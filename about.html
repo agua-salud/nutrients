@@ -105,7 +105,7 @@ code span.wa { color: #008000; font-weight: bold; } /* Warning */
   <!--radix_placeholder_rmarkdown_metadata-->
 
   <script type="text/json" id="radix-rmarkdown-metadata">
-  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","output"]}},"value":[{"type":"character","attributes":{},"value":["Notes About this site"]},{"type":"character","attributes":{},"value":["Notes on how I built the site & hosted on GH-Pages.\n"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["toc"]}},"value":[{"type":"logical","attributes":{},"value":[false]}]}]}]}
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","output"]}},"value":[{"type":"character","attributes":{},"value":["Notes About this site"]},{"type":"character","attributes":{},"value":["Notes on how I built the site & hosted on GH-Pages.\n"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["toc"]}},"value":[{"type":"logical","attributes":{},"value":[true]}]}]}]}
   </script>
   <!--/radix_placeholder_rmarkdown_metadata-->
   <!--radix_placeholder_navigation_in_header-->
@@ -2103,7 +2103,7 @@ B. Diversity
 </div>
 <a href="data-availability.html">Data Products</a>
 <a href="som.html">SOM</a>
-<a href="https://github.com/sweltr/high-temp/">
+<a href="https://github.com/agua-salud/nutrients/">
 <i class="fa fa-github fa-lg" aria-hidden="true"></i>
 </a>
 <a href="about.html">
@@ -2126,14 +2126,33 @@ B. Diversity
 
 
 <div class="d-article">
+<div class="d-contents d-contents-float">
+<nav class="l-text toc figcaption" id="TOC">
+<h3>Contents</h3>
+<ul>
+<li><a href="#github-pages-site-deployment">GitHub Pages Site Deployment</a>
+<ul>
+<li><a href="#initial-setup">Initial Setup</a></li>
+<li><a href="#source-code">Source Code</a></li>
+</ul></li>
+</ul>
+</nav>
+</div>
 <blockquote>
 <p>Page under construction. This page will contain detailed instructions on how this site was created.</p>
 </blockquote>
-<h2 id="github-pages-site-deployment">GitHub Pages Site Deployment</h2>
-<h3 id="initial-setup">Initial Setup</h3>
-<p>This is how I built a <code>gh-pages</code> site for the high-temp Agua Salud study. Check out <a href="https://www.thinkful.com/learn/a-guide-to-using-github-pages/">A guide to using Github Pages</a> for more information.</p>
-<ol type="1">
-<li>Create <code>agua-salud</code> organization on github.</li>
+<h1 id="github-pages-site-deployment">GitHub Pages Site Deployment</h1>
+<h2 id="initial-setup">Initial Setup</h2>
+<p>This is how I built a <code>gh-pages</code> site for the Agua Salud nutrient enrichment study. Check out <a href="https://www.thinkful.com/learn/a-guide-to-using-github-pages/">A guide to using Github Pages</a> for more information.</p>
+<h3 id="create-agua-salud-organization-on-github.">1) Create <code>agua-salud</code> organization on github.</h3>
+<ol type="a">
+<li><p>In the upper right-hand corner of your GitHub page click on your avatar and select <code>Your organizations</code>.</p></li>
+<li><p>On the page that opens, hit <code>New organization</code>.</p></li>
+</ol>
+<div class="layout-chunk" data-layout="l-body-outset">
+<p><img src="include/about/step1.png" width="1436" /><img src="include/about/step2.png" width="1431" /></p>
+</div>
+<ol start="2" type="1">
 <li>Create <code>nutrients</code> repo for source code. Make sure repo public. <strong>MUST initialize repo with a README</strong>. This creates a master branch.</li>
 <li>Create a github.io repo for <code>agua-salud.github.io</code>. Make sure repo public. <strong>MUST initialize repo with a README</strong>.</li>
 <li>Clone the source code repo. in terminal</li>
@@ -2419,9 +2438,9 @@ To https://github.com/agua-salud/nutrients.git
 <!--radix_placeholder_appendices-->
 <div class="appendix-bottom">
 <h3 id="updates-and-corrections">Corrections</h3>
-<p>If you see mistakes or want to suggest changes, please <a href="https://github.com/sweltr/high-temp/issues/new">create an issue</a> on the source repository.</p>
+<p>If you see mistakes or want to suggest changes, please <a href="https://github.com/agua-salud/nutrients/issues/new">create an issue</a> on the source repository.</p>
 <h3 id="reuse">Reuse</h3>
-<p>Text and figures are licensed under Creative Commons Attribution <a rel="license" href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Source code is available at <a href="https://github.com/sweltr/high-temp/">https://github.com/sweltr/high-temp/</a>, unless otherwise noted. The figures that have been reused from other sources don't fall under this license and can be recognized by a note in their caption: "Figure from ...".</p>
+<p>Text and figures are licensed under Creative Commons Attribution <a rel="license" href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Source code is available at <a href="https://github.com/agua-salud/nutrients/">https://github.com/agua-salud/nutrients/</a>, unless otherwise noted. The figures that have been reused from other sources don't fall under this license and can be recognized by a note in their caption: "Figure from ...".</p>
 </div>
 <!--/radix_placeholder_appendices-->
 <!--radix_placeholder_navigation_after_body-->
