@@ -1,1 +1,9 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.Rapp.history
+.DS_Store
+
 public/
+public_build/

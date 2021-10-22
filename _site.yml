@@ -1,0 +1,15 @@
+name: "web"
+title: "My Website"
+base_url: https://agua-salud.github.io/
+repository_url: https://github.com/agua-salud/nutrients/
+exclude: ["public", "README.html", "README.md", "public_build"]
+description: |
+  My Website
+output_dir: "public_build"
+navbar:
+  right:
+    - text: "Home"
+      href: index.html
+    - text: "About"
+      href: about.html
+output: distill::distill_article
