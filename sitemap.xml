@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" version="1.0">
   <url>
-    <loc>https://agua-salud.github.io/about.html</loc>
-    <lastmod>2021-10-22T09:14:38-05:00</lastmod>
+    <loc>https://sweltr.github.io/about.html</loc>
+    <lastmod>2021-10-22T09:46:55-05:00</lastmod>
   </url>
   <url>
-    <loc>https://agua-salud.github.io/</loc>
-    <lastmod>2021-10-22T09:14:38-05:00</lastmod>
+    <loc>https://sweltr.github.io/dada2.html</loc>
+    <lastmod>2021-10-20T07:10:27-05:00</lastmod>
+  </url>
+  <url>
+    <loc>https://sweltr.github.io/data-prep.html</loc>
+    <lastmod>2021-10-22T11:19:54-05:00</lastmod>
+  </url>
+  <url>
+    <loc>https://sweltr.github.io/</loc>
+    <lastmod>2021-10-22T09:18:01-05:00</lastmod>
   </url>
 </urlset>
