@@ -1,15 +1,68 @@
-name: "web"
-title: "My Website"
+title: "agua_salud"
 base_url: https://agua-salud.github.io/
 repository_url: https://github.com/agua-salud/nutrients/
-exclude: ["public", "README.html", "README.md", "public_build"]
 description: |
-  My Website
+  Agua Salud Nutrient Enrichment
 output_dir: "public_build"
+creative_commons: CC BY
+exclude: ["public", "README.html", "README.md", "hack_code", "page_build", "files", "public_build", "archive_code"]
 navbar:
-  right:
-    - text: "Home"
+  icon: icon.png
+  title: ""
+  source_url: false
+  search: false
+  left:
+#    - text: "Home"
+    - icon: fa-home
       href: index.html
-    - text: "About"
+#    - text: "Introduction"
+#      icon: fa-info
+#      href: temp.html
+#    - text: "Field Analyses"
+#      icon: fa-flask
+#      href: temp.html
+  right:
+    - text: "A. Processing"
+      menu:
+        - text: "Workflows"
+        - text: "---------"
+        - text: "1. DADA2"
+          href: dada2.html
+        - text: "2. Data Set Prep"
+          href: data-prep.html
+        - text: "3. Filtering"
+          href: filtering.html
+    - text: "B. Diversity"
+      menu:
+        - text: "Workflows"
+        - text: "---------"
+        - text: "4. Taxonomic"
+          href: taxa.html
+        - text: "5. Alpha Diversity"
+          href: alpha.html
+        - text: "6. Beta Diversity"
+          href: beta.html
+        - text: "7. DA ASVs & Taxa"
+          href: da.html
+        - text: "8. Metadata"
+          href: metadata.html
+#    - icon: fa-code fa-lg
+#      href: raw_code.txt
+#  right:
+    - text: "Data Products"
+      href: data-availability.html
+    - text: "SOM"
+      href: som.html
+    - icon: fa-github fa-lg
+      href: https://github.com/agua-salud/nutrients/
+    - icon: fa-question
       href: about.html
-output: distill::distill_article
+output:
+    distill::distill_article:
+      highlight_downlit: false
+      highlight: haddock
+      css: assets/styles.css
+      toc: true
+      toc_depth: 2
+      toc_float: true
+compare_updates_url: https://github.com/agua-salud/nutrients/compare/pubv1...master
