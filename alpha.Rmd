@@ -1932,7 +1932,7 @@ pacman::p_unload(all)
 
 ##  Source Code {.appendix}
 
-The source code for this page can be accessed on GitHub by [clicking this link](https://github.com/sweltr/high-temp/blob/master/alpha.Rmd).
+The source code for this page can be accessed on GitHub by [clicking this link](https://github.com/agua-salud/nutrients/blob/main/alpha.Rmd).
 
 ## Data Availability {.appendix}
 

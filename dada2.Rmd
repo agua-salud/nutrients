@@ -7886,7 +7886,7 @@ remove(list = ls())
 
 ##  Source Code {.appendix}
 
-The source code for this page can be accessed on GitHub by [clicking this link](https://github.com/sweltr/sweltr-web/blob/master/agua-dada2.Rmd). Please note, that in order to process the data *and*  build the website, we needed to run the workflow and get the results. Then hard code the results and turn off the individual commands. So the raw file for this page is a bit messy---you have been warned.
+The source code for this page can be accessed on GitHub by [clicking this link](https://github.com/agua-salud/nutrients/blob/main/dada2.Rmd). Please note, that in order to process the data *and*  build the website, we needed to run the workflow and get the results. Then hard code the results and turn off the individual commands. So the raw file for this page is a bit messy---you have been warned.
 
 ## Data Availability {.appendix}
 

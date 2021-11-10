@@ -1593,7 +1593,7 @@ If you are interested in performing your own analysis, you can find copies of re
 
 ##  Source Code {.appendix}
 
-You can find the source code for this page by [clicking this link](https://github.com/sweltr/sweltr-web/blob/master/agua-data-prep.Rmd).
+You can find the source code for this page by [clicking this link](https://github.com/agua-salud/nutrients/blob/main/data-prep.Rmd).
 
 ## Data Availability {.appendix}
 

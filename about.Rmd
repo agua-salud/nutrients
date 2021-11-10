@@ -17,7 +17,7 @@ remove(list = ls())
 
 This is how I created this website for the Agua Salud nutrient enrichment experiment using **a**) [Distill](https://rstudio.github.io/distill/) to build the site and **b**) GitHub Pages to host the site. 
 
-> This tutorial assumes you have **a**) git installed, **b**) a GitHub account, **c)**  RStudio installed, and **d**) Distll for R installed. 
+> This tutorial assumes you have **a**) [git installed](https://github.com/git-guides/install-git#:~:text=To%20install%20Git%2C%20run%20the,installation%20by%20typing%3A%20git%20version%20.), **b**) a [GitHub account](https://github.com/join), **c)**  [RStudio installed](https://www.rstudio.com/products/rstudio/download/), and **d**) [Distill](https://rstudio.github.io/distill/) for R installed. 
 
 You will need to jump back and forth between the RStudio IDE and a terminal. You can use the terminal in RStudio if you wish, it is up to you. 
 
@@ -767,4 +767,4 @@ git push origin main
 
 ##  Source Code {.appendix}
 
-The source code for this page can be accessed on GitHub by [clicking this link](https://github.com/agua-salud/nutrients/blob/master/about.Rmd). 
+The source code for this page can be accessed on GitHub by [clicking this link](https://github.com/agua-salud/nutrients/blob/main/about.Rmd). 
