@@ -2,22 +2,30 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" version="1.0">
   <url>
     <loc>https://agua-salud.github.io/about.html</loc>
-    <lastmod>2021-11-07T13:01:31-05:00</lastmod>
+    <lastmod>2021-11-08T07:24:59-05:00</lastmod>
+  </url>
+  <url>
+    <loc>https://agua-salud.github.io/alpha.html</loc>
+    <lastmod>2021-11-18T11:30:56-05:00</lastmod>
   </url>
   <url>
     <loc>https://agua-salud.github.io/dada2.html</loc>
-    <lastmod>2021-10-20T07:10:27-05:00</lastmod>
+    <lastmod>2021-11-08T07:25:39-05:00</lastmod>
   </url>
   <url>
     <loc>https://agua-salud.github.io/data-prep.html</loc>
-    <lastmod>2021-10-25T13:40:26-05:00</lastmod>
+    <lastmod>2021-11-08T07:25:29-05:00</lastmod>
   </url>
   <url>
     <loc>https://agua-salud.github.io/filtering.html</loc>
-    <lastmod>2021-10-27T15:32:16-05:00</lastmod>
+    <lastmod>2021-11-08T07:25:16-05:00</lastmod>
   </url>
   <url>
     <loc>https://agua-salud.github.io/</loc>
     <lastmod>2021-11-07T15:10:36-05:00</lastmod>
+  </url>
+  <url>
+    <loc>https://agua-salud.github.io/taxa.html</loc>
+    <lastmod>2021-11-18T18:45:39-05:00</lastmod>
   </url>
 </urlset>
