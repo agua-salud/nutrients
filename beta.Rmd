@@ -1,0 +1,2589 @@
+---
+title: "6. Beta Diversity & Dispersion Estimates"
+description: |
+  Reproducible workflow for assessing community dissimilarity across temperature treatments.
+author:
+#  - name: Jarrod J Scott
+#    url: https://example.com/norajones
+#    affiliation: Spacely Sprockets
+#    affiliation_nrl: https://example.com/spacelysprokets
+bibliography: assets/cite.bib
+output:
+    distill::distill_article:
+      css: assets/css/styles.css
+      toc: true
+      toc_depth: 2
+---
+
+<details markdown="1">
+<summary><strong>Click here</strong> for setup information.</summary>
+
+```{r setup, message=FALSE, results = 'hide'}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+set.seed(119)
+library(phyloseq); packageVersion("phyloseq")
+library(Biostrings); packageVersion("Biostrings")
+
+pacman::p_load(tidyverse, microeco, file2meco, magrittr,
+               microbiome, phytools, phangorn, reactable, Matrix, 
+               pairwiseAdonis, codefolder, naniar, downloadthis,
+               labdsv, patchwork, agricolae, captioner, 
+               install = FALSE, update = FALSE)
+
+#pacman::p_depends(agricolae, local = TRUE)  
+#pacman::p_depends_reverse(agricolae, local = TRUE)  
+
+options(scipen=999)
+knitr::opts_current$get(c(
+  "cache",
+  "cache.path",
+  "cache.rebuild",
+  "dependson",
+  "autodep"
+))
+```
+
+```{r, echo=FALSE, eval=TRUE}
+xaringanExtra::use_panelset()
+xaringanExtra::style_panelset_tabs(
+  active_foreground = "#2271B2",
+  hover_foreground = "#AB22B2"
+  )
+```
+
+```{r master_load_ssu18, include=FALSE, eval=TRUE}
+## Load to build page only #2
+remove(list = ls())
+load("page_build/beta_wf_part_1.rdata")
+objects()
+```
+
+```{r, message=FALSE, results = 'hide', eval=TRUE}
+### COmmon formatting scripts
+### NOTE: captioner.R must be read BEFORE captions_XYZ.R
+source("assets/captioner/captioner.R")
+source("assets/captioner/captions/captions_beta.R")
+source("assets/reactable/download_this_fun.R")
+source("assets/reactable/styles.R")
+source("assets/reactable/table_functions/beta.R")
+```
+
+</details> 
+
+# Synopsis
+
+This workflow contains diversity assessments for the high temperature data sets. In order to run the workflow, you either need to first run the  [DADA2 Workflow for 2018 High Temp samples](dada2.html) **and** the [Data Preparation workflow](data-prep.html) **or** begin with the output files from the Data Preparation workflow. See the [Data Availability](data-availability.html) page for complete details.
+
+In this workflow...
+
+# 16s rRNA
+
+```{r, include=FALSE, eval=FALSE}
+## Initial Load for  ANALYSIS #1
+set.seed(119)
+ssu_ps_work_Y0 <- readRDS("files/filtering/final_ps/ssu_ps_work_Y0.rds")
+ssu_ps_work_Y1 <- readRDS("files/filtering/final_ps/ssu_ps_work_Y1.rds")
+ssu_ps_work_Y4 <- readRDS("files/filtering/final_ps/ssu_ps_work_Y4.rds")
+
+ssu_ps_filt_Y0 <- readRDS("files/filtering/final_ps/ssu_ps_filt_Y0.rds")
+ssu_ps_filt_Y1 <- readRDS("files/filtering/final_ps/ssu_ps_filt_Y1.rds")
+ssu_ps_filt_Y4 <- readRDS("files/filtering/final_ps/ssu_ps_filt_Y4.rds")
+
+ssu_ps_perfect_Y0 <- readRDS("files/filtering/final_ps/ssu_ps_perfect_Y0.rds")
+ssu_ps_perfect_Y1 <- readRDS("files/filtering/final_ps/ssu_ps_perfect_Y1.rds")
+ssu_ps_perfect_Y4 <- readRDS("files/filtering/final_ps/ssu_ps_perfect_Y4.rds")
+
+ssu_ps_pime_Y0 <- readRDS("files/filtering/final_ps/ssu_ps_pime_Y0.rds")
+ssu_ps_pime_Y1 <- readRDS("files/filtering/final_ps/ssu_ps_pime_Y1.rds")
+ssu_ps_pime_Y4 <- readRDS("files/filtering/final_ps/ssu_ps_pime_Y4.rds")
+```
+
+```{r, echo=FALSE}
+agua_col <- c("#B26322", "#29B222", "#2271B2", "#AB22B2")
+```
+
+In order to test for significance between sample groups, we must perform the following steps:
+
+1. Transform sample counts to relative abundance.
+2. Create distance matrices based on some metrics, for example `wunifrac`, `unifrac`, and `jsd`. For this we use the function `phyloseq::distance`.
+3. Next, calculate beta dispersion using the `betadisper` function from the `vegan` package [@oksanen2013community].
+4. Then, use the function `permutest` to run a Permutation test for homogeneity of multivariate dispersions.
+5. If the beta dispersion tests are not significant we will run a PERMANOVA using `adonis` (since PERMANOVA assumes equal dispersion), otherwise we will use Analysis of Similarity (ANOSIM), both available in the `vegan` package [@oksanen2013community].
+
+Steps 2--4 are combined in a `for` loop that tests all three distance metrics.
+
+First, transform sample counts to relative abundance and generate some new trees.
+
+```{r, code_folding=TRUE}
+ssu_samp_ps <- c(objects(pattern = "ssu_.*_Y[0-9]$"))
+for (i in ssu_samp_ps) {
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_prop"))
+     tmp_get <- get(i)
+     tmp_ps <- transform_sample_counts(tmp_get, function(otu) 
+                                          1e5 * otu/sum(otu))
+     tmp_ps@phy_tree <- NULL
+     tmp_ps <- prune_samples(sample_sums(tmp_ps) > 0, tmp_ps)
+     tmp_tree <- rtree(ntaxa(tmp_ps), rooted = TRUE, 
+                       tip.label = taxa_names(tmp_ps))
+     tmp_ps <- merge_phyloseq(tmp_ps, sample_data, tmp_tree)
+     print(tmp_name)
+     assign(tmp_name, tmp_ps)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects()
+```
+
+
+```{r}
+choose_group <- "YR_TREAT"
+```
+
+## Beta Dispersion
+
+Here we create distance matrices for each metric, calculate the beta dispersion, and run a permutation test for homogeneity of multivariate dispersions. 
+
+```{r, code_folding=TRUE}
+ssu_dist <- c("jsd", "unifrac", "wunifrac", "jaccard")
+for (i in ssu_samp_ps) {
+    for (d in ssu_dist){
+       tmp_get <- get(purrr::map_chr(i, ~ paste0(i, "_prop")))
+       tmp_samp <- data.frame(sample_data(tmp_get))
+       if(d == "jaccard"){
+         tmp_df <- phyloseq::distance(tmp_get, method = d, binary = TRUE)
+       } else {
+         tmp_df <- phyloseq::distance(tmp_get, method = d)
+         }
+       #tmp_df <- phyloseq::distance(tmp_get, method = d)
+       tmp_df_name <- purrr::map_chr(d, ~ paste0(i, "_beta_dist_", .))
+       assign(tmp_df_name, tmp_df)
+       tmp_df2 <- betadisper(tmp_df, tmp_samp[[choose_group]], bias.adjust = TRUE)
+       tmp_df_name2 <- purrr::map_chr(d, ~ paste0(i, "_beta_dispersion_", .))
+       assign(tmp_df_name2, tmp_df2)
+       tmp_df3 <- permutest(tmp_df2, pairwise = TRUE,
+                            permutations = 1000, binary = FALSE)
+       tmp_df_name3 <- purrr::map_chr(d, ~ paste0(i, "_permutest_", .))
+       assign(tmp_df_name3, tmp_df3)
+       rm(list = ls(pattern = "tmp_"))
+    }
+}
+```
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report <- function(ps_object) {
+        for (d in ssu_dist){
+          tmp_ps_name <- deparse(substitute(ps_object))
+          tmp_get <- get(purrr::map_chr(tmp_ps_name, ~ paste0(tmp_ps_name, "_permutest_", d)))
+          cat("\n")
+          cat("####################################################", "\n")
+          tmp_print <- c("BETA DISPERSION significance test", d, "distance")
+          cat(tmp_print, "\n")
+          cat("####################################################")
+          cat("\n")
+          print(tmp_get)
+          rm(list = ls(pattern = "tmp_"))
+        }
+}
+```
+
+<details markdown="1">
+<summary>Results of Beta Dispersion & Permutation tests <strong>(FULL data set)</strong></summary>
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+#### Year 0
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(ssu_ps_work_Y0)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(ssu_ps_work_Y1)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(ssu_ps_work_Y4)
+```
+:::
+:::
+:::
+</details>
+
+<details markdown="1">
+<summary>Results of Beta Dispersion & Permutation tests <strong>(Arbitrary filtered)</strong></summary>
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+#### Year 0
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(ssu_ps_filt_Y0)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(ssu_ps_filt_Y1)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(ssu_ps_filt_Y4)
+```
+:::
+:::
+:::
+</details>
+
+<details markdown="1">
+<summary>Results of Beta Dispersion & Permutation tests <strong>(PERFect filtered)</strong></summary>
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+#### Year 0
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(ssu_ps_perfect_Y0)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(ssu_ps_perfect_Y1)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(ssu_ps_perfect_Y4)
+```
+:::
+:::
+:::
+
+</details>
+
+<details markdown="1">
+<summary>Results of Beta Dispersion & Permutation tests <strong>(PIME filtered)</strong></summary>
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+#### Year 0
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(ssu_ps_pime_Y0)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(ssu_ps_pime_Y1)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(ssu_ps_pime_Y4)
+```
+:::
+:::
+:::
+</details>
+
+Remember, if the beta dispersion p-value is greater than `0.05` we use PERMANOVA, otherwise we use ANOSIM.
+
+```{r, code_folding=TRUE}
+ssu_perm_pvalues <- data.frame()
+for (i in ssu_samp_ps) {
+        for (d in ssu_dist){
+          tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_permutest_", d)))
+          tmp_pv <- tmp_get$tab$`Pr(>F)`[1]
+
+          tmp_test <- if(tmp_pv < 0.05){
+            tmp_test <- "ANOSIM"
+          } else {
+            tmp_test <- "ADONIS"
+          }
+          tmp_df <- data.frame(i, d, tmp_pv, tmp_test)
+          ssu_perm_pvalues <- dplyr::bind_rows(ssu_perm_pvalues, tmp_df)
+          rm(list = ls(pattern = "tmp_"))
+    }
+}
+ssu_perm_pvalues <- ssu_perm_pvalues %>% 
+  dplyr::rename(c("data_set" = 1, "dist" = 2, "pval" = 3, "test" = 4))
+ssu_perm_pvalues <- ssu_perm_pvalues %>% tibble::remove_rownames()
+```
+
+
+```{r, echo=FALSE}
+ssu_perm_summary <- ssu_perm_pvalues
+ssu_perm_summary <- ssu_perm_summary %>% separate(col = 1, 
+                                              into = c("dummy", "metric", "dataset",  "year"), 
+                                              sep = "_", remove = TRUE)
+ssu_perm_summary[,1:2] <- NULL 
+
+ssu_perm_summary$dataset <- stringr::str_replace(ssu_perm_summary$dataset, "work", "FULL") %>%
+                              stringr::str_replace(., "filt", "FILT") %>%
+                              stringr::str_replace(., "perfect", "PERFect") %>%
+                              stringr::str_replace(., "pime", "PIME")
+ssu_perm_summary$dist <- stringr::str_replace(ssu_perm_summary$dist, "jsd", "Jensen–Shannon divergence") %>%
+                              stringr::str_replace(., "wunifrac", "Weighted UniFrac") %>%
+                              stringr::str_replace(., "unifrac", "Unweighted UniFrac") %>%
+                              stringr::str_replace(., "jaccard", "Jaccard index")
+
+ssu_perm_summary$year <- stringr::str_replace(ssu_perm_summary$year, "Y", "Year ")
+ssu_perm_summary$pval <- round(ssu_perm_summary[[4]], 4)
+row_order <- c("FULL",  "FILT", "PERFect", "PIME")
+ssu_perm_summary <- ssu_perm_summary  %>% dplyr::mutate(dataset = factor(dataset, levels = row_order)) %>% 
+                           #dplyr::arrange(dist) %>% 
+                           dplyr::arrange(dataset)
+ssu_beta_disp_tests <- ssu_perm_summary
+```
+
+
+<small>`r caption_tab_ssu("ssu_beta_disp_tests")`</small>
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+download_this_fun(ssu_beta_disp_tests)
+```
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+beta_disp_summ_table(seq_table)
+rm(seq_table)
+```
+
+## Significance Tests 
+
+Depending on the test, we need different data structures. For `adonis` we need the sample metadata and for `anosim` we start with a phyloseq object. 
+
+We begin by creating separate sample metadata data frames for each phyloseq object (for any `adonis` analyses).
+
+```{r, code_folding=TRUE}
+for (i in ssu_samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_prop")))
+     tmp_samp <- data.frame(sample_data(tmp_get))
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_sampledf"))
+     assign(tmp_name, tmp_samp)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern="_sampledf")
+```
+
+Next we can use a `for` loop with an `if/else` to perform significance tests. This loop does the following for every combination of phyloseq object and distance metric:
+
+1) Get the results of each permutation test.
+2) Get the p-value from the test.
+3) If the p-value is < 0.05, `anosim` is run, otherwise we use `adonis`.
+
+```{r, code_folding=TRUE}
+for (i in ssu_samp_ps) {
+        for (d in ssu_dist){
+          tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_permutest_", d)))
+          tmp_pv <- tmp_get$tab$`Pr(>F)`[1]
+          
+          if(tmp_pv < 0.05){
+            tmp_anosim_data <- get(i)
+            tmp_groups <- get_variable(tmp_anosim_data, choose_group)
+            tmp_prop <- get(purrr::map_chr(i, ~ paste0(., "_prop")))
+            tmp_anosim_d <- anosim(phyloseq::distance(tmp_prop, d), grouping = tmp_groups)
+            tmp_anosim_name <- purrr::map_chr(i, ~ paste0(., "_sig_anosim_", d))
+            assign(tmp_anosim_name, tmp_anosim_d)
+
+          } else {
+            tmp_adonis_data <- get(purrr::map_chr(i, ~ paste0(., "_beta_dist_", d)))
+            tmp_adonis_sampledf <- get(purrr::map_chr(i, ~ paste0(., "_sampledf")))
+            tmp_adonis <- adonis(tmp_adonis_data ~ YR_TREAT,
+                                 data = tmp_adonis_sampledf, permutations = 1000)
+            tmp_adonis2 <- adonis2(tmp_adonis_data ~ YR_TREAT,
+                                  data = tmp_adonis_sampledf, permutations = 1000)
+            
+            tmp_adonis_name <- purrr::map_chr(i, ~ paste0(., "_sig_adonis_", d))
+            tmp_adonis2_name <- purrr::map_chr(i, ~ paste0(., "_sig_adonis2_", d))
+            assign(tmp_adonis_name, tmp_adonis)
+            assign(tmp_adonis2_name, tmp_adonis2)
+          }
+          rm(list = ls(pattern = "tmp_"))
+    }
+}
+```
+
+```{r, eval=TRUE, echo=FALSE}
+sig_list <- objects(pattern = paste("ssu_ps_.*_sig_"))
+sig_test_report <- function(ps_object) {
+          ps_name <- deparse(substitute(ps_object))
+          sub_list <- stringr::str_subset(sig_list, ps_name)
+    for (sig_test in sub_list) {
+          tmp_test <- gsub(".*_sig_", "", sig_test) %>% gsub("_.*", "", .)
+          tmp_dist <- gsub(".*_", "", sig_test)
+
+          tmp_test_call <- if (tmp_test == "adonis2") {
+             tmp_test_call <- "PERMANOVA" 
+           } else if (tmp_test == "anosim") {
+             tmp_test_call <- "ANOSIM"
+           } else if (tmp_test == "adonis") {
+             next
+           } 
+          
+          tmp_dist_call <- if (tmp_dist == "jsd") {
+             tmp_dist_call <- "Jensen-Shannon Divergence" 
+           } else if (tmp_dist == "unifrac") {
+             tmp_dist_call <- "Unweighted UniFrac distance"
+           } else if (tmp_dist == "wunifrac") {
+             tmp_dist_call <- "Weighted UniFrac distance"
+           } else if (tmp_dist == "jaccard") {
+             tmp_dist_call <- "Jaccard index"
+           } 
+        cat(paste("-----", tmp_test_call, "for", tmp_dist_call, "(", tmp_dist, ")", "-----", sep = " "))
+        cat("\n\n")
+        print(eval(parse(text = sig_test)))
+        cat("\n\n")
+        flush.console()
+    }
+}   
+```
+
+
+<details markdown="1">
+<summary>Results of Significance tests <strong>(FULL data set)</strong></summary>
+
+::: l-body
+::: {.panelset}
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(ssu_ps_work_Y0)
+```
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(ssu_ps_work_Y1)
+```
+:::
+
+::: {.panel}
+
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(ssu_ps_work_Y4)
+```
+:::
+:::
+:::
+
+</details>
+
+<details markdown="1">
+<summary>Results of Significance tests <strong>(Arbitrary filtered)</strong></summary>
+
+::: l-body
+::: {.panelset}
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(ssu_ps_filt_Y0)
+```
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(ssu_ps_filt_Y1)
+```
+:::
+
+::: {.panel}
+
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(ssu_ps_filt_Y4)
+```
+:::
+:::
+:::
+
+</details>
+
+<details markdown="1">
+<summary>Results of Significance tests <strong>(PERFect filtered)</strong></summary>
+
+::: l-body
+::: {.panelset}
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(ssu_ps_work_Y0)
+```
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(ssu_ps_work_Y1)
+```
+:::
+
+::: {.panel}
+
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(ssu_ps_work_Y4)
+```
+:::
+:::
+:::
+
+</details>
+
+<details markdown="1">
+<summary>Results of Significance tests <strong>(PIME filtered)</strong></summary>
+
+::: l-body
+::: {.panelset}
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(ssu_ps_pime_Y0)
+```
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(ssu_ps_pime_Y1)
+```
+:::
+
+::: {.panel}
+
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(ssu_ps_pime_Y4)
+```
+:::
+:::
+:::
+
+</details>
+
+
+## Summaries 
+
+Here is a quick summary of significance tests for the data sets against three distance matrices.
+
+```{r, echo=FALSE}
+ssu_tab_sig_test <- c()
+for (i in objects(pattern = paste("ssu_ps_.*_sig_"))) {
+  tmp_test <- gsub(".*_sig_", "", i) %>% gsub("_.*", "", .)
+  tmp_dist <- gsub(".*_", "", i)
+  tmp_ds <- gsub("_Y.*", "", i)  
+  tmp_year <- gsub(".*_Y", "Y", i) %>% gsub("_.*", "", .)
+  tmp_get <- get(i)
+  
+  tmp_pvalue <- if (tmp_test == "adonis2") {
+     tmp_pvalue <- tmp_get$`Pr(>F)`[1]
+   } else if (tmp_test == "anosim") {
+     tmp_pvalue <- tmp_get$signif
+   } else if (tmp_test == "adonis") {
+     next
+   } 
+  ssu_tab_sig_test <- rbind(ssu_tab_sig_test, 
+                          data.frame(tmp_ds, tmp_year, 
+                                     tmp_dist, tmp_test, 
+                                     tmp_pvalue))
+  rm(list = ls(pattern = "tmp_"))
+}
+```
+
+```{r, echo=FALSE}
+### FIX table
+ssu_tab_sig_test <- ssu_tab_sig_test %>%
+  dplyr::rename("dataset" = 1, "year" = 2, "distance" = 3, "test" = 4, "p_value" = 5) 
+
+ssu_tab_sig_test$dataset <- stringr::str_replace(ssu_tab_sig_test$dataset, ".*_", "") %>%
+                            stringr::str_replace(., "work", "FULL") %>%
+                            stringr::str_replace(., "filt", "FILT") %>%
+                            stringr::str_replace(., "perfect", "PERFect") %>%
+                            stringr::str_replace(., "pime", "PIME")
+
+ssu_tab_sig_test$distance <- stringr::str_replace(ssu_tab_sig_test$distance, "jsd", "Jensen-Shannon Divergence") %>%
+                             stringr::str_replace(., "^unifrac$", "Unweighted Unifrac") %>%
+                             stringr::str_replace(., "^wunifrac$", "Weighted Unifrac") %>%
+                             stringr::str_replace(., "jaccard", "Jaccard index")
+
+
+ssu_tab_sig_test <- ssu_tab_sig_test %>% mutate(across(where(is.numeric), round, 4))
+ssu_temp_tab <- ssu_tab_sig_test
+#temp_tab$test <- NULL
+```
+
+```{r, echo=FALSE}
+rm(list = ls(pattern = "ssu_tab_sig_test_"))
+sub_ds <- c("FULL", "FILT", "PERFect", "PIME")
+for (i in sub_ds) {
+  tmp_get <- ssu_temp_tab
+  tmp_sub <- dplyr::filter(tmp_get, dataset == i)
+  tmp_sub$dataset <- NULL
+  #tmp_sub <- tmp_sub %>% tidyr::unite("merged", 2:3)
+  tmp_pivot <- tmp_sub %>% pivot_wider(id_cols = distance, 
+                                       names_from = year, 
+                                       values_from = p_value)
+  tmp_pivot <- tmp_pivot[order(tmp_pivot$distance),]
+  tmp_pivot <- tmp_pivot %>% dplyr::rename("Year 0" = 2, "Year 1" = 3, "Year 4" = 4)
+
+
+  #tmp_pivot <- tmp_pivot %>% tidyr::separate(col = "merged", into = c("distance", "test"), sep = "_")
+  
+  tmp_name <- paste("ssu_tab_sig_test_", tolower(i), sep = "")
+  assign(tmp_name, tmp_pivot)
+  rm(list = ls(pattern = "tmp_"))
+}
+```
+
+
+::: l-body
+::: {.panelset}
+::: {.panel}
+
+#### FULL data sets
+
+<small>`r caption_tab_ssu("ssu_tab_sig_test_full")`</small>
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+download_this_fun(ssu_tab_sig_test_full)
+```
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+sig_test_summary(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+
+#### Arbitrary filtered 
+
+<small>`r caption_tab_ssu("ssu_tab_sig_test_filt")`</small>
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+download_this_fun(ssu_tab_sig_test_filt)
+```
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+sig_test_summary(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+
+#### PERFect filtered 
+
+<small>`r caption_tab_ssu("ssu_tab_sig_test_perfect")`</small>
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+download_this_fun(ssu_tab_sig_test_perfect)
+```
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+sig_test_summary(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+
+#### PIME filtered 
+
+<small>`r caption_tab_ssu("ssu_tab_sig_test_pime")`</small>
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+download_this_fun(ssu_tab_sig_test_pime)
+```
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+sig_test_summary(seq_table)
+rm(seq_table)
+```
+:::
+:::
+:::
+
+# ITS
+
+```{r, include=FALSE, eval=FALSE}
+rm(list = ls(pattern = "its_"))
+
+## Initial Load for  ANALYSIS #1
+set.seed(119)
+its_ps_work_Y0 <- readRDS("files/filtering/final_ps/its_ps_work_Y0.rds")
+its_ps_work_Y1 <- readRDS("files/filtering/final_ps/its_ps_work_Y1.rds")
+its_ps_work_Y4 <- readRDS("files/filtering/final_ps/its_ps_work_Y4.rds")
+
+its_ps_filt_Y0 <- readRDS("files/filtering/final_ps/its_ps_filt_Y0.rds")
+its_ps_filt_Y1 <- readRDS("files/filtering/final_ps/its_ps_filt_Y1.rds")
+its_ps_filt_Y4 <- readRDS("files/filtering/final_ps/its_ps_filt_Y4.rds")
+
+its_ps_perfect_Y0 <- readRDS("files/filtering/final_ps/its_ps_perfect_Y0.rds")
+its_ps_perfect_Y1 <- readRDS("files/filtering/final_ps/its_ps_perfect_Y1.rds")
+its_ps_perfect_Y4 <- readRDS("files/filtering/final_ps/its_ps_perfect_Y4.rds")
+
+its_ps_pime_Y0 <- readRDS("files/filtering/final_ps/its_ps_pime_Y0.rds")
+its_ps_pime_Y1 <- readRDS("files/filtering/final_ps/its_ps_pime_Y1.rds")
+its_ps_pime_Y4 <- readRDS("files/filtering/final_ps/its_ps_pime_Y4.rds")
+
+```
+
+In order to test for significance between sample groups, we must perform the following steps:
+
+1. Transform sample counts to relative abundance.
+2. Create distance matrices based on some metrics, for example `wunifrac`, `unifrac`, and `jsd`. For this we use the function `phyloseq::distance`.
+3. Next, calculate beta dispersion using the `betadisper` function from the `vegan` package [@oksanen2013community].
+4. Then, use the function `permutest` to run a Permutation test for homogeneity of multivariate dispersions.
+5. If the beta dispersion tests are not significant we will run a PERMANOVA using `adonis` (since PERMANOVA assumes equal dispersion), otherwise we will use Analysis of Similarity (ANOSIM), both available in the `vegan` package [@oksanen2013community].
+
+Steps 2--4 are combined in a `for` loop that tests all three distance metrics.
+
+
+Again, transform sample counts to relative abundance and generate some new trees.
+
+```{r, code_folding=TRUE}
+its_samp_ps <- c(objects(pattern = "its_.*_Y[0-9]$"))
+for (i in its_samp_ps) {
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_prop"))
+     tmp_get <- get(i)
+     tmp_ps <- transform_sample_counts(tmp_get, function(otu) 
+                                          1e5 * otu/sum(otu))
+     tmp_ps@phy_tree <- NULL
+     tmp_ps <- prune_samples(sample_sums(tmp_ps) > 0, tmp_ps)
+     tmp_ps <- merge_phyloseq(tmp_ps, sample_data)
+     print(tmp_name)
+     assign(tmp_name, tmp_ps)
+     rm(list = ls(pattern = "tmp_"))
+}
+```
+
+## Beta Dispersion
+
+Here we create distance matrices for each metric, calculate the beta dispersion, and run a permutation test for homogeneity of multivariate dispersions. 
+
+```{r, code_folding=TRUE}
+its_dist <- c("jsd", "bray", "gower", "jaccard")
+for (i in its_samp_ps) {
+    for (d in its_dist){
+       tmp_get <- get(purrr::map_chr(i, ~ paste0(i, "_prop")))
+       tmp_samp <- data.frame(sample_data(tmp_get))
+       if(d == "jaccard"){
+         tmp_df <- phyloseq::distance(tmp_get, method = d, binary = TRUE)
+       } else {
+         tmp_df <- phyloseq::distance(tmp_get, method = d)
+         }
+#       tmp_df <- phyloseq::distance(tmp_get, method = d)
+       tmp_df_name <- purrr::map_chr(d, ~ paste0(i, "_beta_dist_", .))
+       assign(tmp_df_name, tmp_df)
+       tmp_df2 <- betadisper(tmp_df, tmp_samp[[choose_group]], bias.adjust = TRUE)
+       tmp_df_name2 <- purrr::map_chr(d, ~ paste0(i, "_beta_dispersion_", .))
+       assign(tmp_df_name2, tmp_df2)
+       tmp_df3 <- permutest(tmp_df2, pairwise = TRUE,
+                            permutations = 1000, binary = FALSE)
+       tmp_df_name3 <- purrr::map_chr(d, ~ paste0(i, "_permutest_", .))
+       assign(tmp_df_name3, tmp_df3)
+       rm(list = ls(pattern = "tmp_"))
+    }
+}
+```
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report <- function(ps_object) {
+        for (d in its_dist){
+          tmp_ps_name <- deparse(substitute(ps_object))
+          tmp_get <- get(purrr::map_chr(tmp_ps_name, ~ paste0(tmp_ps_name, "_permutest_", d)))
+          cat("\n")
+          cat("####################################################", "\n")
+          tmp_print <- c("BETA DISPERSION significance test", d, "distance")
+          cat(tmp_print, "\n")
+          cat("####################################################")
+          cat("\n")
+          print(tmp_get)
+          rm(list = ls(pattern = "tmp_"))
+        }
+}
+```
+
+<details markdown="1">
+<summary>Results of Beta Dispersion & Permutation tests <strong>(FULL data set)</strong></summary>
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+#### Year 0
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(its_ps_work_Y0)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(its_ps_work_Y1)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(its_ps_work_Y4)
+```
+:::
+:::
+:::
+</details>
+
+<details markdown="1">
+<summary>Results of Beta Dispersion & Permutation tests <strong>(Arbitrary filtered)</strong></summary>
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+#### Year 0
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(its_ps_filt_Y0)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(its_ps_filt_Y1)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(its_ps_filt_Y4)
+```
+:::
+:::
+:::
+</details>
+
+<details markdown="1">
+<summary>Results of Beta Dispersion & Permutation tests <strong>(PERFect filtered)</strong></summary>
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+#### Year 0
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(its_ps_perfect_Y0)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(its_ps_perfect_Y1)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(its_ps_perfect_Y4)
+```
+:::
+:::
+:::
+
+</details>
+
+<details markdown="1">
+<summary>Results of Beta Dispersion & Permutation tests <strong>(PIME filtered)</strong></summary>
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+#### Year 0
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(its_ps_pime_Y0)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(its_ps_pime_Y1)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, eval=TRUE, echo=FALSE}
+beta_disp_report(its_ps_pime_Y4)
+```
+:::
+:::
+:::
+
+</details>
+
+Remember, if the beta dispersion p-value is greater than `0.05` we use PERMANOVA, otherwise we use ANOSIM.
+
+```{r, code_folding=TRUE}
+its_perm_pvalues <- data.frame()
+for (i in its_samp_ps) {
+        for (d in its_dist){
+          tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_permutest_", d)))
+          tmp_pv <- tmp_get$tab$`Pr(>F)`[1]
+
+          tmp_test <- if(tmp_pv < 0.05){
+            tmp_test <- "ANOSIM"
+          } else {
+            tmp_test <- "ADONIS"
+          }
+          tmp_df <- data.frame(i, d, tmp_pv, tmp_test)
+          its_perm_pvalues <- dplyr::bind_rows(its_perm_pvalues, tmp_df)
+          rm(list = ls(pattern = "tmp_"))
+    }
+}
+its_perm_pvalues <- its_perm_pvalues %>% 
+  dplyr::rename(c("data_set" = 1, "dist" = 2, "pval" = 3, "test" = 4))
+its_perm_pvalues <- its_perm_pvalues %>% tibble::remove_rownames()
+```
+
+
+```{r, echo=FALSE}
+its_perm_summary <- its_perm_pvalues
+its_perm_summary <- its_perm_summary %>% separate(col = 1, 
+                                              into = c("dummy", "metric", "dataset",  "year"), 
+                                              sep = "_", remove = TRUE)
+its_perm_summary[,1:2] <- NULL 
+
+its_perm_summary$dataset <- stringr::str_replace(its_perm_summary$dataset, "work", "FULL") %>%
+                              stringr::str_replace(., "filt", "FILT") %>%
+                              stringr::str_replace(., "perfect", "PERFect") %>%
+                              stringr::str_replace(., "pime", "PIME")
+its_perm_summary$dist <- stringr::str_replace(its_perm_summary$dist, "jsd", "Jensen–Shannon divergence") %>%
+                              stringr::str_replace(., "bray", "Bray-Curtis dissimilarity") %>%
+                              stringr::str_replace(., "gower", "Gower distance") %>%
+                              stringr::str_replace(., "jaccard", "Jaccard index")
+its_perm_summary$year <- stringr::str_replace(its_perm_summary$year, "Y", "Year ")
+its_perm_summary$pval <- round(its_perm_summary[[4]], 4)
+row_order <- c("FULL",  "FILT", "PERFect", "PIME")
+its_perm_summary <- its_perm_summary  %>% dplyr::mutate(dataset = factor(dataset, levels = row_order)) %>% 
+                           #dplyr::arrange(dist) %>% 
+                           dplyr::arrange(dataset)
+its_beta_disp_tests <- its_perm_summary
+```
+
+
+<small>`r caption_tab_its("its_beta_disp_tests")`</small>
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+download_this_fun(its_beta_disp_tests)
+```
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+beta_disp_summ_table(seq_table)
+rm(seq_table)
+```
+
+## Significance Tests 
+
+Depending on the test, we need different data structures. For `adonis` we need the sample metadata and for `anosim` we start with a phyloseq object. 
+
+We begin by creating separate sample metadata data frames for each phyloseq object (for any `adonis` analyses).
+
+```{r, code_folding=TRUE}
+for (i in its_samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_prop")))
+     tmp_samp <- data.frame(sample_data(tmp_get))
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_sampledf"))
+     assign(tmp_name, tmp_samp)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern="_sampledf")
+```
+
+Next we can use a `for` loop with an `if/else` to perform significance tests. This loop does the following for every combination of phyloseq object and distance metric:
+
+1) Get the results of each permutation test.
+2) Get the p-value from the test.
+3) If the p-value is < 0.05, `anosim` is run, otherwise we use `adonis`.
+
+```{r, code_folding=TRUE}
+for (i in its_samp_ps) {
+        for (d in its_dist){
+          tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_permutest_", d)))
+          tmp_pv <- tmp_get$tab$`Pr(>F)`[1]
+          
+          if(tmp_pv < 0.05){
+            tmp_anosim_data <- get(i)
+            tmp_groups <- get_variable(tmp_anosim_data, choose_group)
+            tmp_prop <- get(purrr::map_chr(i, ~ paste0(., "_prop")))
+            tmp_anosim_d <- anosim(phyloseq::distance(tmp_prop, d), grouping = tmp_groups)
+            tmp_anosim_name <- purrr::map_chr(i, ~ paste0(., "_sig_anosim_", d))
+            assign(tmp_anosim_name, tmp_anosim_d)
+
+          } else {
+            tmp_adonis_data <- get(purrr::map_chr(i, ~ paste0(., "_beta_dist_", d)))
+            tmp_adonis_sampledf <- get(purrr::map_chr(i, ~ paste0(., "_sampledf")))
+            tmp_adonis <- adonis(tmp_adonis_data ~ YR_TREAT,
+                                 data = tmp_adonis_sampledf, permutations = 1000)
+            tmp_adonis2 <- adonis2(tmp_adonis_data ~ YR_TREAT,
+                                  data = tmp_adonis_sampledf, permutations = 1000)
+            
+            tmp_adonis_name <- purrr::map_chr(i, ~ paste0(., "_sig_adonis_", d))
+            tmp_adonis2_name <- purrr::map_chr(i, ~ paste0(., "_sig_adonis2_", d))
+            assign(tmp_adonis_name, tmp_adonis)
+            assign(tmp_adonis2_name, tmp_adonis2)
+          }
+          rm(list = ls(pattern = "tmp_"))
+    }
+}
+```
+
+```{r, eval=TRUE, echo=FALSE}
+sig_list <- objects(pattern = paste("its_ps_.*_sig_"))
+sig_test_report <- function(ps_object) {
+          ps_name <- deparse(substitute(ps_object))
+          sub_list <- stringr::str_subset(sig_list, ps_name)
+    for (sig_test in sub_list) {
+          tmp_test <- gsub(".*_sig_", "", sig_test) %>% gsub("_.*", "", .)
+          tmp_dist <- gsub(".*_", "", sig_test)
+
+          tmp_test_call <- if (tmp_test == "adonis2") {
+             tmp_test_call <- "PERMANOVA" 
+           } else if (tmp_test == "anosim") {
+             tmp_test_call <- "ANOSIM"
+           } else if (tmp_test == "adonis") {
+             next
+           } 
+          
+          tmp_dist_call <- if (tmp_dist == "jsd") {
+             tmp_dist_call <- "Jensen-Shannon Divergence" 
+           } else if (tmp_dist == "bray") {
+             tmp_dist_call <- "Bray-Curtis dissimilarity"
+           } else if (tmp_dist == "gower") {
+             tmp_dist_call <- "Gower distance"
+           } else if (tmp_dist == "jaccard") {
+             tmp_dist_call <- "Jaccard index"
+           } 
+        cat(paste("-----", tmp_test_call, "for", tmp_dist_call, "(", tmp_dist, ")", "-----", sep = " "))
+        cat("\n\n")
+        print(eval(parse(text = sig_test)))
+        cat("\n\n")
+        flush.console()
+    }
+}   
+```
+
+<details markdown="1">
+<summary>Results of Significance tests <strong>(FULL data set)</strong></summary>
+
+::: l-body
+::: {.panelset}
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(its_ps_work_Y0)
+```
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(its_ps_work_Y1)
+```
+:::
+
+::: {.panel}
+
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(its_ps_work_Y4)
+```
+:::
+:::
+:::
+
+</details>
+
+<details markdown="1">
+<summary>Results of Significance tests <strong>(Arbitrary filtered)</strong></summary>
+
+::: l-body
+::: {.panelset}
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(its_ps_filt_Y0)
+```
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(its_ps_filt_Y1)
+```
+:::
+
+::: {.panel}
+
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(its_ps_filt_Y4)
+```
+:::
+:::
+:::
+
+</details>
+
+<details markdown="1">
+<summary>Results of Significance tests <strong>(PERFect filtered)</strong></summary>
+
+::: l-body
+::: {.panelset}
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(its_ps_work_Y0)
+```
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(its_ps_work_Y1)
+```
+:::
+
+::: {.panel}
+
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(its_ps_work_Y4)
+```
+:::
+:::
+:::
+
+</details>
+
+<details markdown="1">
+<summary>Results of Significance tests <strong>(PIME filtered)</strong></summary>
+
+::: l-body
+::: {.panelset}
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(its_ps_pime_Y0)
+```
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(its_ps_pime_Y1)
+```
+:::
+
+::: {.panel}
+
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE}
+sig_test_report(its_ps_pime_Y4)
+```
+:::
+:::
+:::
+
+</details>
+
+
+## Summaries 
+
+Here is a quick summary of significance tests for the data sets against three distance matrices.
+
+```{r, echo=FALSE}
+its_tab_sig_test <- c()
+for (i in objects(pattern = paste("its_ps_.*_sig_"))) {
+  tmp_test <- gsub(".*_sig_", "", i) %>% gsub("_.*", "", .)
+  tmp_dist <- gsub(".*_", "", i)
+  tmp_ds <- gsub("_Y.*", "", i)  
+  tmp_year <- gsub(".*_Y", "Y", i) %>% gsub("_.*", "", .)
+  tmp_get <- get(i)
+  
+  tmp_pvalue <- if (tmp_test == "adonis2") {
+     tmp_pvalue <- tmp_get$`Pr(>F)`[1]
+   } else if (tmp_test == "anosim") {
+     tmp_pvalue <- tmp_get$signif
+   } else if (tmp_test == "adonis") {
+     next
+   } 
+  its_tab_sig_test <- rbind(its_tab_sig_test, 
+                          data.frame(tmp_ds, tmp_year, 
+                                     tmp_dist, tmp_test, 
+                                     tmp_pvalue))
+  rm(list = ls(pattern = "tmp_"))
+}
+```
+
+```{r, echo=FALSE}
+### FIX table
+its_tab_sig_test <- its_tab_sig_test %>%
+  dplyr::rename("dataset" = 1, "year" = 2, "distance" = 3, "test" = 4, "p_value" = 5) 
+
+its_tab_sig_test$dataset <- stringr::str_replace(its_tab_sig_test$dataset, ".*_", "") %>%
+                            stringr::str_replace(., "work", "FULL") %>%
+                            stringr::str_replace(., "filt", "FILT") %>%
+                            stringr::str_replace(., "perfect", "PERFect") %>%
+                            stringr::str_replace(., "pime", "PIME")
+
+its_tab_sig_test$distance <- stringr::str_replace(its_tab_sig_test$distance, "jsd", "Jensen-Shannon Divergence") %>%
+                             stringr::str_replace(., "bray", "Bray-Curtis dissimilarity") %>%
+                             stringr::str_replace(., "gower", "Gower distance") %>%
+                             stringr::str_replace(., "jaccard", "Jaccard index")
+
+its_tab_sig_test <- its_tab_sig_test %>% mutate(across(where(is.numeric), round, 4))
+its_temp_tab <- its_tab_sig_test
+#temp_tab$test <- NULL
+```
+
+```{r, echo=FALSE}
+rm(list = ls(pattern = "its_tab_sig_test_"))
+sub_ds <- c("FULL", "FILT", "PERFect", "PIME")
+for (i in sub_ds) {
+  tmp_get <- its_temp_tab
+  tmp_sub <- dplyr::filter(tmp_get, dataset == i)
+  tmp_sub$dataset <- NULL
+  #tmp_sub <- tmp_sub %>% tidyr::unite("merged", 2:3)
+  tmp_pivot <- tmp_sub %>% pivot_wider(id_cols = distance, 
+                                       names_from = year, 
+                                       values_from = p_value)
+  tmp_pivot <- tmp_pivot[order(tmp_pivot$distance),]
+  tmp_pivot <- tmp_pivot %>% dplyr::rename("Year 0" = 2, "Year 1" = 3, "Year 4" = 4)
+
+
+  #tmp_pivot <- tmp_pivot %>% tidyr::separate(col = "merged", into = c("distance", "test"), sep = "_")
+  
+  tmp_name <- paste("its_tab_sig_test_", tolower(i), sep = "")
+  assign(tmp_name, tmp_pivot)
+  rm(list = ls(pattern = "tmp_"))
+}
+```
+
+
+::: l-body
+::: {.panelset}
+::: {.panel}
+
+#### FULL data sets
+
+<small>`r caption_tab_its("its_tab_sig_test_full")`</small>
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+download_this_fun(its_tab_sig_test_full)
+```
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+sig_test_summary(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+
+#### Arbitrary filtered 
+
+<small>`r caption_tab_its("its_tab_sig_test_filt")`</small>
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+download_this_fun(its_tab_sig_test_filt)
+```
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+sig_test_summary(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+
+#### PERFect filtered 
+
+<small>`r caption_tab_its("its_tab_sig_test_perfect")`</small>
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+download_this_fun(its_tab_sig_test_perfect)
+```
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+sig_test_summary(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+
+#### PIME filtered 
+
+<small>`r caption_tab_its("its_tab_sig_test_pime")`</small>
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+download_this_fun(its_tab_sig_test_pime)
+```
+
+```{r, echo=FALSE, eval=TRUE, layout="l-body"}
+sig_test_summary(seq_table)
+rm(seq_table)
+```
+:::
+:::
+:::
+
+
+```{r,echo=FALSE}
+save.image("page_build/beta_wf_part_1.rdata")
+```
+
+# Ordinations
+
+```{r, eval=TRUE, echo=FALSE}
+load("page_build/beta_wf_part_2.rdata")
+```
+
+```{r, echo=FALSE}
+remove(list = ls())
+ssu_samp_ps <- c("ssu_ps_work_Y0", "ssu_ps_work_Y1", "ssu_ps_work_Y4", 
+                 "ssu_ps_filt_Y0", "ssu_ps_filt_Y1", "ssu_ps_filt_Y4", 
+                 "ssu_ps_perfect_Y0", "ssu_ps_perfect_Y1", "ssu_ps_perfect_Y4", 
+                 "ssu_ps_pime_Y0", "ssu_ps_pime_Y1", "ssu_ps_pime_Y4")
+
+for (i in ssu_samp_ps) {
+  tmp_path <- "files/taxa/rdata/"
+  tmp_ps <- readRDS(paste(tmp_path, i, ".rds", sep = ""))
+  tmp_me <- readRDS(paste(tmp_path, i, "_me", ".rds", sep = ""))
+  tmp_ps_name <- i
+  tmp_me_name <- purrr::map_chr(i, ~ paste0(., "_me"))
+  assign(tmp_ps_name, tmp_ps)
+  assign(tmp_me_name, tmp_me)
+  rm(list = ls(pattern = "tmp_"))
+}
+
+its_samp_ps <- c("its_ps_work_Y0", "its_ps_work_Y1", "its_ps_work_Y4", 
+                 "its_ps_filt_Y0", "its_ps_filt_Y1", "its_ps_filt_Y4", 
+                 "its_ps_perfect_Y0", "its_ps_perfect_Y1", "its_ps_perfect_Y4", 
+                 "its_ps_pime_Y0", "its_ps_pime_Y1", "its_ps_pime_Y4")
+
+for (i in its_samp_ps) {
+  tmp_path <- "files/taxa/rdata/"
+  tmp_ps <- readRDS(paste(tmp_path, i, ".rds", sep = ""))
+  tmp_me <- readRDS(paste(tmp_path, i, "_me", ".rds", sep = ""))
+  tmp_ps_name <- i
+  tmp_me_name <- purrr::map_chr(i, ~ paste0(., "_me"))
+  assign(tmp_ps_name, tmp_ps)
+  assign(tmp_me_name, tmp_me)
+  rm(list = ls(pattern = "tmp_"))
+}
+
+objects()
+```
+
+Now we can visualize the results of several distance matrices to access dissimilarity among sample. Here we ordinate using Principal Coordinate Analysis (PCoA) but we could also test other methods like NMDS, CCA, etc. 
+
+## Plot Code
+
+Here I made a custom "function" to run the analysis, plot the graphs, save graph objects, and save plots (as `.png` and `.pdf` files). I am sure an actual programmer would be shocked, but it works. This is used for both the 16S rRNA and ITS data sets.
+
+```{r, code_folding=TRUE}
+agua_col <- c("#B26322", "#29B222", "#2271B2", "#AB22B2")
+#agua_col2 <- c("#2271B2", "#3DB7E9", "#F748A5", "#359B73", "#D55E00", "#E69F00")
+agua_col2 <- c("#191919", "#191919", "#191919", "#191919", "#191919", "#191919")
+#source("hack_code/trans_beta_jjs.R")
+
+treat_order <- c("CTL", "N", "P", "NP") 
+age_order <- c("NEW", "YNG", "OLD")
+
+microeco_beta_plot <- function(choose_input, choose_metric, choose_ord) {  
+  tmp_dataset <- get(purrr::map_chr(choose_input, ~paste0(., "_me")))
+###### ORDER factors
+  tmp_dataset$sample_table$TREAT %<>% factor(., levels =  treat_order)
+  tmp_dataset$sample_table$AGE %<>% factor(., levels = age_order)
+
+###### GENERATE plots
+  tmp_t1 <- trans_beta$new(dataset = tmp_dataset, group = "TREAT", measure = choose_metric)
+  tmp_t1$cal_ordination(ordination = choose_ord)
+  tmp_t1_ord_plot <- tmp_t1$plot_ordination(plot_color = "TREAT", 
+                                            plot_shape = "AGE",
+                                            plot_group_ellipse = FALSE,
+                                            color_values = agua_col, 
+                                            shape_values = c(16, 17, 15)
+                                            ) + 
+    geom_point(size = 4) +  
+    theme(legend.position = "bottom")
+  tmp_t1$cal_group_distance()
+  tmp_t1_within_group_plot <- tmp_t1$plot_group_distance(plot_group_order = treat_order, 
+                                                         distance_pair_stat = TRUE, 
+                                                         hide_ns = TRUE, hide_ns_more = NULL, 
+                                                         color_values = agua_col)
+  tmp_t1$res_group_distance
+  tmp_t1$cal_group_distance(within_group = FALSE)
+  tmp_t1_btwn_group_plot <- tmp_t1$plot_group_distance(distance_pair_stat = TRUE, 
+                                                       hide_ns = TRUE, hide_ns_more = NULL,
+                                                       color_values = agua_col2)
+  if (choose_metric == "jsd") {
+    tmp_t1_within_group_plot <- tmp_t1_within_group_plot + ylab("Jensen-Shannon Index")
+    tmp_t1_btwn_group_plot <- tmp_t1_btwn_group_plot + ylab("Jensen-Shannon Index")
+  } else if (choose_metric == "manhattan") {
+    tmp_t1_within_group_plot <- tmp_t1_within_group_plot + ylab("Manhattan distance")
+    tmp_t1_btwn_group_plot <- tmp_t1_btwn_group_plot + ylab("Manhattan distance")
+  } else if (choose_metric == "gower") {
+    tmp_t1_within_group_plot <- tmp_t1_within_group_plot + ylab("Gower distance")
+    tmp_t1_btwn_group_plot <- tmp_t1_btwn_group_plot + ylab("Gower distance")
+  } else if (choose_metric == "canberra") {
+    tmp_t1_within_group_plot <- tmp_t1_within_group_plot + ylab("Canberra distance")
+    tmp_t1_btwn_group_plot <- tmp_t1_btwn_group_plot + ylab("Canberra distance")
+  } else  {
+    tmp_t1_within_group_plot <- tmp_t1_within_group_plot
+    tmp_t1_btwn_group_plot <- tmp_t1_btwn_group_plot
+  } 
+
+###### SET names
+  tmp_name_ord <- paste(choose_input, "_me_", choose_metric, "_", choose_ord, sep = "")
+  tmp_name_wg <- paste(choose_input, "_me_wg_", choose_metric, "_", choose_ord, sep = "")
+  tmp_name_bg <- paste(choose_input, "_me_bg_", choose_metric, "_", choose_ord, sep = "")
+  
+  assign(tmp_name_ord, tmp_t1_ord_plot, envir = parent.frame(n = 2))
+  assign(tmp_name_wg, tmp_t1_within_group_plot, envir = parent.frame(n = 2))
+  assign(tmp_name_bg, tmp_t1_btwn_group_plot, envir = parent.frame(n = 2))
+###### SET paths
+  dir.create(paste(microeco_path, choose_input, "/ordination/", sep = ""), recursive = TRUE)
+  tmp_path <- paste(microeco_path, choose_input, "/ordination/", sep = "")
+  tmp_path_ord <- paste(tmp_path, "ord_plots/", sep = "")
+  tmp_path_wg <- paste(tmp_path, "within_group/", sep = "")
+  tmp_path_bg <- paste(tmp_path, "between_group/", sep = "")
+###### SAVE plots  
+  ggplot2::ggsave(tmp_t1_ord_plot, path = paste(tmp_path_ord, sep = ""), filename = paste0(tmp_name_ord, ".png", sep = ""))
+  ggplot2::ggsave(tmp_t1_ord_plot, path = paste(tmp_path_ord, sep = ""), filename = paste0(tmp_name_ord, ".pdf", sep = ""))                    
+  ggplot2::ggsave(tmp_t1_within_group_plot, path = paste(tmp_path_wg, sep = ""), filename = paste0(tmp_name_wg, ".png", sep = ""))
+  ggplot2::ggsave(tmp_t1_within_group_plot, path = paste(tmp_path_wg, sep = ""), filename = paste0(tmp_name_wg, ".pdf", sep = ""))                  
+  ggplot2::ggsave(tmp_t1_btwn_group_plot, path = paste(tmp_path_bg, sep = ""), filename = paste0(tmp_name_bg, ".png", sep = ""))
+  ggplot2::ggsave(tmp_t1_btwn_group_plot, path = paste(tmp_path_bg, sep = ""), filename = paste0(tmp_name_bg, ".pdf", sep = ""))                  
+
+  rm(list = ls(pattern = "tmp_"))
+}
+```
+
+And then run it like so:
+
+```{r}
+microeco_beta_plot(choose_input = "ssu_ps_pime_Y0", 
+                   choose_metric = "bray", 
+                   choose_ord = "PCoA")
+```
+
+However, since we have a lot of data sets and distance metrics to test,  I wrote a little function that runs the function described above on a bunch of data sets, distance metrics, and ordination methods. 
+
+```{r, code_folding=TRUE}
+run_microeco_beta_plot <- function(dataset, year, ord) {
+  for (j in 1:length(get(paste(dataset, "_",  year, "_me", sep = ""))$beta_diversity)) {
+  tmp_metric <- names(get(paste(dataset, "_",  year, "_me", sep = ""))$beta_diversity[j])
+  tmp_choose_input <- paste(dataset, "_",  year, sep = "")
+  microeco_beta_plot(choose_input = tmp_choose_input, choose_metric = tmp_metric, choose_ord = ord)
+  rm(list = ls(pattern = "tmp_"))
+  }
+} 
+```
+
+So if we wanted to plot the 16S rRNA, PERFect filtered data set, from Year 4 using PCoA, we would run the command like so.
+
+```{r}
+run_microeco_beta_plot("ssu_ps_perfect", "Y4", "PCoA")
+```
+
+The two functions could likely be combined but I could not figure out how to make that work :/
+
+## 16S rRNA plots
+
+To begin, we calculate distance matrices using several methods. By default, the `microeco` package will calculate Bray-Curtis, Unweighted UniFrac, and Weighted UniFrac. If we want to include others (which we do) we simply add code to calculate distance using the desire metric. The code below illustrates how this is accomplished. 
+
+```{r, code_folding=TRUE}
+ssu_ps_pime_Y4
+microeco_path <- "files/beta/microeco/"
+for (i in ssu_samp_ps) {
+  tmp_dataset <- get(purrr::map_chr(i, ~paste0(., "_me")))
+  tmp_dataset$cal_betadiv(unifrac = TRUE)
+#### CODE TO ADD JSD DISTANCE ####  
+  tmp_jsd <- phyloseq::distance(get(i), method = "jsd") 
+  tmp_jsd <- forceSymmetric(as.matrix(tmp_jsd), uplo = "L")
+  tmp_jsd <- as.matrix(tmp_jsd)
+  tmp_dataset$beta_diversity$jsd <- tmp_jsd
+#### CODE TO ADD jaccard DISTANCE ####  
+  tmp_jac <- phyloseq::distance(get(i), method = "jaccard", binary = TRUE) 
+  tmp_jac <- forceSymmetric(as.matrix(tmp_jac), uplo = "L")
+  tmp_jac <- as.matrix(tmp_jac)
+  tmp_dataset$beta_diversity$jaccard <- tmp_jac
+#### #### #### #### #### #### #### ####  
+  dir.create(paste(microeco_path, i, "/metrics/", sep = ""), recursive = TRUE)
+  tmp_dataset$save_betadiv(dirpath = paste(microeco_path, i, "/metrics/", sep = ""))
+  rm(list = ls(pattern = "tmp_"))
+}
+```
+
+```{r, echo=TRUE, eval=TRUE, results='hold'}
+class(ssu_ps_perfect_Y0_me$beta_diversity)
+summary(ssu_ps_perfect_Y0_me$beta_diversity)
+```
+
+Now we run the custom function `run_microeco_beta_plot`, which incorporates the other custom function `microeco_beta_plot`, for each of the filtered and unfiltered data sets, split by Year. Like so...
+
+
+```{r, code_folding=TRUE}
+run_microeco_beta_plot("ssu_ps_work", "Y0", "PCoA")
+run_microeco_beta_plot("ssu_ps_work", "Y1", "PCoA")
+run_microeco_beta_plot("ssu_ps_work", "Y4", "PCoA")
+
+run_microeco_beta_plot("ssu_ps_filt", "Y0", "PCoA")
+run_microeco_beta_plot("ssu_ps_filt", "Y1", "PCoA")
+run_microeco_beta_plot("ssu_ps_filt", "Y4", "PCoA")
+
+run_microeco_beta_plot("ssu_ps_perfect", "Y0", "PCoA")
+run_microeco_beta_plot("ssu_ps_perfect", "Y1", "PCoA")
+run_microeco_beta_plot("ssu_ps_perfect", "Y4", "PCoA")
+
+run_microeco_beta_plot("ssu_ps_pime", "Y0", "PCoA")
+run_microeco_beta_plot("ssu_ps_pime", "Y1", "PCoA")
+run_microeco_beta_plot("ssu_ps_pime", "Y4", "PCoA")
+```
+
+The remaining code blocks in this section are used to generate combined figures. These code blocks are hidden by default but can be accessed using the repo link at the bottom of the page. 
+
+```{r, echo=FALSE}
+## The next 6 code blocks are to generate combined figures. 
+```
+
+```{r, echo=FALSE}
+## Combo Figure code Block #1
+combine_beta_plot_ssu <- function(dataset, year, ord) {
+#for (samp_ps in objects(pattern = paste("ssu_ps_work_Y[0-9]$"))) {
+  tmp_combo_plot <- (
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me",  "_jaccard_", ord))) +
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me",  "_jsd_", ord))) +
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me",  "_unwei_unifrac_", ord))) +
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me",  "_wei_unifrac_", ord))) 
+    ) + 
+    geom_point(size = 1, show.legend = FALSE)
+  #tmp_title <- paste(samp_ps, "_title", sep = "")
+  tmp_title <- stringr::str_replace(year, "^Y", "Year ")
+  tmp_combo_plot <-  tmp_combo_plot +
+  plot_annotation(title = tmp_title,
+    subtitle = 'Comparisons of distance metrics.') +
+  plot_layout(guides = "collect", byrow = TRUE, ncol =  4) &
+  theme(plot.title = element_text(size = 18),
+        plot.subtitle = element_text(size = 16),
+        plot.tag = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 10),
+        legend.position = "bottom",
+        legend.justification = "center",
+        legend.title = element_text(size = rel(1.75)),
+        legend.text = element_text(size = rel(1.5)))
+  tmp_combo_plot_name <- purrr::map_chr(dataset, ~ paste0(., "_", year, "_plots"))
+  assign(tmp_combo_plot_name, tmp_combo_plot, envir = parent.frame())
+  
+  rm(list = ls(pattern = "tmp_"))
+  #}
+}  
+#widths = c(3, 3)
+```
+
+```{r, echo=FALSE}
+## Combo Figure code Block #2
+rm(list = ls(pattern = "_plots"))
+combine_beta_plot_ssu("ssu_ps_work", "Y0", "PCoA")
+combine_beta_plot_ssu("ssu_ps_work", "Y1", "PCoA")
+combine_beta_plot_ssu("ssu_ps_work", "Y4", "PCoA")
+
+combine_beta_plot_ssu("ssu_ps_filt", "Y0", "PCoA")
+combine_beta_plot_ssu("ssu_ps_filt", "Y1", "PCoA")
+combine_beta_plot_ssu("ssu_ps_filt", "Y4", "PCoA")
+
+combine_beta_plot_ssu("ssu_ps_perfect", "Y0", "PCoA")
+combine_beta_plot_ssu("ssu_ps_perfect", "Y1", "PCoA")
+combine_beta_plot_ssu("ssu_ps_perfect", "Y4", "PCoA")
+
+combine_beta_plot_ssu("ssu_ps_pime", "Y0", "PCoA")
+combine_beta_plot_ssu("ssu_ps_pime", "Y1", "PCoA")
+combine_beta_plot_ssu("ssu_ps_pime", "Y4", "PCoA")
+objects(pattern = "_plots")
+```
+
+```{r, echo=FALSE}
+## Combo Figure code Block #3
+for (i in objects(pattern = paste("ssu_ps_.*_Y[0-9]_plots$"))) {
+  dir.create(paste("files/beta/figures/combo_plots/by_year", sep = ""), recursive = TRUE)
+  tmp_path <- paste("files/beta/figures/combo_plots/by_year", sep = "")
+  tmp_filename <- paste(i, "_beta_div_ord_plots", sep="")
+  #tmp_get_plot <- get(purrr::map_chr(i, ~ paste0(., "_plots")))
+  tmp_get_plot <- get(i)
+  ggplot2::ggsave(tmp_get_plot, path = tmp_path, filename = paste(tmp_filename, ".png", sep = ""), height = 12, width = 40,
+    units = 'cm', dpi = 600, bg = "white")
+  ggplot2::ggsave(tmp_get_plot, path = tmp_path, filename = paste(tmp_filename, ".pdf", sep = ""), height = 4.8, width = 16)
+}  
+```
+
+```{r, echo=FALSE}
+## Combo Figure code Block #4
+for (i in objects(pattern = paste("ssu_ps_.*_Y[0-9]_plots$"))) {
+  tmp_plt <- get(i)
+  tmp_ds_year <- stringr::str_extract(i, "Y[0-9]") 
+      if (tmp_ds_year == "Y0") {
+          tmp_plt$patches$annotation$theme$legend.position <- "none"
+        } else if (tmp_ds_year == "Y1") {
+          tmp_plt$patches$annotation$theme$legend.position <- "none"
+        } else if (tmp_ds_year == "Y4") {
+          next
+        } 
+  tmp_name <- paste(i, "_no_legend", sep = "")
+  assign(tmp_name, tmp_plt)
+  rm(list = ls(pattern = "tmp_"))
+}
+
+objects(pattern = "_no_legend")
+```
+
+```{r, echo=FALSE}
+## Combo Figure code Block #5
+ssu_combo_cap <- "Top to bottom: Year 0, Year 1, Year 4. \n Left to right: Jaccard, Jensen-Shannon, Unifrac (unweighted), Unifrac (weighted)"
+combine_all_plots_ssu <- function(dataset) {
+  tmp_final_plt <- paste(dataset, "_combo_plot", sep = "")
+  tmp_y0 <- get(paste(dataset, "_Y0_plots_no_legend", sep = ""))
+  tmp_y1 <- get(paste(dataset, "_Y1_plots_no_legend", sep = ""))
+  tmp_y4 <- get(paste(dataset, "_Y4_plots", sep = ""))
+  
+tmp_final_plt <- (
+    tmp_y0 /
+    tmp_y1 /
+    tmp_y4 
+    ) + plot_annotation(
+  #title = "Comparison by sampling Years",
+  #subtitle = 'These 3 plots will reveal yet-untold secrets about our beloved data-set',
+  caption = ssu_combo_cap)
+
+  tmp_final_plt <-  tmp_final_plt +
+  plot_layout(guides = "collect", byrow = TRUE, ncol =  1) &
+  theme(plot.title = element_text(size = 18),
+        plot.subtitle = element_text(size = 16),
+        plot.caption = element_text(size = 16),
+        plot.tag = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10),
+        #legend.position = "bottom",
+        #legend.justification = "center",
+        legend.title = element_text(size = rel(1.75)),
+        legend.text = element_text(size = rel(1.5)))
+
+ggplot2::ggsave(tmp_final_plt, path = "files/beta/figures/combo_plots/", 
+                filename = paste(dataset, "_combo_plot.png", sep = ""), height = 24, width = 40, 
+                units = 'cm', dpi = 600, bg = "white")
+ggplot2::ggsave(tmp_final_plt, path = "files/beta/figures/combo_plots/", 
+                filename = paste(dataset, "_combo_plot.pdf", sep = ""), height = 9.6, width = 16)
+  rm(list = ls(pattern = "tmp_"))
+}  
+```
+
+
+```{r, echo=FALSE}
+## Combo Figure code Block #6
+combine_all_plots_ssu("ssu_ps_work")
+combine_all_plots_ssu("ssu_ps_filt")
+combine_all_plots_ssu("ssu_ps_perfect")
+combine_all_plots_ssu("ssu_ps_pime")
+```
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+
+#### FULL data set
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_work_combo_plot.png")
+```
+<small>`r caption_fig_ssu("ssu_beta_div_plots_full")`</small>
+:::
+
+::: {.panel}
+
+#### Arbitrary filtered
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_filt_combo_plot.png")
+```
+<small>`r caption_fig_ssu("ssu_beta_div_plots_filt")`</small>
+:::
+
+::: {.panel}
+#### PERFect filtered
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_perfect_combo_plot.png")
+```
+<small>`r caption_fig_ssu("ssu_beta_div_plots_perfect")`</small>
+:::
+
+::: {.panel}
+#### PIME filtered
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_pime_combo_plot.png")
+```
+<small>`r caption_fig_ssu("ssu_beta_div_plots_pime")`</small>
+:::
+:::
+:::
+
+## ITS Plots
+
+The ITS code is nearly identical. The only differences are related to selected distance metrics. 
+
+<details markdown="1">
+<summary>Code to reproduce <strong>ITS</strong> plots</summary>
+
+```{r, code_folding=FALSE}
+microeco_path <- "files/beta/microeco/"
+for (i in its_samp_ps) {
+  tmp_dataset <- get(purrr::map_chr(i, ~paste0(., "_me")))
+  tmp_dataset$cal_betadiv(unifrac = FALSE)
+#### CODE TO ADD JSD DISTANCE ####  
+  tmp_jsd <- phyloseq::distance(get(i), method = "jsd") 
+  tmp_jsd <- forceSymmetric(as.matrix(tmp_jsd), uplo = "L")
+  tmp_jsd <- as.matrix(tmp_jsd)
+  tmp_dataset$beta_diversity$jsd <- tmp_jsd
+#### CODE TO ADD jaccard DISTANCE ####  
+  tmp_jac <- phyloseq::distance(get(i), method = "jaccard", binary = TRUE) 
+  tmp_jac <- forceSymmetric(as.matrix(tmp_jac), uplo = "L")
+  tmp_jac <- as.matrix(tmp_jac)
+  tmp_dataset$beta_diversity$jaccard <- tmp_jac
+#### CODE TO ADD GOWER DISTANCE ####  
+  tmp_gower <- phyloseq::distance(get(i), method = "gower") 
+  tmp_gower <- forceSymmetric(as.matrix(tmp_gower), uplo = "L")
+  tmp_gower <- as.matrix(tmp_gower)
+  tmp_dataset$beta_diversity$gower <- tmp_gower
+#### CODE TO ADD canberra DISTANCE ####  
+  tmp_canberra <- phyloseq::distance(get(i), method = "canberra") 
+  tmp_canberra <- forceSymmetric(as.matrix(tmp_canberra), uplo = "L")
+  tmp_canberra <- as.matrix(tmp_canberra)
+  tmp_dataset$beta_diversity$canberra <- tmp_canberra
+#### CODE TO ADD manhattan DISTANCE ####  
+  tmp_manhattan <- phyloseq::distance(get(i), method = "manhattan") 
+  tmp_manhattan <- forceSymmetric(as.matrix(tmp_manhattan), uplo = "L")
+  tmp_manhattan <- as.matrix(tmp_manhattan)
+  tmp_dataset$beta_diversity$manhattan <- tmp_manhattan
+#### #### #### #### #### #### #### ####  
+  dir.create(paste(microeco_path, i, "/metrics/", sep = ""), recursive = TRUE)
+  tmp_dataset$save_betadiv(dirpath = paste(microeco_path, i, "/metrics/", sep = ""))
+  rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern = "its_")
+```
+
+```{r, echo=TRUE, eval=TRUE, results='hold'}
+class(its_ps_perfect_Y0_me$beta_diversity)
+summary(its_ps_perfect_Y0_me$beta_diversity)
+```
+
+```{r, code_folding=TRUE}
+run_microeco_beta_plot("its_ps_work", "Y0", "PCoA")
+run_microeco_beta_plot("its_ps_work", "Y1", "PCoA")
+run_microeco_beta_plot("its_ps_work", "Y4", "PCoA")
+
+run_microeco_beta_plot("its_ps_filt", "Y0", "PCoA")
+run_microeco_beta_plot("its_ps_filt", "Y1", "PCoA")
+run_microeco_beta_plot("its_ps_filt", "Y4", "PCoA")
+
+run_microeco_beta_plot("its_ps_perfect", "Y0", "PCoA")
+run_microeco_beta_plot("its_ps_perfect", "Y1", "PCoA")
+run_microeco_beta_plot("its_ps_perfect", "Y4", "PCoA")
+
+run_microeco_beta_plot("its_ps_pime", "Y0", "PCoA")
+run_microeco_beta_plot("its_ps_pime", "Y1", "PCoA")
+run_microeco_beta_plot("its_ps_pime", "Y4", "PCoA")
+objects(pattern = "PCoA$")
+```
+
+```{r, echo=FALSE}
+## The next 6 code blocks are to generate combined figures. 
+```
+
+```{r, echo=FALSE}
+## Combo Figure code Block #1
+combine_beta_plot_its <- function(dataset, year, ord) {
+  tmp_combo_plot <- (
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me",  "_bray_", ord))) +
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me",  "_jaccard_", ord))) +
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me",  "_jsd_", ord))) +
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me",  "_manhattan_", ord))) 
+    ) + 
+    geom_point(size = 1, show.legend = FALSE)
+  #tmp_title <- paste(samp_ps, "_title", sep = "")
+  tmp_title <- stringr::str_replace(year, "^Y", "Year ")
+  tmp_combo_plot <-  tmp_combo_plot +
+  plot_annotation(title = tmp_title,
+    subtitle = 'Comparisons of distance metrics.') +
+  plot_layout(guides = "collect", byrow = TRUE, ncol =  4) &
+  theme(plot.title = element_text(size = 18),
+        plot.subtitle = element_text(size = 16),
+        plot.tag = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 10),
+        legend.position = "bottom",
+        legend.justification = "center",
+        legend.title = element_text(size = rel(1.75)),
+        legend.text = element_text(size = rel(1.5)))
+  tmp_combo_plot_name <- purrr::map_chr(dataset, ~ paste0(., "_", year, "_plots"))
+  assign(tmp_combo_plot_name, tmp_combo_plot, envir = parent.frame())
+  
+  rm(list = ls(pattern = "tmp_"))
+}  
+objects(pattern = "_plots$")
+```
+
+```{r, echo=FALSE}
+## Combo Figure code Block #2
+#rm(list = ls(pattern = "its_.*_plots"))
+combine_beta_plot_its("its_ps_work", "Y0", "PCoA")
+combine_beta_plot_its("its_ps_work", "Y1", "PCoA")
+combine_beta_plot_its("its_ps_work", "Y4", "PCoA")
+
+combine_beta_plot_its("its_ps_filt", "Y0", "PCoA")
+combine_beta_plot_its("its_ps_filt", "Y1", "PCoA")
+combine_beta_plot_its("its_ps_filt", "Y4", "PCoA")
+
+combine_beta_plot_its("its_ps_perfect", "Y0", "PCoA")
+combine_beta_plot_its("its_ps_perfect", "Y1", "PCoA")
+combine_beta_plot_its("its_ps_perfect", "Y4", "PCoA")
+
+combine_beta_plot_its("its_ps_pime", "Y0", "PCoA")
+combine_beta_plot_its("its_ps_pime", "Y1", "PCoA")
+combine_beta_plot_its("its_ps_pime", "Y4", "PCoA")
+objects(pattern = "_plots")
+```
+
+```{r, echo=FALSE}
+## Combo Figure code Block #3
+for (i in objects(pattern = paste("its_ps_.*_Y[0-9]_plots$"))) {
+  #dir.create(paste("files/beta/figures/combo_plots/by_year", sep = ""), recursive = TRUE)
+  tmp_path <- paste("files/beta/figures/combo_plots/by_year", sep = "")
+  tmp_filename <- paste(i, "_beta_div_ord_plots", sep="")
+  #tmp_get_plot <- get(purrr::map_chr(i, ~ paste0(., "_plots")))
+  tmp_get_plot <- get(i)
+  ggplot2::ggsave(tmp_get_plot, path = tmp_path, filename = paste(tmp_filename, ".png", sep = ""), height = 12, width = 40,
+    units = 'cm', dpi = 600, bg = "white")
+  ggplot2::ggsave(tmp_get_plot, path = tmp_path, filename = paste(tmp_filename, ".pdf", sep = ""), height = 4.8, width = 16)
+}  
+```
+
+```{r, echo=FALSE}
+## Combo Figure code Block #4
+for (i in objects(pattern = paste("its_ps_.*_Y[0-9]_plots$"))) {
+  tmp_plt <- get(i)
+  tmp_ds_year <- stringr::str_extract(i, "Y[0-9]") 
+      if (tmp_ds_year == "Y0") {
+          tmp_plt$patches$annotation$theme$legend.position <- "none"
+        } else if (tmp_ds_year == "Y1") {
+          tmp_plt$patches$annotation$theme$legend.position <- "none"
+        } else if (tmp_ds_year == "Y4") {
+          next
+        } 
+  tmp_name <- paste(i, "_no_legend", sep = "")
+  assign(tmp_name, tmp_plt)
+  rm(list = ls(pattern = "tmp_"))
+}
+
+objects(pattern = "_no_legend")
+```
+
+```{r, echo=FALSE}
+## Combo Figure code Block #5
+its_combo_cap <- "Top to bottom: Year 0, Year 1, Year 4. \n Left to right: Bray-Curtis, Jaccard, Jensen-Shannon, Manhattan"
+combine_all_plots_its <- function(dataset) {
+  tmp_final_plt <- paste(dataset, "_combo_plot", sep = "")
+  tmp_y0 <- get(paste(dataset, "_Y0_plots_no_legend", sep = ""))
+  tmp_y1 <- get(paste(dataset, "_Y1_plots_no_legend", sep = ""))
+  tmp_y4 <- get(paste(dataset, "_Y4_plots", sep = ""))
+  
+tmp_final_plt <- (
+    tmp_y0 /
+    tmp_y1 /
+    tmp_y4 
+    ) + plot_annotation(
+  #title = "Comparison by sampling Years",
+  #subtitle = 'These 3 plots will reveal yet-untold secrets about our beloved data-set',
+  caption = its_combo_cap)
+
+  tmp_final_plt <-  tmp_final_plt +
+  plot_layout(guides = "collect", byrow = TRUE, ncol =  1) &
+  theme(plot.title = element_text(size = 18),
+        plot.subtitle = element_text(size = 16),
+        plot.caption = element_text(size = 16),
+        plot.tag = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10),
+        #legend.position = "bottom",
+        #legend.justification = "center",
+        legend.title = element_text(size = rel(1.75)),
+        legend.text = element_text(size = rel(1.5)))
+
+ggplot2::ggsave(tmp_final_plt, path = "files/beta/figures/combo_plots/", 
+                filename = paste(dataset, "_combo_plot.png", sep = ""), height = 24, width = 40, 
+                units = 'cm', dpi = 600, bg = "white")
+ggplot2::ggsave(tmp_final_plt, path = "files/beta/figures/combo_plots/", 
+                filename = paste(dataset, "_combo_plot.pdf", sep = ""), height = 9.6, width = 16)
+  rm(list = ls(pattern = "tmp_"))
+}  
+```
+
+```{r, echo=FALSE}
+## Combo Figure code Block #6
+combine_all_plots_its("its_ps_work")
+combine_all_plots_its("its_ps_filt")
+combine_all_plots_its("its_ps_perfect")
+combine_all_plots_its("its_ps_pime")
+```
+
+```{r, echo=FALSE}
+## Code to copy all plots
+samp_ps <- unique(stringr::str_replace(c(ssu_samp_ps, its_samp_ps), "_Y[0-9]", ""))
+for (combo_plot in samp_ps) {
+  tmp_path_o <- "files/beta/figures/combo_plots/"
+  tmp_path_r <- "include/beta/"
+  tmp_o <- paste(tmp_path_o, combo_plot,  "_combo_plot.png",  sep = "")
+  tmp_i <- paste(tmp_path_r, combo_plot,  "_combo_plot.png",  sep = "")
+  tmp_sys <- paste("cp", tmp_o, tmp_i, sep = " ")
+  system(tmp_sys)
+  rm(list = ls(pattern = "tmp_"))
+}
+```
+</details>
+
+</br>
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+
+#### FULL data set
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_work_combo_plot.png")
+```
+<small>`r caption_fig_its("its_beta_div_plots_full")`</small>
+:::
+
+::: {.panel}
+
+#### Arbitrary filtered
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_filt_combo_plot.png")
+```
+<small>`r caption_fig_its("its_beta_div_plots_filt")`</small>
+:::
+
+::: {.panel}
+#### PERFect filtered
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_perfect_combo_plot.png")
+```
+<small>`r caption_fig_its("its_beta_div_plots_perfect")`</small>
+:::
+
+::: {.panel}
+#### PIME filtered
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_pime_combo_plot.png")
+```
+<small>`r caption_fig_its("its_beta_div_plots_pime")`</small>
+:::
+:::
+:::
+
+# Within & Between Group Distance Plots
+
+Part of the custom function described above---`microeco_beta_plot`---calculated the sample distances within and between treatment groups. Let's see what those plots look like. These code blocks are hidden by default but can be accessed using the repo link at the bottom of the page. 
+
+```{r, echo=FALSE}
+## The next 7 code blocks are to modify within/between group plots and generate
+## combined figures.
+```
+
+```{r, echo=FALSE}
+## Code block #1
+for (i in objects(pattern = "_wg_")) {
+  tmp_dataset <- get(i)
+  tmp_wg <- tmp_dataset + geom_boxplot(fill = agua_col) + 
+    scale_colour_manual(values = paste(replicate(4, "#191919")))
+  tmp_name <- purrr::map_chr(i, ~ paste0(., "_mod"))
+  assign(tmp_name, tmp_wg)
+  rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern = "_mod")
+```
+
+
+```{r, echo=FALSE}
+## Code block #2
+for (i in objects(pattern = "_bg_")) {
+  tmp_dataset <- get(i)
+  tmp_wg <- tmp_dataset + geom_boxplot(fill = "grey90") + 
+    scale_colour_manual(values = paste(replicate(6, "#191919"))) +
+    theme(axis.text.x = element_text(angle = 90))
+  tmp_name <- purrr::map_chr(i, ~ paste0(., "_mod"))
+  assign(tmp_name, tmp_wg)
+  rm(list = ls(pattern = "tmp_"))
+}  
+```
+
+```{r, echo=FALSE}
+## Code block #3
+combine_var_plot_ssu <- function(dataset, year) {
+    tmp_combo_plot <- (
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_wg_jaccard_PCoA_mod"))) +  ggtitle("Within-group") |
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_wg_jsd_PCoA_mod")))  |
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_wg_unwei_unifrac_PCoA_mod"))) |
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_wg_wei_unifrac_PCoA_mod"))) 
+    ) /
+    (
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_bg_jaccard_PCoA_mod"))) + ggtitle("Between-group") |
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_bg_jsd_PCoA_mod"))) |
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_bg_unwei_unifrac_PCoA_mod"))) |
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_bg_wei_unifrac_PCoA_mod")))
+    )
+  tmp_title <- stringr::str_replace(year, "^Y", "Year ")
+  tmp_combo_plot <-  tmp_combo_plot +
+  plot_annotation(title = tmp_title,
+    subtitle = 'Treatment-level variation of various distance metrics.') +
+  plot_layout(widths = c(8, 8), guides = "collect") &
+  theme(plot.title = element_text(size = 18),
+        plot.subtitle = element_text(size = 16),
+        plot.tag = element_text(size = 12),
+        axis.title = element_text(size = 13),
+        axis.text = element_text(size = 10),
+        axis.text.x = element_text(size = 14),
+        legend.position = "none",
+        legend.justification = "center",
+        legend.title = element_text(size = rel(1.75)),
+        legend.text = element_text(size = rel(1.5)))
+  tmp_combo_plot_name <- purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_variation_plots"))
+  assign(tmp_combo_plot_name, tmp_combo_plot, envir = parent.frame())
+  rm(list = ls(pattern = "tmp_"))
+}
+```    
+    
+```{r, echo=FALSE}
+## Code block #4
+combine_var_plot_its <- function(dataset, year) {
+    tmp_combo_plot <- (
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_wg_bray_PCoA_mod"))) +  ggtitle("Within-group") |
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_wg_jaccard_PCoA_mod"))) |
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_wg_jsd_PCoA_mod"))) |
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_wg_manhattan_PCoA_mod"))) 
+    ) /
+    (
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_bg_bray_PCoA_mod"))) + ggtitle("Between-group") |
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_bg_jaccard_PCoA_mod"))) |
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_bg_jsd_PCoA_mod"))) |
+    get(purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_bg_manhattan_PCoA_mod")))
+    )
+  tmp_title <- stringr::str_replace(year, "^Y", "Year ")
+  tmp_combo_plot <-  tmp_combo_plot +
+  plot_annotation(title = tmp_title,
+    subtitle = 'Treatment-level variation of various distance metrics.') +
+  plot_layout(widths = c(8, 8), guides = "collect") &
+  theme(plot.title = element_text(size = 18),
+        plot.subtitle = element_text(size = 16),
+        plot.tag = element_text(size = 12),
+        axis.title = element_text(size = 13),
+        axis.text = element_text(size = 10),
+        axis.text.x = element_text(size = 14),
+        legend.position = "none",
+        legend.justification = "center",
+        legend.title = element_text(size = rel(1.75)),
+        legend.text = element_text(size = rel(1.5)))
+  tmp_combo_plot_name <- purrr::map_chr(dataset, ~ paste0(., "_", year, "_me_variation_plots"))
+  assign(tmp_combo_plot_name, tmp_combo_plot, envir = parent.frame())
+  rm(list = ls(pattern = "tmp_"))
+}
+```    
+
+```{r, echo=FALSE}
+## Code block #5
+combine_var_plot_ssu("ssu_ps_work", "Y0")
+combine_var_plot_ssu("ssu_ps_work", "Y1")
+combine_var_plot_ssu("ssu_ps_work", "Y4")
+
+combine_var_plot_ssu("ssu_ps_filt", "Y0")
+combine_var_plot_ssu("ssu_ps_filt", "Y1")
+combine_var_plot_ssu("ssu_ps_filt", "Y4")
+
+combine_var_plot_ssu("ssu_ps_perfect", "Y0")
+combine_var_plot_ssu("ssu_ps_perfect", "Y1")
+combine_var_plot_ssu("ssu_ps_perfect", "Y4")
+
+combine_var_plot_ssu("ssu_ps_pime", "Y0")
+combine_var_plot_ssu("ssu_ps_pime", "Y1")
+combine_var_plot_ssu("ssu_ps_pime", "Y4")
+
+combine_var_plot_its("its_ps_work", "Y0")
+combine_var_plot_its("its_ps_work", "Y1")
+combine_var_plot_its("its_ps_work", "Y4")
+
+combine_var_plot_its("its_ps_filt", "Y0")
+combine_var_plot_its("its_ps_filt", "Y1")
+combine_var_plot_its("its_ps_filt", "Y4")
+
+combine_var_plot_its("its_ps_perfect", "Y0")
+combine_var_plot_its("its_ps_perfect", "Y1")
+combine_var_plot_its("its_ps_perfect", "Y4")
+
+combine_var_plot_its("its_ps_pime", "Y0")
+combine_var_plot_its("its_ps_pime", "Y1")
+combine_var_plot_its("its_ps_pime", "Y4")
+objects(pattern = "_me_variation_plots")
+```
+
+```{r, echo=FALSE}
+## Code block #6
+for (i in objects(pattern = paste(".*_ps_.*_Y[0-9]_me_variation_plots$"))) {
+  #dir.create(paste("files/beta/figures/combo_plots", sep = ""), recursive = TRUE)
+  tmp_path <- paste("files/beta/figures/combo_plots", sep = "")
+  #tmp_filename <- paste(i, "_variation_plots", sep="")
+  tmp_filename <- i
+  #tmp_get_plot <- get(purrr::map_chr(i, ~ paste0(., "_me_variation_plots")))
+  tmp_get_plot <- get(i)
+  ggplot2::ggsave(tmp_get_plot, path = tmp_path, filename = paste(tmp_filename, ".png", sep = ""), height = 26, width = 36,
+    units = 'cm', dpi = 600, bg = "white")
+  ggplot2::ggsave(tmp_get_plot, path = tmp_path, filename = paste(tmp_filename, ".pdf", sep = ""), height = 9, width = 12)
+}  
+```
+
+```{r, echo=FALSE}
+## Code block #7
+for (combo_plot in objects(pattern =".*_ps_.*_Y[0-9]_me_variation_plots$")) {
+  tmp_path_o <- "files/beta/figures/combo_plots/"
+  tmp_path_r <- "include/beta/"
+  tmp_o <- paste(tmp_path_o, combo_plot,  ".png",  sep = "")
+  tmp_i <- paste(tmp_path_r, combo_plot,  ".png",  sep = "")
+  tmp_sys <- paste("cp", tmp_o, tmp_i, sep = " ")
+  system(tmp_sys)
+  rm(list = ls(pattern = "tmp_"))
+}
+
+```
+
+## 16S rRNA Plots
+
+::: l-page
+
+<details markdown="1">
+<summary><strong>FULL data set:</strong> within & between group variation plots.</summary>
+
+::: {.panelset}
+::: {.panel}
+
+#### Year 0  
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_work_Y0_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_work_Y0_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_work_Y1_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_work_Y1_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_work_Y4_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_work_Y4_me_variation_plots")`</small>
+:::
+:::
+</details>
+
+<details markdown="1">
+<summary><strong>Arbitrary filtered:</strong> within & between group variation plots.</summary>
+
+::: {.panelset}
+::: {.panel}
+
+#### Year 0  
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_filt_Y0_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_filt_Y0_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_filt_Y1_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_filt_Y1_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_filt_Y4_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_filt_Y4_me_variation_plots")`</small>
+:::
+:::
+</details>
+
+<details markdown="1">
+<summary><strong>PERFect filtered:</strong> within & between group variation plots.</summary>
+
+::: {.panelset}
+::: {.panel}
+
+#### Year 0  
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_perfect_Y0_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_perfect_Y0_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_perfect_Y1_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_perfect_Y1_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_perfect_Y4_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_perfect_Y4_me_variation_plots")`</small>
+:::
+:::
+</details>
+:::
+
+::: l-page
+
+<details markdown="1">
+<summary><strong>PIME filtered:</strong> within & between group variation plots.</summary>
+
+::: {.panelset}
+::: {.panel}
+
+#### Year 0  
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_pime_Y0_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_pime_Y0_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_pime_Y1_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_pime_Y1_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_pime_Y4_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_pime_Y4_me_variation_plots")`</small>
+:::
+:::
+</details>
+:::
+
+## ITS Plots
+
+::: l-page
+
+<details markdown="1">
+<summary><strong>FULL data set:</strong> within & between group variation plots.</summary>
+
+::: {.panelset}
+::: {.panel}
+
+#### Year 0  
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_work_Y0_me_variation_plots.png")
+```
+<small>`r caption_fig_its("its_ps_work_Y0_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_work_Y1_me_variation_plots.png")
+```
+<small>`r caption_fig_its("its_ps_work_Y1_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_work_Y4_me_variation_plots.png")
+```
+<small>`r caption_fig_its("its_ps_work_Y4_me_variation_plots")`</small>
+:::
+:::
+</details>
+
+<details markdown="1">
+<summary><strong>Arbitrary filtered:</strong> within & between group variation plots.</summary>
+
+::: {.panelset}
+::: {.panel}
+
+#### Year 0  
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_filt_Y0_me_variation_plots.png")
+```
+<small>`r caption_fig_its("its_ps_filt_Y0_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_filt_Y1_me_variation_plots.png")
+```
+<small>`r caption_fig_its("its_ps_filt_Y1_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_filt_Y4_me_variation_plots.png")
+```
+<small>`r caption_fig_its("its_ps_filt_Y4_me_variation_plots")`</small>
+:::
+:::
+</details>
+
+<details markdown="1">
+<summary><strong>PERFect filtered:</strong> within & between group variation plots.</summary>
+
+::: {.panelset}
+::: {.panel}
+
+#### Year 0  
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_perfect_Y0_me_variation_plots.png")
+```
+<small>`r caption_fig_its("its_ps_perfect_Y0_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_perfect_Y1_me_variation_plots.png")
+```
+<small>`r caption_fig_its("its_ps_perfect_Y1_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_perfect_Y4_me_variation_plots.png")
+```
+<small>`r caption_fig_its("its_ps_perfect_Y4_me_variation_plots")`</small>
+:::
+:::
+</details>
+:::
+
+::: l-page
+
+<details markdown="1">
+<summary><strong>PIME filtered:</strong> within & between group variation plots.</summary>
+
+::: {.panelset}
+::: {.panel}
+
+#### Year 0  
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_pime_Y0_me_variation_plots.png")
+```
+<small>`r caption_fig_its("its_ps_pime_Y0_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_pime_Y1_me_variation_plots.png")
+```
+<small>`r caption_fig_its("its_ps_pime_Y1_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/its_ps_pime_Y4_me_variation_plots.png")
+```
+<small>`r caption_fig_its("its_ps_pime_Y4_me_variation_plots")`</small>
+:::
+:::
+</details>
+:::
+
+```{r, echo=FALSE}
+#objects()
+#rm(ssu_ps_filt, ssu_ps_work, ssu_ps_perfect, ssu_ps_pime)
+save.image("page_build/beta_wf_part_2.rdata")
+```
+
+```{r, include=FALSE, eval=TRUE}
+remove(list = ls())
+```
+
+
+##  Source Code {.appendix}
+
+The source code for this page can be accessed on GitHub by [clicking this link](https://github.com/agua-salud/nutrients/blob/main/beta.Rmd). 
+
+## Data Availability {.appendix}
+
+Data generated in this workflow and the Rdata need to run the workflow can be accessed on figshare at [10.25573/data.16828063](https://doi.org/10.25573/data.16828063).

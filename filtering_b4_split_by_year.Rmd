@@ -75,8 +75,6 @@ We begin by summarizing the results of each filtering method on the 16S and ITS 
 ## 16S rRNA
 
 ```{r, echo=FALSE}
-ssu_sum_arbitrary <- ssu_sum_arbitrary[,1:3]
-ssu_sum_perfect <- ssu_sum_perfect[,1:3]
 ssu_filtering_results <- dplyr::left_join(ssu_sum_arbitrary, ssu_sum_perfect, 
                                             by = c("Metric", "Full data")) %>% 
                            dplyr::left_join(., ssu_sum_pime, 
@@ -127,7 +125,8 @@ ssu_all_filt_samp_summary <- dplyr::left_join(ssu_work_samp_summary, ssu_filt_sa
                              by = c("Sample_ID", "LOC", "SITE", "TRAN", "YEAR", "AGE", "TREAT")) %>% 
             dplyr::left_join(., ssu_pime_samp_summary, 
                              by = c("Sample_ID", "LOC", "SITE", "TRAN", "YEAR", "AGE", "TREAT", "YR_TREAT")) %>% 
-            dplyr::relocate(c("YR_TREAT"), .after = "TREAT")
+            dplyr::relocate(c("total_reads.x", "total_reads.y", 
+                              "total_reads.x.x", "total_reads.y.y"), .after = "YR_TREAT")
 
 ssu_all_filt_samp_summary[,c(3:4, 8)] <- NULL
 ```
@@ -147,8 +146,6 @@ rm(seq_table)
 ## ITS
 
 ```{r, echo=FALSE}
-its_sum_arbitrary <- its_sum_arbitrary[,1:3]
-its_sum_perfect <- its_sum_perfect[,1:3]
 its_filtering_results <- dplyr::left_join(its_sum_arbitrary, its_sum_perfect, 
                                             by = c("Metric", "Full data")) %>% 
                            dplyr::left_join(., its_sum_pime, 
@@ -199,7 +196,8 @@ its_all_filt_samp_summary <- dplyr::left_join(its_work_samp_summary, its_filt_sa
                              by = c("Sample_ID", "LOC", "SITE", "TRAN", "YEAR", "AGE", "TREAT")) %>% 
             dplyr::left_join(., its_pime_samp_summary, 
                              by = c("Sample_ID", "LOC", "SITE", "TRAN", "YEAR", "AGE", "TREAT", "YR_TREAT")) %>% 
-            dplyr::relocate(c("YR_TREAT"), .after = "TREAT")
+            dplyr::relocate(c("total_reads.x", "total_reads.y", 
+                              "total_reads.x.x", "total_reads.y.y"), .after = "YR_TREAT")
 
 its_all_filt_samp_summary[,c(3:4, 8)] <- NULL
 ```
@@ -208,17 +206,12 @@ its_all_filt_samp_summary[,c(3:4, 8)] <- NULL
 
 ```{r eval=TRUE, echo=FALSE, layout="l-page"}
 its_filter_sample_data <- its_all_filt_samp_summary
-download_this_fun(its_filter_sample_data)
+download_this_fun(ssu_filter_sample_data)
 ```
 
 ```{r, echo=FALSE, layout="l-page", eval=TRUE}
 filter_full_table(seq_table)
 rm(seq_table)
-```
-
-```{r, echo=FALSE}
-rm(ssu_ps_work, its_ps_work)
-save.image("page_build/filtering_summaries.rdata")
 ```
 
 ```{r, echo=FALSE, eval=TRUE}
@@ -232,7 +225,9 @@ source("assets/reactable/table_functions/filtering.R")
 load("page_build/filtering_wf.rdata")
 ```
 
-# Setup
+# A. Arbitrary Filtering
+
+For low-count arbitrary filtering, we set the minimum read count to `5` and the prevalence to 20%. Then we apply another filter to remove ASVs with a low variance (`0.2`). 
 
 ```{r, echo=FALSE}
 ## Initial Load for ARBITRARY  ANALYSIS #1
@@ -241,134 +236,38 @@ ssu_ps_work <- readRDS("files/data-prep/rdata/ssu_ps_work.rds")
 its_ps_work <- readRDS("files/data-prep/rdata/its_ps_work.rds")
 ```
 
-Before we begin, we first subset the 16S rRNA and ITS data sets by sampling year. We will use these subsets for Arbirary and PERFect filtering.
-
-```{r, code_folding=TRUE}
-subset_ds <- c("ssu_ps_work", "its_ps_work")
-for (i in subset_ds) {
-  tmp_get <- get(i)
-  tmp_samples <- row.names(data.frame(otu_table(tmp_get)))
-  tmp_y0_samps <- stringr::str_subset(tmp_samples, "_Y0_")
-  tmp_y1_samps <- stringr::str_subset(tmp_samples, "_Y1_")
-  tmp_y4_samps <- stringr::str_subset(tmp_samples, "_Y4_")
-
-  tmp_y0 <- prune_samples(tmp_y0_samps, tmp_get) 
-  tmp_y1 <- prune_samples(tmp_y1_samps, tmp_get)
-  tmp_y4 <- prune_samples(tmp_y4_samps, tmp_get)
-  
-  tmp_y0 <- prune_taxa(taxa_sums(tmp_y0) > 0, tmp_y0)
-  tmp_y1 <- prune_taxa(taxa_sums(tmp_y1) > 0, tmp_y1)
-  tmp_y4 <- prune_taxa(taxa_sums(tmp_y4) > 0, tmp_y4)
-  
-  tmp_ps_name_y0 <- purrr::map_chr(i, ~ paste0(., "_Y0"))
-  assign(tmp_ps_name_y0, tmp_y0)
-  
-  tmp_ps_name_y1 <- purrr::map_chr(i, ~ paste0(., "_Y1"))
-  assign(tmp_ps_name_y1, tmp_y1)
-  
-  tmp_ps_name_y4 <- purrr::map_chr(i, ~ paste0(., "_Y4"))
-  assign(tmp_ps_name_y4, tmp_y4)
-  
-  tmp_path <- file.path("files/filtering/work/")
-  saveRDS(tmp_y0, paste(tmp_path, tmp_ps_name_y0, ".rds", sep = ""))
-  saveRDS(tmp_y1, paste(tmp_path, tmp_ps_name_y1, ".rds", sep = ""))
-  saveRDS(tmp_y4, paste(tmp_path, tmp_ps_name_y4, ".rds", sep = ""))
-  rm(list = ls(pattern = "tmp_"))
-}
-objects(pattern = "Y")
-objects()
-```
-
-<details markdown="1">
-<summary><strong>Click here</strong> for phyloseq object details.</summary>
-
-```{r, echo=FALSE, eval=TRUE, results='hold'}
-cat("---------SSU FULL------------------\n")
-ssu_ps_work
-cat("---------SSU Y0--------------------\n")
-ssu_ps_work_Y0
-cat("---------SSU Y1--------------------\n")
-ssu_ps_work_Y1
-cat("---------SSU Y4--------------------\n")
-ssu_ps_work_Y4
-cat("---------ITS FULL------------------\n")
-its_ps_work
-cat("---------ITS Y0--------------------\n")
-its_ps_work_Y0
-cat("---------ITS Y1--------------------\n")
-its_ps_work_Y1
-cat("---------ITS Y4--------------------\n")
-its_ps_work_Y4
-```
-</details>
-
-# A. Arbitrary Filtering
-
-For low-count arbitrary filtering, we set the minimum read count to `5` and the prevalence to 20%. Then we apply another filter to remove ASVs with a low variance (`0.2`). 
-
 ## 16S rRNA
 
 ```{r, code_folding=TRUE}
-ssu_ps <- c("ssu_ps_work_Y0", "ssu_ps_work_Y1", "ssu_ps_work_Y4")
-for(i in ssu_ps) {
-  tmp_year <- stringr::str_remove(i, ".*_")
-  tmp_get <- get(i)
-  tmp_low_count <- phyloseq::genefilter_sample(
-                                         tmp_get, 
+tmp_low_count <- phyloseq::genefilter_sample(
+                                         ssu_ps_work, 
                                          filterfun_sample(function(x) x >= 5), 
-                                         A = 0.2 * nsamples(tmp_get))
-  tmp_low_count <- phyloseq::prune_taxa(tmp_low_count, tmp_get)
-  tmp_low_var <- phyloseq::filter_taxa(tmp_low_count, 
+                                         A = 0.2 * nsamples(ssu_ps_work))
+tmp_low_count <- phyloseq::prune_taxa(tmp_low_count, ssu_ps_work)
+tmp_low_var <- phyloseq::filter_taxa(tmp_low_count, 
                                      function(x) var(x) > 0.2, prune = TRUE)
-  tmp_filt <- tmp_low_var
-  tmp_filt@phy_tree <- NULL
-  tmp_tree <- rtree(ntaxa(tmp_filt), rooted = TRUE,
-                      tip.label = taxa_names(tmp_filt))
-  tmp_filt <- merge_phyloseq(tmp_filt,
+ssu_ps_filt <- tmp_low_var
+ssu_ps_filt@phy_tree <- NULL
+tmp_tree <- rtree(ntaxa(ssu_ps_filt), rooted = TRUE,
+                      tip.label = taxa_names(ssu_ps_filt))
+ssu_ps_filt <- merge_phyloseq(ssu_ps_filt,
                           sample_data,
                           tmp_tree)
-  tmp_name <- paste0("ssu_ps_filt_", tmp_year, sep = "")
-  assign(tmp_name, tmp_filt)
-  rm(list = ls(pattern = "tmp_"))
-}
-objects(pattern = "ssu_ps_filt_")
-objects()
+
+rm(list = ls(pattern = "tmp_"))
 ```
 
-And then merge the subset objects back together. 
+Here is the filtered 16S rRNA phyloseq object. 
 
-```{r, code_folding=TRUE}
-ssu_ps_filt_Y0@phy_tree <- NULL
-ssu_ps_filt_Y1@phy_tree <- NULL
-ssu_ps_filt_Y4@phy_tree <- NULL
-ssu_ps_filt <- merge_phyloseq(ssu_ps_filt_Y0, 
-                              ssu_ps_filt_Y1, 
-                              ssu_ps_filt_Y4)
-```
-
-Here are the filtered 16S rRNA phyloseq objects separated by year followed by the merged object. 
-
-<details markdown="1">
-<summary><strong>Click here</strong> for phyloseq object details.</summary>
-
-```{r, echo=FALSE, eval=TRUE, results='hold'}
-cat("---------Year 0--------------------\n")
-ssu_ps_filt_Y0
-cat("---------Year 1--------------------\n")
-ssu_ps_filt_Y1
-cat("---------Year 4--------------------\n")
-ssu_ps_filt_Y4
-cat("---------MERGED--------------------\n")
+```{r, echo=FALSE, eval=TRUE}
 ssu_ps_filt
 ```
-</details>
 
 ```{r, echo=FALSE}
+## This code is gross. I spent hours trying to find a better
+## solution but failed :(
 rm(list = ls(pattern = "tmp_"))
-tmp_samples <- c("ssu_ps_work", "ssu_ps_filt",
-                 "ssu_ps_work_Y0", "ssu_ps_filt_Y0",
-                 "ssu_ps_work_Y1", "ssu_ps_filt_Y1",
-                 "ssu_ps_work_Y4", "ssu_ps_filt_Y4")
+tmp_samples <- c("ssu_ps_work", "ssu_ps_filt")
 tmp_objects <- c(
                 "Total number of reads", 
                 "Min. number of reads", 
@@ -381,23 +280,70 @@ tmp_objects <- c(
                 "Average number of ASVs", 
                 "Median number of ASVs")
 
-compare_filter_to_original(compare_filter_to_original, "arbitrary", "ssu")
+tmp_total_reads <- c()
+for (i in tmp_samples) {
+   tmp_get <- sum(readcount(get(i)))
+   tmp_total_reads <- c(append(tmp_total_reads, tmp_get))
+}
+tmp_min_read <- c()
+for (i in tmp_samples) {
+   tmp_get <- min(readcount(get(i)))
+   tmp_min_read <- c(append(tmp_min_read, tmp_get))
+}
+tmp_max_read <- c()
+for (i in tmp_samples) {
+   tmp_get <- max(readcount(get(i)))
+   tmp_max_read <- c(append(tmp_max_read, tmp_get))
+}
+tmp_mean_reads <- c()
+for (i in tmp_samples) {
+   tmp_get <- round(mean(readcount(get(i))), digits = 0)
+   tmp_mean_reads <- c(append(tmp_mean_reads, tmp_get))
+}
+tmp_median_reads <- c()
+for (i in tmp_samples) {
+   tmp_get <- median(readcount(get(i)))
+   tmp_median_reads <- c(append(tmp_median_reads, tmp_get))
+}
+tmp_total_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- ntaxa(get(i))
+   tmp_total_asvs <- c(append(tmp_total_asvs, tmp_get))
+}
+tmp_min_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- min(richness(get(i), index = "observed"))
+   tmp_min_asvs <- c(append(tmp_min_asvs, tmp_get))
+}
+tmp_max_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- max(richness(get(i), index = "observed"))
+   tmp_max_asvs <- c(append(tmp_max_asvs, tmp_get))
+}
+tmp_mean_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- round(mean(richness(get(i), index = "observed")$observed), digits = 0)
+   tmp_mean_asvs <- c(append(tmp_mean_asvs, tmp_get))
+}
+tmp_med_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- median(richness(get(i), index = "observed")$observed)
+   tmp_med_asvs <- c(append(tmp_med_asvs, tmp_get))
+}
 
-ssu_sum_arbitrary <- dplyr::bind_cols(tmp_objects, ssu_sum_arbitrary) %>%
-  dplyr::rename("Metric" = 1, 
-                "Full data" = 2, "Arbitrary filter" = 3, 
-                "Full data (Y0)" = 4, "Arbitrary filter (Y0)" = 5, 
-                "Full data (Y1)" = 6, "Arbitrary filter (Y1)" = 7,
-                "Full data (Y4)" = 8, "Arbitrary filter (Y4)" = 9
-                )
+tmp_bind <- data.frame(do.call("rbind", list(
+  tmp_total_reads, tmp_min_read, tmp_max_read, tmp_mean_reads, tmp_median_reads, 
+  tmp_total_asvs, tmp_min_asvs, tmp_max_asvs, tmp_mean_asvs, tmp_med_asvs)))
+
+ssu_sum_arbitrary <- dplyr::bind_cols(tmp_objects, tmp_bind) %>%
+  dplyr::rename("Metric" = 1, "Full data" = 2, "Arbitrary filter" = 3)
 rm(list = ls(pattern = "tmp_"))
-objects()
 ```
 
 <small>`r caption_tab_ssu("ssu_arbitrary_filt_summary")`</small>
 
 ```{r eval=TRUE, echo=FALSE, layout="l-body"}
-ssu_arbitrary_filt_summary <- ssu_sum_arbitrary[,1:3]
+ssu_arbitrary_filt_summary <- ssu_sum_arbitrary
 download_this_fun(ssu_arbitrary_filt_summary)
 ```
 
@@ -409,31 +355,21 @@ rm(seq_table)
 We can look at how filtering affected total reads and ASVs for each sample.
 
 ```{r, echo=FALSE}
-for (i in objects(pattern = "ssu_.*_filt_Y[0-9]$")) {
-  tmp_get <- get(i)
-  tmp_read_count <- data.frame(sample_sums(tmp_get)) %>%
-    tibble::rownames_to_column("SamName")
-  tmp_asv_count <- estimate_richness(tmp_get, split = TRUE, measures = "Observed") %>%
-    tibble::rownames_to_column("SamName")
-  tmp_samp_data <- data.frame(sample_data(tmp_get))
-  tmp_samp_data <- tmp_samp_data[order(tmp_samp_data$LOC, tmp_samp_data$YEAR),]
+tmp_read_count <- data.frame(sample_sums(ssu_ps_filt)) %>%
+  tibble::rownames_to_column("SamName")
+tmp_asv_count <- estimate_richness(ssu_ps_filt, split = TRUE, measures = "Observed") %>%
+  tibble::rownames_to_column("SamName")
+tmp_samp_data <- data.frame(sample_data(ssu_ps_filt))
+tmp_samp_data <- tmp_samp_data[order(tmp_samp_data$LOC, tmp_samp_data$YEAR),]
 
-  tmp_join <- dplyr::left_join(tmp_samp_data, tmp_read_count, by = "SamName") %>%
-    dplyr::left_join(., tmp_asv_count, by = "SamName") %>%
-    dplyr::rename("Sample_ID" = 1) %>%
-    dplyr::rename("total_reads" = 8) %>%
-    dplyr::rename("total_asvs" = 9)
-  tmp_name <- paste(i, "_filt_samples", sep = "")
-  assign(tmp_name, tmp_join)
-  rm(list = ls(pattern = "tmp_"))
-}
-objects(pattern = "_filt_samples")
-
-ssu_filt_samp_summary <- rbind(ssu_ps_filt_Y0_filt_samples, 
-                             ssu_ps_filt_Y1_filt_samples, 
-                             ssu_ps_filt_Y4_filt_samples)
+tmp_join <- dplyr::left_join(tmp_samp_data, tmp_read_count, by = "SamName") %>%
+  dplyr::left_join(., tmp_asv_count, by = "SamName") %>%
+  dplyr::rename("Sample_ID" = 1) %>%
+  dplyr::rename("total_reads" = 8) %>%
+  dplyr::rename("total_asvs" = 9)
+ssu_filt_samp_summary <- tmp_join
+rm(list = ls(pattern = "tmp_"))
 ```
-
 
 <small>`r caption_tab_ssu("ssu_arbitrary_filt_samples")`</small>
 
@@ -450,55 +386,29 @@ rm(seq_table)
 ## ITS
 
 ```{r, code_folding=TRUE}
-its_ps <- c("its_ps_work_Y0", "its_ps_work_Y1", "its_ps_work_Y4")
-for(i in its_ps) {
-  tmp_year <- stringr::str_remove(i, ".*_")
-  tmp_get <- get(i)
-  tmp_low_count <- phyloseq::genefilter_sample(
-                                         tmp_get, 
+tmp_low_count <- phyloseq::genefilter_sample(
+                                         its_ps_work, 
                                          filterfun_sample(function(x) x >= 5), 
-                                         A = 0.2 * nsamples(tmp_get))
-  tmp_low_count <- phyloseq::prune_taxa(tmp_low_count, tmp_get)
-  tmp_low_var <- phyloseq::filter_taxa(tmp_low_count, 
+                                         A = 0.2 * nsamples(its_ps_work))
+tmp_low_count <- phyloseq::prune_taxa(tmp_low_count, its_ps_work)
+tmp_low_var <- phyloseq::filter_taxa(tmp_low_count, 
                                      function(x) var(x) > 0.2, prune = TRUE)
-  tmp_name <- paste0("its_ps_filt_", tmp_year, sep = "")
-  assign(tmp_name, tmp_low_var)
-  rm(list = ls(pattern = "tmp_"))
-}
-objects(pattern = "its_ps_filt_")
-objects()
-```
-
-And then merge the subset objects back together. 
-
-```{r, code_folding=TRUE}
-its_ps_filt <- merge_phyloseq(its_ps_filt_Y0, 
-                              its_ps_filt_Y1, 
-                              its_ps_filt_Y4)
-```
-
-Here are the filtered ITS phyloseq objects separated by year followed by the merged object. 
-
-<details markdown="1">
-<summary><strong>Click here</strong> for phyloseq object details.</summary>
-```{r, echo=FALSE, eval=TRUE, results='hold'}
-cat("---------Year 0--------------------\n")
-its_ps_filt_Y0
-cat("---------Year 1--------------------\n")
-its_ps_filt_Y1
-cat("---------Year 4--------------------\n")
-its_ps_filt_Y4
-cat("---------MERGED--------------------\n")
+its_ps_filt <- tmp_low_var
+rm(list = ls(pattern = "tmp_"))
 its_ps_filt
 ```
-</details>
+
+And the filtered ITS phyloseq object. 
+
+```{r, echo=FALSE, eval=TRUE}
+its_ps_filt
+```
 
 ```{r, echo=FALSE}
+## This code is gross. I spent hours trying to find a better
+## solution but failed :(
 rm(list = ls(pattern = "tmp_"))
-tmp_samples <- c("its_ps_work", "its_ps_filt",
-                 "its_ps_work_Y0", "its_ps_filt_Y0",
-                 "its_ps_work_Y1", "its_ps_filt_Y1",
-                 "its_ps_work_Y4", "its_ps_filt_Y4")
+tmp_samples <- c("its_ps_work", "its_ps_filt")
 tmp_objects <- c(
                 "Total number of reads", 
                 "Min. number of reads", 
@@ -511,23 +421,70 @@ tmp_objects <- c(
                 "Average number of ASVs", 
                 "Median number of ASVs")
 
-compare_filter_to_original(compare_filter_to_original, "arbitrary", "its")
+tmp_total_reads <- c()
+for (i in tmp_samples) {
+   tmp_get <- sum(readcount(get(i)))
+   tmp_total_reads <- c(append(tmp_total_reads, tmp_get))
+}
+tmp_min_read <- c()
+for (i in tmp_samples) {
+   tmp_get <- min(readcount(get(i)))
+   tmp_min_read <- c(append(tmp_min_read, tmp_get))
+}
+tmp_max_read <- c()
+for (i in tmp_samples) {
+   tmp_get <- max(readcount(get(i)))
+   tmp_max_read <- c(append(tmp_max_read, tmp_get))
+}
+tmp_mean_reads <- c()
+for (i in tmp_samples) {
+   tmp_get <- round(mean(readcount(get(i))), digits = 0)
+   tmp_mean_reads <- c(append(tmp_mean_reads, tmp_get))
+}
+tmp_median_reads <- c()
+for (i in tmp_samples) {
+   tmp_get <- median(readcount(get(i)))
+   tmp_median_reads <- c(append(tmp_median_reads, tmp_get))
+}
+tmp_total_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- ntaxa(get(i))
+   tmp_total_asvs <- c(append(tmp_total_asvs, tmp_get))
+}
+tmp_min_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- min(richness(get(i), index = "observed"))
+   tmp_min_asvs <- c(append(tmp_min_asvs, tmp_get))
+}
+tmp_max_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- max(richness(get(i), index = "observed"))
+   tmp_max_asvs <- c(append(tmp_max_asvs, tmp_get))
+}
+tmp_mean_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- round(mean(richness(get(i), index = "observed")$observed), digits = 0)
+   tmp_mean_asvs <- c(append(tmp_mean_asvs, tmp_get))
+}
+tmp_med_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- median(richness(get(i), index = "observed")$observed)
+   tmp_med_asvs <- c(append(tmp_med_asvs, tmp_get))
+}
 
-its_sum_arbitrary <- dplyr::bind_cols(tmp_objects, its_sum_arbitrary) %>%
-  dplyr::rename("Metric" = 1, 
-                "Full data" = 2, "Arbitrary filter" = 3, 
-                "Full data (Y0)" = 4, "Arbitrary filter (Y0)" = 5, 
-                "Full data (Y1)" = 6, "Arbitrary filter (Y1)" = 7,
-                "Full data (Y4)" = 8, "Arbitrary filter (Y4)" = 9
-                )
+tmp_bind <- data.frame(do.call("rbind", list(
+  tmp_total_reads, tmp_min_read, tmp_max_read, tmp_mean_reads, tmp_median_reads, 
+  tmp_total_asvs, tmp_min_asvs, tmp_max_asvs, tmp_mean_asvs, tmp_med_asvs)))
+
+its_sum_arbitrary <- dplyr::bind_cols(tmp_objects, tmp_bind) %>%
+  dplyr::rename("Metric" = 1, "Full data" = 2, "Arbitrary filter" = 3)
 rm(list = ls(pattern = "tmp_"))
-its_sum_arbitrary
 ```
 
 <small>`r caption_tab_its("its_arbitrary_filt_summary")`</small>
 
 ```{r eval=TRUE, echo=FALSE, layout="l-body"}
-its_arbitrary_filt_summary <- its_sum_arbitrary[,1:3]
+its_arbitrary_filt_summary <- its_sum_arbitrary
 download_this_fun(its_arbitrary_filt_summary)
 ```
 
@@ -539,29 +496,20 @@ rm(seq_table)
 And again, let's look how filtering affected total reads and ASVs for each sample.
 
 ```{r, echo=FALSE}
-for (i in objects(pattern = "its_.*_filt_Y[0-9]$")) {
-  tmp_get <- get(i)
-  tmp_read_count <- data.frame(sample_sums(tmp_get)) %>%
-    tibble::rownames_to_column("SamName")
-  tmp_asv_count <- estimate_richness(tmp_get, split = TRUE, measures = "Observed") %>%
-    tibble::rownames_to_column("SamName")
-  tmp_samp_data <- data.frame(sample_data(tmp_get))
-  tmp_samp_data <- tmp_samp_data[order(tmp_samp_data$LOC, tmp_samp_data$YEAR),]
+tmp_read_count <- data.frame(sample_sums(its_ps_filt)) %>%
+  tibble::rownames_to_column("SamName")
+tmp_asv_count <- estimate_richness(its_ps_filt, split = TRUE, measures = "Observed") %>%
+  tibble::rownames_to_column("SamName")
+tmp_samp_data <- data.frame(sample_data(its_ps_filt))
+tmp_samp_data <- tmp_samp_data[order(tmp_samp_data$LOC, tmp_samp_data$YEAR),]
 
-  tmp_join <- dplyr::left_join(tmp_samp_data, tmp_read_count, by = "SamName") %>%
-    dplyr::left_join(., tmp_asv_count, by = "SamName") %>%
-    dplyr::rename("Sample_ID" = 1) %>%
-    dplyr::rename("total_reads" = 8) %>%
-    dplyr::rename("total_asvs" = 9)
-  tmp_name <- paste(i, "_filt_samples", sep = "")
-  assign(tmp_name, tmp_join)
-  rm(list = ls(pattern = "tmp_"))
-}
-objects(pattern = "_filt_samples")
-
-its_filt_samp_summary <- rbind(its_ps_filt_Y0_filt_samples, 
-                               its_ps_filt_Y1_filt_samples, 
-                               its_ps_filt_Y4_filt_samples)
+tmp_join <- dplyr::left_join(tmp_samp_data, tmp_read_count, by = "SamName") %>%
+  dplyr::left_join(., tmp_asv_count, by = "SamName") %>%
+  dplyr::rename("Sample_ID" = 1) %>%
+  dplyr::rename("total_reads" = 8) %>%
+  dplyr::rename("total_asvs" = 9)
+its_filt_samp_summary <- tmp_join
+rm(list = ls(pattern = "tmp_"))
 ```
 
 <small>`r caption_tab_its("its_arbitrary_filt_samples")`</small>
@@ -576,17 +524,10 @@ filter_results_sample(seq_table)
 rm(seq_table)
 ```
 
-```{r, echo=FALSE, eval=FALSE}
-saveRDS(ssu_ps_filt, "files/filtering/arbitrary/rdata/ssu_ps_filt.rds")
-saveRDS(ssu_ps_filt_Y0, "files/filtering/arbitrary/rdata/ssu_ps_filt_Y0.rds")
-saveRDS(ssu_ps_filt_Y1, "files/filtering/arbitrary/rdata/ssu_ps_filt_Y1.rds")
-saveRDS(ssu_ps_filt_Y4, "files/filtering/arbitrary/rdata/ssu_ps_filt_Y4.rds")
 
+```{r, echo=FALSE}
+saveRDS(ssu_ps_filt, "files/filtering/arbitrary/rdata/ssu_ps_filt.rds")
 saveRDS(its_ps_filt, "files/filtering/arbitrary/rdata/its_ps_filt.rds")
-saveRDS(its_ps_filt_Y0, "files/filtering/arbitrary/rdata/its_ps_filt_Y0.rds")
-saveRDS(its_ps_filt_Y1, "files/filtering/arbitrary/rdata/its_ps_filt_Y1.rds")
-saveRDS(its_ps_filt_Y4, "files/filtering/arbitrary/rdata/its_ps_filt_Y4.rds")
-objects()
 save.image("page_build/filtering_wf.rdata")
 ```
 
@@ -598,27 +539,28 @@ And that's it for Arbitrary filtering. Moving on.
 ## Load to build page
 ## perfect_wf_alt.rdata = ITS pval  set at  0.05: 1712 ASVs
 ## perfect_wf.rdata = ITS pval  set at  0.10: 3299 ASVs
-load("page_build/perfect_wf.rdata")
+load("page_build/perfect_wf_alt.rdata")
 objects()
+ssu_ps_work <- readRDS("files/data-prep/rdata/ssu_ps_work.rds")
+its_ps_work <- readRDS("files/data-prep/rdata/its_ps_work.rds")
 ```
 
-To run PERFect, we need the ASV tables in data frame format with samples as rows and ASVs as columns. PERFect is sensitive to the order of ASVs, so here we test **a**) the default order in the phyloseq object and **b**) ASVs ordered by decreasing abundance. Again, we use the phyloseq objects that were separated by year. 
+To run PERFect, we need the ASV tables in data frame format with samples as rows and ASVs as columns. PERFect is sensitive to the order of ASVs, so here we test **a**) the default order in the phyloseq object and **b**) ASVs ordered by decreasing abundance.
 
 ## Setup
 
 ```{r, code_folding=TRUE}
-samp_ps_filt <- c("ssu_ps_work_Y0", "ssu_ps_work_Y1", "ssu_ps_work_Y4", 
-                  "its_ps_work_Y0", "its_ps_work_Y1", "its_ps_work_Y4")
+samp_ps_filt <- c("ssu_ps_work", "its_ps_work")
 for (i in samp_ps_filt) {
   tmp_get <- get(i)
   tmp_get_tab <- data.frame(t(otu_table(tmp_get)))
   tmp_get_tab <- tmp_get_tab %>% tibble::rownames_to_column("ID")
   tmp_get_tab <- jamba::mixedSortDF(tmp_get_tab, decreasing = FALSE, 
-                                    useRownames = FALSE, byCols = 1)
+                                        useRownames = FALSE, byCols = 1)
   tmp_get_tab <- tmp_get_tab %>% tibble::remove_rownames() 
   tmp_get_tab <- tmp_get_tab %>% tibble::column_to_rownames("ID")
   tmp_get_tab <- data.frame(t(tmp_get_tab))
-  
+
   tmp_get_tab_ord <- data.frame(t(otu_table(tmp_get)))
   tmp_get_tab_ord <- tmp_get_tab_ord %>% tibble::rownames_to_column("ID")
   tmp_get_tab_ord <- jamba::mixedSortDF(tmp_get_tab_ord, decreasing = TRUE, 
@@ -626,7 +568,7 @@ for (i in samp_ps_filt) {
   tmp_get_tab_ord <- tmp_get_tab_ord %>% tibble::remove_rownames() 
   tmp_get_tab_ord <- tmp_get_tab_ord %>% tibble::column_to_rownames("ID")
   tmp_get_tab_ord <- data.frame(t(tmp_get_tab_ord))
-  
+
   tmp_tab_name <- purrr::map_chr(i, ~ paste0(., "_perfect"))
   assign(tmp_tab_name, tmp_get_tab)
   
@@ -662,19 +604,18 @@ for (i in samp_ps_filt) {
   
   tmp_sim_name <- purrr::map_chr(i, ~ paste0(., "_perfect_sim"))
   assign(tmp_sim_name, tmp_sim)
-  
+
   tmp_sim_ord_name <- purrr::map_chr(i, ~ paste0(., "_ord_perfect_sim"))
   assign(tmp_sim_ord_name, tmp_sim_ord)
   
-  tmp_path <- file.path("rfiles/filtering/perfect/rdata/")
+  tmp_path <- file.path("files/filtering/perfect/rdata/")
   saveRDS(tmp_sim, paste(tmp_path, tmp_sim_name, ".rds", sep = ""))
   saveRDS(tmp_sim_ord, paste(tmp_path, tmp_sim_ord_name, ".rds", sep = ""))
-  
+
   rm(list = ls(pattern = "tmp_"))
   
 }
 objects(pattern = "_sim")
-objects()
 ```
 
 ```{r, echo=FALSE}
@@ -699,14 +640,8 @@ write.table(tmp_com, "tmp_com.txt", quote = FALSE, sep = "\t", row.names = FALSE
 ```
 
 ```{r, echo=FALSE}
-ps_sim <- c(
-  "ssu_ps_work_Y0_perfect_sim", "ssu_ps_work_Y0_ord_perfect_sim", 
-  "ssu_ps_work_Y1_perfect_sim", "ssu_ps_work_Y1_ord_perfect_sim", 
-  "ssu_ps_work_Y4_perfect_sim", "ssu_ps_work_Y4_ord_perfect_sim", 
-  "its_ps_work_Y0_perfect_sim", "its_ps_work_Y0_ord_perfect_sim", 
-  "its_ps_work_Y1_perfect_sim", "its_ps_work_Y1_ord_perfect_sim", 
-  "its_ps_work_Y4_perfect_sim", "its_ps_work_Y4_ord_perfect_sim"
-)
+ps_sim <- c("ssu_ps_work_perfect_sim", "ssu_ps_work_ord_perfect_sim", 
+            "its_ps_work_perfect_sim", "its_ps_work_ord_perfect_sim")
 for (i in ps_sim) {
   tmp_get <- get(i)
   tmp_name <- i
@@ -724,97 +659,78 @@ objects()
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #Save some deets so we do not need to save large objects
-ssu_Y0_default_num_asvs <- dim(ssu_ps_work_Y0_perfect_sim$filtX)[2]
-ssu_Y0_ord_num_asvs <- dim(ssu_ps_work_Y0_ord_perfect_sim$filtX)[2]
-ssu_Y1_default_num_asvs <- dim(ssu_ps_work_Y1_perfect_sim$filtX)[2]
-ssu_Y1_ord_num_asvs <- dim(ssu_ps_work_Y1_ord_perfect_sim$filtX)[2]
-ssu_Y4_default_num_asvs <- dim(ssu_ps_work_Y4_perfect_sim$filtX)[2]
-ssu_Y4_ord_num_asvs <- dim(ssu_ps_work_Y4_ord_perfect_sim$filtX)[2]
+ssu_default_num_asvs <- dim(ssu_ps_work_perfect_sim$filtX)[2]
+ssu_ord_num_asvs <- dim(ssu_ps_work_ord_perfect_sim$filtX)[2]
+its_default_num_asvs <- dim(its_ps_work_perfect_sim$filtX)[2]
+its_ord_num_asvs <- dim(its_ps_work_ord_perfect_sim$filtX)[2]
 
-its_Y0_default_num_asvs <- dim(its_ps_work_Y0_perfect_sim$filtX)[2]
-its_Y0_ord_num_asvs <- dim(its_ps_work_Y0_ord_perfect_sim$filtX)[2]
-its_Y1_default_num_asvs <- dim(its_ps_work_Y1_perfect_sim$filtX)[2]
-its_Y1_ord_num_asvs <- dim(its_ps_work_Y1_ord_perfect_sim$filtX)[2]
-its_Y4_default_num_asvs <- dim(its_ps_work_Y4_perfect_sim$filtX)[2]
-its_Y4_ord_num_asvs <- dim(its_ps_work_Y4_ord_perfect_sim$filtX)[2]
-
-ssu_Y0_default_pvals <- ssu_ps_work_Y0_perfect_sim$pvals
-ssu_Y0_ord_pvals <- ssu_ps_work_Y0_ord_perfect_sim$pvals
-ssu_Y1_default_pvals <- ssu_ps_work_Y1_perfect_sim$pvals
-ssu_Y1_ord_pvals <- ssu_ps_work_Y1_ord_perfect_sim$pvals
-ssu_Y4_default_pvals <- ssu_ps_work_Y4_perfect_sim$pvals
-ssu_Y4_ord_pvals <- ssu_ps_work_Y4_ord_perfect_sim$pvals
-
-its_Y0_default_pvals <- its_ps_work_Y0_perfect_sim$pvals
-its_Y0_ord_pvals <- its_ps_work_Y0_ord_perfect_sim$pvals
-its_Y1_default_pvals <- its_ps_work_Y1_perfect_sim$pvals
-its_Y1_ord_pvals <- its_ps_work_Y1_ord_perfect_sim$pvals
-its_Y4_default_pvals <- its_ps_work_Y4_perfect_sim$pvals
-its_Y4_ord_pvals <- its_ps_work_Y4_ord_perfect_sim$pvals
+ssu_default_pvals <- ssu_ps_work_perfect_sim$pvals
+ssu_ord_pvals <- ssu_ps_work_ord_perfect_sim$pvals
+its_default_pvals <- its_ps_work_perfect_sim$pvals
+its_ord_pvals <- its_ps_work_ord_perfect_sim$pvals
 ```
 
-For some reason, the package does not remove ASVs based on the p-value cutoff that we set earlier (`0.05`). So we need to filter out the ASVs that have a higher p-value than the cutoff. Before we do that, we can see how default order analysis compares to the decreasing order analysis. 
+```{r, echo=FALSE, message=FALSE, warning=FALSE, eval=TRUE}
+#Save some deets so we do not need to save large objects
+ssu_default_num_asvs <- 58311
+ssu_ord_num_asvs <- 19706
+its_default_num_asvs <- 33657
+its_ord_num_asvs <- 12934
 
-```{r echo=FALSE}
-rm(list = ls(pattern = "tmp_"))
-tmp_samples <- c("Year_0 (16S rRNA)", "Year_1 (16S rRNA)", "Year_4 (16S rRNA)",
-                 "Year_0 (ITS)", "Year_1 (ITS)", "Year_4 (ITS)")
-per_pval <- 0.05
-##### DEFAULT ORDER
-tmp_asv <- c()
-for (i in samp_ps_filt) {
-   tmp_df <- get(purrr::map_chr(i, ~ paste0(., "_perfect_sim")))
-   tmp_asv_count <- dim(tmp_df$filtX)[2]
-   tmp_asv <- c(append(tmp_asv, tmp_asv_count))
-}
-
-tmp_pval_asv <- c()
-for (i in samp_ps_filt) {
-   tmp_df <- get(purrr::map_chr(i, ~ paste0(., "_perfect_sim")))
-   tmp_default_pvals <- data.frame(tmp_df$pvals)
-   tmp_asv_count <- tmp_default_pvals %>% dplyr::summarise(count = sum(tmp_default_pvals <= per_pval))
-   tmp_pval_asv <- c(append(tmp_pval_asv, tmp_asv_count))
-}
-
-##### DECREASE ORDER
-tmp_asv_ord <- c()
-for (i in samp_ps_filt) {
-   tmp_df <- get(purrr::map_chr(i, ~ paste0(., "_ord_perfect_sim")))
-   tmp_asv_ord_count <- dim(tmp_df$filtX)[2]
-   tmp_asv_ord <- c(append(tmp_asv_ord, tmp_asv_ord_count))
-}
-
-tmp_pval_asv_ord <- c()
-for (i in samp_ps_filt) {
-   tmp_df <- get(purrr::map_chr(i, ~ paste0(., "_ord_perfect_sim")))
-   tmp_default_pvals <- data.frame(tmp_df$pvals)
-   tmp_asv_ord_count <- tmp_default_pvals %>% dplyr::summarise(count = sum(tmp_default_pvals <= per_pval))
-   tmp_pval_asv_ord <- c(append(tmp_pval_asv_ord, tmp_asv_ord_count))
-}
-
-tmp_bind1 <- data.frame(tmp_asv, tmp_asv_ord)
-tmp_bind1$data_set <- tmp_samples
-tmp_bind2 <- do.call(rbind, Map(data.frame, A = tmp_pval_asv, B = tmp_pval_asv_ord))
-tmp_bind2$data_set <- tmp_samples
-perfect_asv_checking <- dplyr::full_join(tmp_bind1, tmp_bind2) %>% 
-                        dplyr::relocate(data_set) %>% 
-                        dplyr::rename("default_order" = 2, "decrease_order" = 3, 
-                                      "default_order_after_pval" = 4, 
-                                      "decrease_order_after_pval" = 5) %>% 
-                        dplyr::relocate("decrease_order", .after = "default_order_after_pval")
-perfect_asv_checking
-rm(list = ls(pattern = "tmp_"))
+ssu_default_pvals <- 4616
+ssu_ord_pvals <- 4615
+its_default_pvals <- 1712
+its_ord_pvals <- 1765
 ```
 
-<small>`r caption_tab_ssu("perfect_asv_checking")`</small>
+How many ASVs were retained after filtering? 
 
-```{r eval=TRUE, echo=FALSE, layout="l-body-outset"}
-download_this_fun(perfect_asv_checking)
+First the 16S rRNA data set. Default ordering resulted in 
+**`r ssu_default_num_asvs`** ASVs 
+and reordering the data resulted in 
+**`r ssu_ord_num_asvs`** ASVs.
+
+And then the ITS data set. Default ordering resulted in 
+**`r its_default_num_asvs`** ASVs 
+and reordering the data resulted in 
+**`r its_ord_num_asvs`** ASVs.
+
+For some reason, the package does not remove based on the p value cutoff that we set earlier (`0.05`). So we need to filter out the ASVs that have a higher p-value than the cutoff.
+
+```{r echo=FALSE, results='hold', eval=FALSE, render=pander::pander}
+cat("Total 16S rRNA ASVs with p-value less than", ssu_per_pval[1], "\n")
+tmp_df <- ssu_default_pvals
+tmp_df <- data.frame(tmp_df)
+pval_asv <- tmp_df %>% dplyr::summarise(count = sum(tmp_df <= ssu_per_pval))
+print(paste("default order: ASVs before checking p value was", ssu_default_num_asvs, "and after was", pval_asv$count[1]), quote = FALSE)
+
+tmp_df <- ssu_ord_pvals
+tmp_df <- data.frame(tmp_df)
+pval_asv_ord <- tmp_df %>% dplyr::summarise(count = sum(tmp_df <= ssu_per_pval))
+print(paste("decreasing order: ASVs before checking p value was", ssu_ord_num_asvs, "and after was", pval_asv_ord$count[1]), quote = FALSE)
+
+print("--------------------------------------", quote = FALSE)
+
+cat("Total ITS ASVs with p-value less than", its_per_pval[1], "\n")
+tmp_df <- its_default_pvals
+tmp_df <- data.frame(tmp_df)
+pval_asv <- tmp_df %>% dplyr::summarise(count = sum(tmp_df <= its_per_pval))
+print(paste("default order: ASVs before checking p-value was", its_default_num_asvs, "and after was", pval_asv$count[1]), quote = FALSE)
+
+tmp_df <- its_ord_pvals
+tmp_df <- data.frame(tmp_df)
+pval_asv_ord <- tmp_df %>% dplyr::summarise(count = sum(tmp_df <= its_per_pval))
+print(paste("decreasing order: ASVs before checking p-value was", its_ord_num_asvs, "and after was", pval_asv_ord$count[1]), quote = FALSE)
 ```
 
-```{r eval=TRUE, echo=FALSE, layout="l-body-outset"}
-asv_checking(seq_table)
-rm(seq_table)
+```{r echo=FALSE, results='hold', eval=TRUE, render=pander::pander}
+print("Total 16S rRNA ASVs with p-value less than 0.05")
+print("[1] default order: ASVs before checking p value was 58311 and after was 4616")
+print("[1] decreasing order: ASVs before checking p value was 19706 and after was 4615")
+print("[1] --------------------------------------")
+print("Total ITS ASVs with p-value less than 0.05 ")
+print("[1] default order: ASVs before checking p-value was 33657 and after was 1712")
+print("[1] decreasing order: ASVs before checking p-value was 12934 and after was 1765")
 ```
 
 Now we can make phyloseq objects. Manual inspection of the results from `PERFect_sim` for the 16S rRNA data indicated that using the **decreasing** order and filtering p-values less than `r ssu_per_pval` yielded in the best results. Manual inspection of the results from `PERFect_sim` for the ITS data indicated that using the **default** order and filtering p-values less than `r its_per_pval` yielded in the best results. These approaches limited the number of ASVs found in only 1 or 2 samples. So first we filter out ASVs with p-values lower than the defined cutoff and then make the objects.
@@ -828,107 +744,63 @@ ssu_select <- "_ord_perfect"
 its_select <- "_perfect"
 ```
 
+
 ```{r, code_folding=TRUE}
 for (i in samp_ps_filt) {
   ## select pval cutoff and method
-  tmp_pval <- gsub("_.*", "_per_pval", i)
-  tmp_select <- gsub("_.*", "_select", i)
-  
-  tmp_get <- get(purrr::map_chr(i, ~ paste0(., get(tmp_select))))
-  tmp_get_sim <- get(purrr::map_chr(i, ~ paste0(., get(tmp_select), "_sim")))
-  tmp_filt <- data.frame(t(tmp_get_sim$filtX))
-  tmp_filt <- tmp_filt %>% tibble::rownames_to_column("ID")
-  tmp_tab <- data.frame(t(tmp_get))
-  tmp_tab <- tmp_tab %>% tibble::rownames_to_column("ID")
-  tmp_pvals <- data.frame(tmp_get_sim$pvals)
-  tmp_pvals <- tmp_pvals %>% tibble::rownames_to_column("ID") %>% 
-    dplyr::rename("pval" = 2)
-  tmp_pvals <- tmp_pvals %>% filter(pval <= get(tmp_pval))
-  tmp_merge <- dplyr::left_join(tmp_pvals, tmp_tab, by = "ID")
-  tmp_merge[, 2] <- NULL
-  tmp_merge <- tmp_merge %>% tibble::column_to_rownames("ID")
-  tmp_tax <- data.frame(tax_table(get(i))) %>% tibble::rownames_to_column("ID")
-  tmp_tax <- dplyr::left_join(tmp_pvals, tmp_tax, by = "ID")
-  tmp_tax[, 2] <- NULL
-  tmp_tax <- tmp_tax %>% tibble::column_to_rownames("ID")
-  # Build PS object
-  tmp_samp <- data.frame(sample_data(get(i)))
-  identical(row.names(tmp_tax), row.names(tmp_merge))
-  tmp_merge <- data.frame(t(tmp_merge))
-  tmp_merge <- as.matrix(tmp_merge)
-  tmp_tax <- as.matrix(tmp_tax)
-  tmp_ps <- phyloseq(otu_table(tmp_merge, taxa_are_rows = FALSE),
+    tmp_pval <- gsub("18.*", "_per_pval", i)
+    tmp_select <- gsub("18.*", "_select", i)
+    
+    tmp_get <- get(purrr::map_chr(i, ~ paste0(., get(tmp_select))))
+    tmp_get_sim <- get(purrr::map_chr(i, ~ paste0(., get(tmp_select), "_sim")))
+    tmp_filt <- data.frame(t(tmp_get_sim$filtX))
+    tmp_filt <- tmp_filt %>% tibble::rownames_to_column("ID")
+    tmp_tab <- data.frame(t(tmp_get))
+    tmp_tab <- tmp_tab %>% tibble::rownames_to_column("ID")
+    tmp_pvals <- data.frame(tmp_get_sim$pvals)
+    tmp_pvals <- tmp_pvals %>% tibble::rownames_to_column("ID") %>% 
+              dplyr::rename("pval" = 2)
+    tmp_pvals <- tmp_pvals %>% filter(pval <= get(tmp_pval))
+    tmp_merge <- dplyr::left_join(tmp_pvals, tmp_tab, by = "ID")
+    tmp_merge[, 2] <- NULL
+    tmp_merge <- tmp_merge %>% tibble::column_to_rownames("ID")
+    tmp_tax <- data.frame(tax_table(get(i))) %>% tibble::rownames_to_column("ID")
+    tmp_tax <- dplyr::left_join(tmp_pvals, tmp_tax, by = "ID")
+    tmp_tax[, 2] <- NULL
+    tmp_tax <- tmp_tax %>% tibble::column_to_rownames("ID")
+# Build PS object
+    tmp_samp <- data.frame(sample_data(get(i)))
+    identical(row.names(tmp_tax), row.names(tmp_merge))
+    tmp_merge <- data.frame(t(tmp_merge))
+    tmp_merge <- as.matrix(tmp_merge)
+    tmp_tax <- as.matrix(tmp_tax)
+    tmp_ps <- phyloseq(otu_table(tmp_merge, taxa_are_rows = FALSE),
                      tax_table(tmp_tax),
                      sample_data(tmp_samp))
-  
-  tmp_tree <- rtree(ntaxa(tmp_ps), rooted = TRUE,
-                    tip.label = taxa_names(tmp_ps))
-  tmp_ps <- merge_phyloseq(tmp_ps,
-                           sample_data,
-                           tmp_tree)
-  tmp_ps_name <- purrr::map_chr(i, ~ paste0(., "_perf_filt"))
-  assign(tmp_ps_name, tmp_ps)
-  rm(list = ls(pattern = "tmp_"))
+    
+    tmp_tree <- rtree(ntaxa(tmp_ps), rooted = TRUE,
+                           tip.label = taxa_names(tmp_ps))
+    tmp_ps <- merge_phyloseq(tmp_ps,
+                               sample_data,
+                               tmp_tree)
+    tmp_ps_name <- purrr::map_chr(i, ~ paste0(., "_perf_filt"))
+    assign(tmp_ps_name, tmp_ps)
+    rm(list = ls(pattern = "tmp_"))
 }  
 
-ssu_ps_perfect_Y0 <- ssu_ps_work_Y0_perf_filt
-ssu_ps_perfect_Y1 <- ssu_ps_work_Y1_perf_filt
-ssu_ps_perfect_Y4 <- ssu_ps_work_Y4_perf_filt
-
-its_ps_perfect_Y0 <- its_ps_work_Y0_perf_filt
-its_ps_perfect_Y1 <- its_ps_work_Y1_perf_filt
-its_ps_perfect_Y4 <- its_ps_work_Y4_perf_filt
+ssu_ps_perfect <- ssu_ps_work_perf_filt
+its_ps_perfect <- its_ps_work_perf_filt
 rm(list = ls(pattern = "_perf_filt"))
 ```
 
-The last task is to merge the years together to have a single, PERFect filtered, phyloseq object.
-
-```{r, code_folding=TRUE}
-ssu_ps_perfect_Y0@phy_tree <- NULL
-ssu_ps_perfect_Y1@phy_tree <- NULL
-ssu_ps_perfect_Y4@phy_tree <- NULL
-ssu_ps_perfect <- merge_phyloseq(ssu_ps_perfect_Y0, 
-                                 ssu_ps_perfect_Y1, 
-                                 ssu_ps_perfect_Y4)
-its_ps_perfect_Y0@phy_tree <- NULL
-its_ps_perfect_Y1@phy_tree <- NULL
-its_ps_perfect_Y4@phy_tree <- NULL
-its_ps_perfect <- merge_phyloseq(its_ps_perfect_Y0, 
-                                 its_ps_perfect_Y1, 
-                                 its_ps_perfect_Y4)
+```{r, eval=TRUE, echo=FALSE}
+print("16S rRNA phyloseq object", quote = FALSE)
+ssu_ps_perfect
+print("ITS phyloseq object", quote = FALSE)
+its_ps_perfect
 ```
 
 ## Summary
-
-Here are the filtered phyloseq objects separated by year followed by the merged object. 
-
-<details markdown="1">
-<summary><strong>Click here</strong> for the <strong>16S rRNA</strong> phyloseq object </summary>
-```{r, echo=FALSE, eval=TRUE, results='hold'}
-cat("---------Year 0--------------------\n")
-ssu_ps_perfect_Y0
-cat("---------Year 1--------------------\n")
-ssu_ps_perfect_Y1
-cat("---------Year 4--------------------\n")
-ssu_ps_perfect_Y4
-cat("---------MERGED--------------------\n")
-ssu_ps_perfect
-```
-</details>
-
-<details markdown="1">
-<summary><strong>Click here</strong> for the <strong>ITS</strong> phyloseq object </summary>
-```{r, echo=FALSE, eval=TRUE, results='hold'}
-cat("---------Year 0--------------------\n")
-its_ps_perfect_Y0
-cat("---------Year 1--------------------\n")
-its_ps_perfect_Y1
-cat("---------Year 4--------------------\n")
-its_ps_perfect_Y4
-cat("---------MERGED--------------------\n")
-its_ps_perfect
-```
-</details>
 
 How many reads and ASVs were removed following PERFect filtering?
 
@@ -938,10 +810,7 @@ How many reads and ASVs were removed following PERFect filtering?
 ## This code is gross. I spent hours trying to find a better
 ## solution but failed :(
 rm(list = ls(pattern = "tmp_"))
-tmp_samples <- c("ssu_ps_work", "ssu_ps_perfect",
-                 "ssu_ps_work_Y0", "ssu_ps_perfect_Y0",
-                 "ssu_ps_work_Y1", "ssu_ps_perfect_Y1",
-                 "ssu_ps_work_Y4", "ssu_ps_perfect_Y4")
+tmp_samples <- c("ssu_ps_work", "ssu_ps_perfect")
 tmp_objects <- c(
                 "Total number of reads", 
                 "Min. number of reads", 
@@ -954,22 +823,70 @@ tmp_objects <- c(
                 "Average number of ASVs", 
                 "Median number of ASVs")
 
-compare_filter_to_original(compare_filter_to_original, "perfect", "ssu")
+tmp_total_reads <- c()
+for (i in tmp_samples) {
+   tmp_get <- sum(readcount(get(i)))
+   tmp_total_reads <- c(append(tmp_total_reads, tmp_get))
+}
+tmp_min_read <- c()
+for (i in tmp_samples) {
+   tmp_get <- min(readcount(get(i)))
+   tmp_min_read <- c(append(tmp_min_read, tmp_get))
+}
+tmp_max_read <- c()
+for (i in tmp_samples) {
+   tmp_get <- max(readcount(get(i)))
+   tmp_max_read <- c(append(tmp_max_read, tmp_get))
+}
+tmp_mean_reads <- c()
+for (i in tmp_samples) {
+   tmp_get <- round(mean(readcount(get(i))), digits = 0)
+   tmp_mean_reads <- c(append(tmp_mean_reads, tmp_get))
+}
+tmp_median_reads <- c()
+for (i in tmp_samples) {
+   tmp_get <- median(readcount(get(i)))
+   tmp_median_reads <- c(append(tmp_median_reads, tmp_get))
+}
+tmp_total_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- ntaxa(get(i))
+   tmp_total_asvs <- c(append(tmp_total_asvs, tmp_get))
+}
+tmp_min_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- min(richness(get(i), index = "observed"))
+   tmp_min_asvs <- c(append(tmp_min_asvs, tmp_get))
+}
+tmp_max_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- max(richness(get(i), index = "observed"))
+   tmp_max_asvs <- c(append(tmp_max_asvs, tmp_get))
+}
+tmp_mean_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- round(mean(richness(get(i), index = "observed")$observed), digits = 0)
+   tmp_mean_asvs <- c(append(tmp_mean_asvs, tmp_get))
+}
+tmp_med_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- median(richness(get(i), index = "observed")$observed)
+   tmp_med_asvs <- c(append(tmp_med_asvs, tmp_get))
+}
 
-ssu_sum_perfect <- dplyr::bind_cols(tmp_objects, ssu_sum_perfect) %>%
-  dplyr::rename("Metric" = 1, 
-                "Full data" = 2, "PERFect filter" = 3, 
-                "Full data (Y0)" = 4, "PERFect filter (Y0)" = 5, 
-                "Full data (Y1)" = 6, "PERFect filter (Y1)" = 7,
-                "Full data (Y4)" = 8, "PERFect filter (Y4)" = 9
-                )
+tmp_bind <- data.frame(do.call("rbind", list(
+  tmp_total_reads, tmp_min_read, tmp_max_read, tmp_mean_reads, tmp_median_reads, 
+  tmp_total_asvs, tmp_min_asvs, tmp_max_asvs, tmp_mean_asvs, tmp_med_asvs)))
+
+ssu_sum_perfect <- dplyr::bind_cols(tmp_objects, tmp_bind) %>%
+  dplyr::rename("Metric" = 1, "Full data" = 2, "PERFect filter" = 3)
 rm(list = ls(pattern = "tmp_"))
 ```
 
 <small>`r caption_tab_ssu("ssu_perfect_filt_summary")`</small>
 
 ```{r eval=TRUE, echo=FALSE, layout="l-body"}
-ssu_perfect_filt_summary <- ssu_sum_perfect[,1:3]
+ssu_perfect_filt_summary <- ssu_sum_perfect
 download_this_fun(ssu_perfect_filt_summary)
 ```
 
@@ -978,38 +895,122 @@ filter_results_summ(seq_table)
 rm(seq_table)
 ```
 
-We can look at how filtering affected total reads and ASVs for each sample.
+**ITS**
 
 ```{r, echo=FALSE}
-for (i in objects(pattern = "ssu_.*_perfect_Y[0-9]$")) {
-  tmp_get <- get(i)
-  tmp_read_count <- data.frame(sample_sums(tmp_get)) %>%
-    tibble::rownames_to_column("SamName")
-  tmp_asv_count <- estimate_richness(tmp_get, split = TRUE, measures = "Observed") %>%
-    tibble::rownames_to_column("SamName")
-  tmp_samp_data <- data.frame(sample_data(tmp_get))
-  tmp_samp_data <- tmp_samp_data[order(tmp_samp_data$LOC, tmp_samp_data$YEAR),]
+rm(list = ls(pattern = "tmp_"))
+tmp_samples <- c("its_ps_work", "its_ps_perfect")
+tmp_objects <- c(
+                "Total number of reads", 
+                "Min. number of reads", 
+                "Max. number of reads", 
+                "Average number of reads", 
+                "Median number of reads", 
+                "Total ASVs", 
+                "Min. number of ASVs", 
+                "Max. number of ASVs", 
+                "Average number of ASVs", 
+                "Median number of ASVs")
 
-  tmp_join <- dplyr::left_join(tmp_samp_data, tmp_read_count, by = "SamName") %>%
-    dplyr::left_join(., tmp_asv_count, by = "SamName") %>%
-    dplyr::rename("Sample_ID" = 1) %>%
-    dplyr::rename("total_reads" = 8) %>%
-    dplyr::rename("total_asvs" = 9)
-  tmp_name <- paste(i, "_perfect_samples", sep = "")
-  assign(tmp_name, tmp_join)
-  rm(list = ls(pattern = "tmp_"))
+tmp_total_reads <- c()
+for (i in tmp_samples) {
+   tmp_get <- sum(readcount(get(i)))
+   tmp_total_reads <- c(append(tmp_total_reads, tmp_get))
 }
-objects(pattern = "_perfect_samples")
+tmp_min_read <- c()
+for (i in tmp_samples) {
+   tmp_get <- min(readcount(get(i)))
+   tmp_min_read <- c(append(tmp_min_read, tmp_get))
+}
+tmp_max_read <- c()
+for (i in tmp_samples) {
+   tmp_get <- max(readcount(get(i)))
+   tmp_max_read <- c(append(tmp_max_read, tmp_get))
+}
+tmp_mean_reads <- c()
+for (i in tmp_samples) {
+   tmp_get <- round(mean(readcount(get(i))), digits = 0)
+   tmp_mean_reads <- c(append(tmp_mean_reads, tmp_get))
+}
+tmp_median_reads <- c()
+for (i in tmp_samples) {
+   tmp_get <- median(readcount(get(i)))
+   tmp_median_reads <- c(append(tmp_median_reads, tmp_get))
+}
+tmp_total_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- ntaxa(get(i))
+   tmp_total_asvs <- c(append(tmp_total_asvs, tmp_get))
+}
+tmp_min_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- min(richness(get(i), index = "observed"))
+   tmp_min_asvs <- c(append(tmp_min_asvs, tmp_get))
+}
+tmp_max_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- max(richness(get(i), index = "observed"))
+   tmp_max_asvs <- c(append(tmp_max_asvs, tmp_get))
+}
+tmp_mean_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- round(mean(richness(get(i), index = "observed")$observed), digits = 0)
+   tmp_mean_asvs <- c(append(tmp_mean_asvs, tmp_get))
+}
+tmp_med_asvs <- c()
+for (i in tmp_samples) {
+   tmp_get <- median(richness(get(i), index = "observed")$observed)
+   tmp_med_asvs <- c(append(tmp_med_asvs, tmp_get))
+}
 
-ssu_perfect_samp_summary <- rbind(ssu_ps_perfect_Y0_perfect_samples, 
-                             ssu_ps_perfect_Y1_perfect_samples, 
-                             ssu_ps_perfect_Y4_perfect_samples)
+tmp_bind <- data.frame(do.call("rbind", list(
+  tmp_total_reads, tmp_min_read, tmp_max_read, tmp_mean_reads, tmp_median_reads, 
+  tmp_total_asvs, tmp_min_asvs, tmp_max_asvs, tmp_mean_asvs, tmp_med_asvs)))
+
+its_sum_perfect <- dplyr::bind_cols(tmp_objects, tmp_bind) %>%
+  dplyr::rename("Metric" = 1, "Full data" = 2, "PERFect filter" = 3)
+rm(list = ls(pattern = "tmp_"))
 ```
 
-<small>`r caption_tab_ssu("ssu_perfect_samp_summary")`</small>
+<small>`r caption_tab_its("its_perfect_filt_summary")`</small>
+
+```{r eval=TRUE, echo=FALSE, layout="l-body"}
+its_perfect_filt_summary <- its_sum_perfect
+download_this_fun(its_perfect_filt_summary)
+```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+filter_results_summ(seq_table)
+rm(seq_table)
+```
+
+
+Here is a summary table of total reads and ASVs on a per sample basis after filtering. 
+
+**16S rRNA**
+
+```{r, echo=FALSE}
+tmp_read_count <- data.frame(sample_sums(ssu_ps_perfect)) %>%
+  tibble::rownames_to_column("SamName")
+tmp_asv_count <- estimate_richness(ssu_ps_perfect, split = TRUE, measures = "Observed") %>%
+  tibble::rownames_to_column("SamName")
+tmp_samp_data <- data.frame(sample_data(ssu_ps_perfect))
+tmp_samp_data <- tmp_samp_data[order(tmp_samp_data$LOC, tmp_samp_data$YEAR),]
+
+tmp_join <- dplyr::left_join(tmp_samp_data, tmp_read_count, by = "SamName") %>%
+  dplyr::left_join(., tmp_asv_count, by = "SamName") %>%
+  dplyr::rename("Sample_ID" = 1) %>%
+  dplyr::rename("total_reads" = 8) %>%
+  dplyr::rename("total_asvs" = 9)
+ssu_perfect_samp_summary <- tmp_join
+rm(list = ls(pattern = "tmp_"))
+```
+
+<small>`r caption_tab_ssu("ssu_perfect_filt_samples")`</small>
 
 ```{r eval=TRUE, echo=FALSE, layout="l-page"}
-download_this_fun(ssu_perfect_samp_summary)
+ssu_perfect_filt_samples <- ssu_perfect_samp_summary
+download_this_fun(ssu_perfect_filt_samples)
 ```
 
 ```{r, echo=FALSE, layout="l-page", eval=TRUE}
@@ -1020,77 +1021,27 @@ rm(seq_table)
 **ITS**
 
 ```{r, echo=FALSE}
-rm(list = ls(pattern = "tmp_"))
-tmp_samples <- c("its_ps_work", "its_ps_perfect",
-                 "its_ps_work_Y0", "its_ps_perfect_Y0",
-                 "its_ps_work_Y1", "its_ps_perfect_Y1",
-                 "its_ps_work_Y4", "its_ps_perfect_Y4")
-tmp_objects <- c(
-                "Total number of reads", 
-                "Min. number of reads", 
-                "Max. number of reads", 
-                "Average number of reads", 
-                "Median number of reads", 
-                "Total ASVs", 
-                "Min. number of ASVs", 
-                "Max. number of ASVs", 
-                "Average number of ASVs", 
-                "Median number of ASVs")
+tmp_read_count <- data.frame(sample_sums(its_ps_perfect)) %>%
+  tibble::rownames_to_column("SamName")
+tmp_asv_count <- estimate_richness(its_ps_perfect, split = TRUE, measures = "Observed") %>%
+  tibble::rownames_to_column("SamName")
+tmp_samp_data <- data.frame(sample_data(its_ps_perfect))
+tmp_samp_data <- tmp_samp_data[order(tmp_samp_data$LOC, tmp_samp_data$YEAR),]
 
-compare_filter_to_original(compare_filter_to_original, "perfect", "its")
-
-its_sum_perfect <- dplyr::bind_cols(tmp_objects, its_sum_perfect) %>%
-  dplyr::rename("Metric" = 1, 
-                "Full data" = 2, "PERFect filter" = 3, 
-                "Full data (Y0)" = 4, "PERFect filter (Y0)" = 5, 
-                "Full data (Y1)" = 6, "PERFect filter (Y1)" = 7,
-                "Full data (Y4)" = 8, "PERFect filter (Y4)" = 9
-                )
-its_sum_perfect
+tmp_join <- dplyr::left_join(tmp_samp_data, tmp_read_count, by = "SamName") %>%
+  dplyr::left_join(., tmp_asv_count, by = "SamName") %>%
+  dplyr::rename("Sample_ID" = 1) %>%
+  dplyr::rename("total_reads" = 8) %>%
+  dplyr::rename("total_asvs" = 9)
+its_perfect_samp_summary <- tmp_join
 rm(list = ls(pattern = "tmp_"))
 ```
 
-<small>`r caption_tab_its("its_perfect_filt_summary")`</small>
-
-```{r eval=TRUE, echo=FALSE, layout="l-body"}
-its_perfect_filt_summary <- its_sum_perfect[,1:3]
-download_this_fun(its_perfect_filt_summary)
-```
-
-```{r, echo=FALSE, layout="l-body", eval=TRUE}
-filter_results_summ(seq_table)
-rm(seq_table)
-```
-
-```{r, echo=FALSE}
-for (i in objects(pattern = "its_.*_perfect_Y[0-9]$")) {
-  tmp_get <- get(i)
-  tmp_read_count <- data.frame(sample_sums(tmp_get)) %>%
-    tibble::rownames_to_column("SamName")
-  tmp_asv_count <- estimate_richness(tmp_get, split = TRUE, measures = "Observed") %>%
-    tibble::rownames_to_column("SamName")
-  tmp_samp_data <- data.frame(sample_data(tmp_get))
-  tmp_samp_data <- tmp_samp_data[order(tmp_samp_data$LOC, tmp_samp_data$YEAR),]
-
-  tmp_join <- dplyr::left_join(tmp_samp_data, tmp_read_count, by = "SamName") %>%
-    dplyr::left_join(., tmp_asv_count, by = "SamName") %>%
-    dplyr::rename("Sample_ID" = 1) %>%
-    dplyr::rename("total_reads" = 8) %>%
-    dplyr::rename("total_asvs" = 9)
-  tmp_name <- paste(i, "_perfect_samples", sep = "")
-  assign(tmp_name, tmp_join)
-  rm(list = ls(pattern = "tmp_"))
-}
-
-its_perfect_samp_summary <- rbind(its_ps_perfect_Y0_perfect_samples, 
-                             its_ps_perfect_Y1_perfect_samples, 
-                             its_ps_perfect_Y4_perfect_samples)
-```
-
-<small>`r caption_tab_its("its_perfect_samp_summary")`</small>
+<small>`r caption_tab_its("its_perfect_filt_samples")`</small>
 
 ```{r eval=TRUE, echo=FALSE, layout="l-page"}
-download_this_fun(its_perfect_samp_summary)
+its_perfect_filt_samples <- its_perfect_samp_summary
+download_this_fun(its_perfect_filt_samples)
 ```
 
 ```{r, echo=FALSE, layout="l-page", eval=TRUE}
@@ -1102,20 +1053,12 @@ And finally, save the PERFect filtered phyloseq objects.
 
 ```{r, code_folding=TRUE}
 saveRDS(ssu_ps_perfect, "files/filtering/perfect/rdata/ssu_ps_perfect.rds")
-saveRDS(ssu_ps_perfect_Y0, "files/filtering/perfect/rdata/ssu_ps_perfect_Y0.rds")
-saveRDS(ssu_ps_perfect_Y1, "files/filtering/perfect/rdata/ssu_ps_perfect_Y1.rds")
-saveRDS(ssu_ps_perfect_Y4, "files/filtering/perfect/rdata/ssu_ps_perfect_Y4.rds")
 saveRDS(its_ps_perfect, "files/filtering/perfect/rdata/its_ps_perfect.rds")
-saveRDS(its_ps_perfect_Y0, "files/filtering/perfect/rdata/its_ps_perfect_Y0.rds")
-saveRDS(its_ps_perfect_Y1, "files/filtering/perfect/rdata/its_ps_perfect_Y1.rds")
-saveRDS(its_ps_perfect_Y4, "files/filtering/perfect/rdata/its_ps_perfect_Y4.rds")
 ```
 
-```{r, echo=FALSE, eval=FALSE}
-objects()
+```{r, echo=FALSE}
 save.image("page_build/filtering_wf.rdata")
 ```
-
 
 # C. PIME Filtering
 
@@ -2230,122 +2173,32 @@ save.image("page_build/pime_its_asv_wf.rdata")
 objects()
 ```
 
-```{r, echo=FALSE}
-## SPLIT PIME BY YEAR
-objects()
-subset_ds <- c("ssu_ps_pime", "its_ps_pime")
-for (i in subset_ds) {
-  tmp_get <- get(i)
-  tmp_samples <- row.names(data.frame(otu_table(tmp_get)))
-  tmp_y0_samps <- stringr::str_subset(tmp_samples, "_Y0_")
-  tmp_y1_samps <- stringr::str_subset(tmp_samples, "_Y1_")
-  tmp_y4_samps <- stringr::str_subset(tmp_samples, "_Y4_")
-  
-  tmp_y0 <- prune_samples(tmp_y0_samps, tmp_get) 
-  tmp_y1 <- prune_samples(tmp_y1_samps, tmp_get)
-  tmp_y4 <- prune_samples(tmp_y4_samps, tmp_get)
-  
-  tmp_y0 <- prune_taxa(taxa_sums(tmp_y0) > 0, tmp_y0)
-  tmp_y1 <- prune_taxa(taxa_sums(tmp_y1) > 0, tmp_y1)
-  tmp_y4 <- prune_taxa(taxa_sums(tmp_y4) > 0, tmp_y4)
-  
-  tmp_ps_name_y0 <- purrr::map_chr(i, ~ paste0(., "_Y0"))
-  assign(tmp_ps_name_y0, tmp_y0)
-  
-  tmp_ps_name_y1 <- purrr::map_chr(i, ~ paste0(., "_Y1"))
-  assign(tmp_ps_name_y1, tmp_y1)
-  
-  tmp_ps_name_y4 <- purrr::map_chr(i, ~ paste0(., "_Y4"))
-  assign(tmp_ps_name_y4, tmp_y4)
-  
-  tmp_path <- file.path("files/filtering/pime/rdata/")
-  saveRDS(tmp_y0, paste(tmp_path, tmp_ps_name_y0, ".rds", sep = ""))
-  saveRDS(tmp_y1, paste(tmp_path, tmp_ps_name_y1, ".rds", sep = ""))
-  saveRDS(tmp_y4, paste(tmp_path, tmp_ps_name_y4, ".rds", sep = ""))
-  rm(list = ls(pattern = "tmp_"))
-}
-```
+And that is all for filtering. The last thing we will do is add the new variable we created for the PIME filtered data sets to the other phyloseq objects. We will use  these objects for all downstream  analyses.
 
-
-And that is all for filtering. There are two final tasks. The first is to add the new variable we created for the PIME filtered data sets to the other phyloseq objects. The second is to remove any trees from the 16S rRNA objects and add new trees back in. 
-
-We will use these objects for all downstream  analyses.
-
-```{r, echo=FALSE}
+```{r , code_folding=TRUE}
 remove(list = ls())
-## FULL DATASETS
 ssu_ps_work <- readRDS("files/data-prep/rdata/ssu_ps_work.rds")
-ssu_ps_work_Y0 <- readRDS("files/filtering/work/rdata/ssu_ps_work_Y0.rds")
-ssu_ps_work_Y1 <- readRDS("files/filtering/work/rdata/ssu_ps_work_Y1.rds")
-ssu_ps_work_Y4 <- readRDS("files/filtering/work/rdata/ssu_ps_work_Y4.rds")
-its_ps_work <- readRDS("files/data-prep/rdata/its_ps_work.rds")
-its_ps_work_Y0 <- readRDS("files/filtering/work/rdata/its_ps_work_Y0.rds")
-its_ps_work_Y1 <- readRDS("files/filtering/work/rdata/its_ps_work_Y1.rds")
-its_ps_work_Y4 <- readRDS("files/filtering/work/rdata/its_ps_work_Y4.rds")
-
-## Arbirtary filtered
 ssu_ps_filt <- readRDS("files/filtering/arbitrary/rdata/ssu_ps_filt.rds")
-ssu_ps_filt_Y0 <- readRDS("files/filtering/arbitrary/rdata/ssu_ps_filt_Y0.rds")
-ssu_ps_filt_Y1 <- readRDS("files/filtering/arbitrary/rdata/ssu_ps_filt_Y1.rds")
-ssu_ps_filt_Y4 <- readRDS("files/filtering/arbitrary/rdata/ssu_ps_filt_Y4.rds")
-its_ps_filt <- readRDS("files/filtering/arbitrary/rdata/its_ps_filt.rds")
-its_ps_filt_Y0 <- readRDS("files/filtering/arbitrary/rdata/its_ps_filt_Y0.rds")
-its_ps_filt_Y1 <- readRDS("files/filtering/arbitrary/rdata/its_ps_filt_Y1.rds")
-its_ps_filt_Y4 <- readRDS("files/filtering/arbitrary/rdata/its_ps_filt_Y4.rds")
-
-## PERFect filtered
 ssu_ps_perfect <- readRDS("files/filtering/perfect/rdata/ssu_ps_perfect.rds")
-ssu_ps_perfect_Y0 <- readRDS("files/filtering/perfect/rdata/ssu_ps_perfect_Y0.rds")
-ssu_ps_perfect_Y1 <- readRDS("files/filtering/perfect/rdata/ssu_ps_perfect_Y1.rds")
-ssu_ps_perfect_Y4 <- readRDS("files/filtering/perfect/rdata/ssu_ps_perfect_Y4.rds")
+its_ps_work <- readRDS("files/data-prep/rdata/its_ps_work.rds")
+its_ps_filt <- readRDS("files/filtering/arbitrary/rdata/its_ps_filt.rds")
 its_ps_perfect <- readRDS("files/filtering/perfect/rdata/its_ps_perfect.rds")
-its_ps_perfect_Y0 <- readRDS("files/filtering/perfect/rdata/its_ps_perfect_Y0.rds")
-its_ps_perfect_Y1 <- readRDS("files/filtering/perfect/rdata/its_ps_perfect_Y1.rds")
-its_ps_perfect_Y4 <- readRDS("files/filtering/perfect/rdata/its_ps_perfect_Y4.rds")
 
-## PIME filtered
-ssu_ps_pime <- readRDS("files/filtering/pime/rdata/ssu_ps_pime.rds")
-ssu_ps_pime_Y0 <- readRDS("files/filtering/pime/rdata/ssu_ps_pime_Y0.rds")
-ssu_ps_pime_Y1 <- readRDS("files/filtering/pime/rdata/ssu_ps_pime_Y1.rds")
-ssu_ps_pime_Y4 <- readRDS("files/filtering/pime/rdata/ssu_ps_pime_Y4.rds")
-its_ps_pime <- readRDS("files/filtering/pime/rdata/its_ps_pime.rds")
-its_ps_pime_Y0 <- readRDS("files/filtering/pime/rdata/its_ps_pime_Y0.rds")
-its_ps_pime_Y1 <- readRDS("files/filtering/pime/rdata/its_ps_pime_Y1.rds")
-its_ps_pime_Y4 <- readRDS("files/filtering/pime/rdata/its_ps_pime_Y4.rds")
-```
+ps_list <-  c("ssu_ps_work", "ssu_ps_filt", "ssu_ps_perfect", 
+              "its_ps_work", "its_ps_filt", "its_ps_perfect")
 
-```{r, code_folding=TRUE}
-ps_list <- objects(pattern = (".*_ps.*"))
-for (i in ps_list) {
+for (i in ps_list){
+  tmp_path <- "files/filtering/working_ps/"
   tmp_get <- get(i)
-  tmp_get@phy_tree <- NULL
-
-  tmp_type <- stringr::str_replace(i, ".*ps_", "") %>% stringr::str_replace(., "_.*", "")
-      if (tmp_type != "pime") {
-       tmp_samp_data <- sample_data(tmp_get)	
-       tmp_samp_data$YR_TREAT <- paste(tmp_samp_data$YEAR, tmp_samp_data$TREAT, sep = "_")
-       tmp_get <- merge_phyloseq(tmp_get, tmp_samp_data)	
-     } else if (tmp_type == "pime") {
-       tmp_get <- merge_phyloseq(tmp_get, sample_data)	
-     } 
-  
-  tmp_marker <- stringr::str_replace(i, "_.*", "") 
-      if (tmp_marker == "ssu") {
-        tmp_tree <- rtree(ntaxa(tmp_get), rooted = TRUE,
-                      tip.label = taxa_names(tmp_get))
-        tmp_get <- merge_phyloseq(tmp_get,
-                          sample_data,
-                          tmp_tree)
-     } else if (tmp_marker == "its") {
-       tmp_get <- merge_phyloseq(tmp_get, sample_data)	
-     } 
-  assign(i, tmp_get)
-  tmp_path <- "files/filtering/final_ps/"
-  saveRDS(tmp_get, paste(tmp_path, i, ".rds", sep = ""))
+  tmp_samp_data <- sample_data(tmp_get)	
+  tmp_samp_data$YR_TREAT <- paste(tmp_samp_data$YEAR, tmp_samp_data$TREAT, sep="_")
+  tmp_ps <- merge_phyloseq(tmp_get, tmp_samp_data)	
+  assign(i, tmp_ps)
+  saveRDS(tmp_ps, paste(tmp_path, i, ".rds", sep = ""))
   rm(list = ls(pattern = "tmp_"))
 }
-objects()
 ```
+
 
 ```{r echo=FALSE, eval=TRUE}
 remove(list = ls())

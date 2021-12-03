@@ -1,0 +1,4897 @@
+---
+title: "7. Differentially Abundant ASVs & Taxa"
+description: |
+  Reproducible workflow to assess differentially abundant ASVs and taxa between temperature treatments using Indicator Species Analysis and linear discriminant analysis (LDA) effect size (LEfSe).
+author:
+#  - name: Jarrod J Scott
+#    url: https://example.com/norajones
+#    affiliation: Spacely Sprockets
+#    affiliation_nrl: https://example.com/spacelysprokets
+bibliography: assets/cite.bib
+output:
+    distill::distill_article:
+      css: assets/css/styles.css
+      toc: true
+      toc_depth: 2
+---
+
+<details markdown="1">
+<summary><strong>Click here</strong> for setup information.</summary>
+
+```{r setup, message=FALSE, results = 'hide'}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+set.seed(119)
+#library(conflicted)
+#pacman::p_depends(microbiomeMarker, local = TRUE)  
+#pacman::p_depends_reverse(microbiomeMarker, local = TRUE)  
+library(phyloseq); packageVersion("phyloseq")
+library(Biostrings); packageVersion("Biostrings")
+pacman::p_load(tidyverse, metacoder, patchwork, 
+               agricolae, labdsv, naniar, codefolder, ape,
+               pairwiseAdonis, microbiome, seqRFLP, DT, microbiomeMarker,
+               microbiomeMarker, reactable, downloadthis, captioner,
+               install = FALSE, update = FALSE)
+
+options(scipen=999)
+knitr::opts_current$get(c(
+  "cache",
+  "cache.path",
+  "cache.rebuild",
+  "dependson",
+  "autodep"
+))
+```
+
+```{r, echo=FALSE, eval=TRUE}
+xaringanExtra::use_panelset()
+```
+
+```{r, include=FALSE, eval=TRUE}
+## Load to build page only #2
+remove(list = ls())
+load("page_build/tmp_1.rdata")
+
+#load("page_build/da_wf.rdata")
+#load("page_build/mmarker_wf.rdata")
+objects()
+```
+
+```{r, message=FALSE, results = 'hide', eval=TRUE}
+### COmmon formatting scripts
+### NOTE: captioner.R must be read BEFORE captions_XYZ.R
+source("assets/captioner/captioner.R")
+source("assets/captioner/captions/captions_da.R")
+source("assets/reactable/download_this_fun.R")
+source("assets/reactable/styles.R")
+source("assets/reactable/table_functions/da.R")
+```
+
+</details>
+
+<br/>
+
+
+# Synopsis
+
+This workflow contains ASV differential abundance analysis for the high temperature data sets. In order to run the workflow, you ...
+
+In this workflow, we use the `labdsv` package [@roberts2016package] to run Dufrene-Legendre Indicator Species Analysis and the  [microbiomeMarker package](https://github.com/yiluheihei/microbiomeMarker) [@cao2020package] to run linear discriminant analysis (LDA) effect size (LEfSe) [@segata2011metagenomic].
+
+# 16s rRNA
+
+```{r, include=FALSE, eval=FALSE}
+## Initial Load for  ANALYSIS #1
+remove(list = ls())
+ssu_ps_work_Y0 <- readRDS("files/alpha/rdata/ssu_ps_work_Y0.rds")
+ssu_ps_work_Y1 <- readRDS("files/alpha/rdata/ssu_ps_work_Y1.rds")
+ssu_ps_work_Y4 <- readRDS("files/alpha/rdata/ssu_ps_work_Y4.rds")
+
+ssu_ps_filt_Y0 <- readRDS("files/alpha/rdata/ssu_ps_filt_Y0.rds")
+ssu_ps_filt_Y1 <- readRDS("files/alpha/rdata/ssu_ps_filt_Y1.rds")
+ssu_ps_filt_Y4 <- readRDS("files/alpha/rdata/ssu_ps_filt_Y4.rds")
+
+ssu_ps_perfect_Y0 <- readRDS("files/alpha/rdata/ssu_ps_perfect_Y0.rds")
+ssu_ps_perfect_Y1 <- readRDS("files/alpha/rdata/ssu_ps_perfect_Y1.rds")
+ssu_ps_perfect_Y4 <- readRDS("files/alpha/rdata/ssu_ps_perfect_Y4.rds")
+
+ssu_ps_pime_Y0 <- readRDS("files/alpha/rdata/ssu_ps_pime_Y0.rds")
+ssu_ps_pime_Y1 <- readRDS("files/alpha/rdata/ssu_ps_pime_Y1.rds")
+ssu_ps_pime_Y4 <- readRDS("files/alpha/rdata/ssu_ps_pime_Y4.rds")
+objects()
+```
+
+
+```{r, echo=FALSE}
+samp_ps <- c("ssu_ps_work_Y0", "ssu_ps_work_Y1", "ssu_ps_work_Y4",
+             "ssu_ps_filt_Y0", "ssu_ps_filt_Y1", "ssu_ps_filt_Y4", 
+             "ssu_ps_perfect_Y0", "ssu_ps_perfect_Y1", "ssu_ps_perfect_Y4", 
+             "ssu_ps_pime_Y0", "ssu_ps_pime_Y1", "ssu_ps_pime_Y4")	
+```
+
+```{r, echo=FALSE, message = FALSE}
+for (i in samp_ps) {
+  tmp_get <- get(i)
+  tmp_path <- file.path("files/alpha/rdata/")
+  tmp_read <- readRDS(paste(tmp_path, i, ".rds", sep = ""))
+  tmp_sam_data <- sample_data(tmp_read)
+  tmp_tax_data <- data.frame(tax_table(tmp_get))
+  #tmp_tax_data[,c(1:6)]
+  tmp_tax_data$ASV_ID <- NULL # Some have, some do not
+  tmp_tax_data[] <- data.frame(lapply(tmp_tax_data, gsub, 
+                                      pattern = "^[k | p | c | o | f]_.*", 
+                                      replacement = NA, fixed = FALSE))
+  tmp_tax_data <- as.matrix(tmp_tax_data)
+  tmp_ps <- phyloseq(otu_table(tmp_get),
+                     phy_tree(tmp_get),
+                     tax_table(tmp_tax_data),
+                     tmp_sam_data)
+  assign(i, tmp_ps)
+  rm(list = ls(pattern = "tmp_"))
+}
+objects()
+```
+
+## Indicator Analysis
+
+Indicator Analysis calculates the indicator value (fidelity and relative abundance) of species in clusters or types.
+
+1. Choose a data set(s) & set the p-value cutoff.
+
+```{r, code_folding=TRUE}
+indval_pval <- 0.05
+```
+
+2. Format Data Frame
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(i)
+     tmp_df <- data.frame(otu_table(tmp_get))
+     tmp_df <- tmp_df[, which(colSums(tmp_df) != 0)]
+     tmp_row_names <- row.names(tmp_df)
+     tmp_row_names <- tmp_row_names %>%
+              stringr::str_replace("[A-Z]{2}_S[0-9]{2}_T[0-9]{3}_", "") %>%
+              stringr::str_replace("_[A-Z]{3}_", "_")
+     tmp_df <- tmp_df %>% tibble::add_column(tmp_row_names, .before = 1)
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_seq_tab"))
+     assign(tmp_name, tmp_df)
+     rm(list = ls(pattern = "tmp_"))
+}
+```
+
+3. Run Indicator Analysis
+
+```{r, code_folding=TRUE}
+set.seed(1191)
+for (i in samp_ps) {
+     tmp_year <- stringr::str_extract(i, "Y[0-9]") 
+     
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_seq_tab")))
+     tmp_iva <- indval(tmp_get[,-1], tmp_get[,1])
+     tmp_gr <- tmp_iva$maxcls[tmp_iva$pval <= indval_pval]
+     tmp_iv <- tmp_iva$indcls[tmp_iva$pval <= indval_pval]
+     tmp_pv <- tmp_iva$pval[tmp_iva$pval <= indval_pval]
+     tmp_fr <- apply(tmp_get[,-1] > 0, 2, sum)[tmp_iva$pval <= indval_pval]
+     tmp_sum <- data.frame(group = tmp_gr, indval = tmp_iv,
+                                  pval = tmp_pv, freq = tmp_fr)
+     tmp_sum <- tmp_sum[order(tmp_sum$group, -tmp_sum$indval),]
+
+     tmp_tax_df <- data.frame(tax_table(get(i)))
+     tmp_tax_df$ASV_ID <- NULL
+     tmp_sum_tax <- merge(tmp_sum, tmp_tax_df, by = "row.names", all = TRUE)
+     tmp_sum_tax <- tmp_sum_tax[!(is.na(tmp_sum_tax$group)),]
+     class(tmp_sum_tax$group) <- "character"
+     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^1$", paste(tmp_year, "CTL", sep = "_"))
+     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^2$", paste(tmp_year, "N", sep = "_"))
+     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^3$", paste(tmp_year, "NP", sep = "_"))
+     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^4$", paste(tmp_year, "P", sep = "_"))
+
+#     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^5$", "Y1_CTL")
+#     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^6$", "Y1_N")
+#     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^7$", "Y1_NP")
+#     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^8$", "Y1_P")
+           
+#     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^9$", "Y4_CTL")
+#     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^10$", "Y4_N")
+#     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^11$", "Y4_NP")
+#     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^12$", "Y4_P")
+     
+     tmp_sum_tax <- tmp_sum_tax %>% dplyr::rename("ASV_ID" = "Row.names")
+     tmp_sum_tax <- tmp_sum_tax[order(as.numeric(gsub("[A-Z]{3}", "", tmp_sum_tax$ASV_ID))),]
+     tmp_sum_tax$ASV_ID <-  as.character(tmp_sum_tax$ASV_ID)
+     tmp_sum.prob.corrected <- p.adjust(tmp_sum$pval, "bonferroni")
+     tmp_res_name <- purrr::map_chr(i, ~ paste0(., "_indval_summary"))
+     assign(tmp_res_name, tmp_sum_tax)
+     rm(list = ls(pattern = "tmp_"))
+}
+
+for (i in objects(pattern = "_indval_summary")){
+  cat(i, nrow(get(i)), "\n")
+}
+```
+
+Now we can save a few files and display the data.
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_year <- stringr::str_extract(i, "Y[0-9]") 
+
+     tmp_ctl <- paste(tmp_year, "CTL", sep = "_")
+     tmp_n <- paste(tmp_year, "N", sep = "_")
+     tmp_p <- paste(tmp_year, "P", sep = "_")
+     tmp_np <- paste(tmp_year, "NP", sep = "_")
+     
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_seq_tab")))
+     tmp_get[,1] <- NULL
+     tmp_df <- as.data.frame(t(tmp_get))
+     tmp_col_names <- colnames(tmp_df)
+     tmp_col_names <- tmp_col_names %>%
+              stringr::str_replace("[A-Z]{2}_S[0-9]{2}_T[0-9]{3}_", "") %>%
+              stringr::str_replace("_[A-Z]{3}_", "_")
+     colnames(tmp_df) <- tmp_col_names
+     #tmp_df$freq_all <- apply(tmp_df > 0, 1, sum)
+     tmp_df$freq_CTL <- apply(tmp_df[ , (names(tmp_df) %in% tmp_ctl)] > 0, 1, sum)
+     tmp_df$freq_N <- apply(tmp_df[ , (names(tmp_df) %in% tmp_n)] > 0, 1, sum)
+     tmp_df$freq_P <- apply(tmp_df[ , (names(tmp_df) %in% tmp_p)] > 0, 1, sum)
+     tmp_df$freq_NP <- apply(tmp_df[ , (names(tmp_df) %in% tmp_np)] > 0, 1, sum)
+
+     tmp_df$reads_total <- base::rowSums(tmp_df[ , (names(tmp_df) %in% 
+                                            c(tmp_ctl, tmp_n, tmp_p, tmp_np))])
+     
+     tmp_df$reads_CTL <- base::rowSums(tmp_df[ , (names(tmp_df) %in% tmp_ctl)])
+     tmp_df$reads_N <- base::rowSums(tmp_df[ , (names(tmp_df) %in% tmp_n)])
+     tmp_df$reads_P <- base::rowSums(tmp_df[ , (names(tmp_df) %in% tmp_p)])
+     tmp_df$reads_NP <- base::rowSums(tmp_df[ , (names(tmp_df) %in% tmp_np)])
+
+     tmp_df <- tmp_df[,!grepl("^[Y]", names(tmp_df))]
+     tmp_df <- tmp_df %>% tibble::rownames_to_column("ASV_ID")
+
+     tmp_get_indval <- get(purrr::map_chr(i, ~ paste0(., "_indval_summary")))
+     tmp_merge_df <- merge(tmp_df, tmp_get_indval, by = "ASV_ID", all = FALSE)
+     tmp_merge_df <- tmp_merge_df[,c(1,11:14,2:10,15:21)]
+     tmp_merge_df <- tmp_merge_df[order(tmp_merge_df$reads_total, decreasing = TRUE), ]
+     tmp_merge_name <- purrr::map_chr(i, ~ paste0(., "_indval_final"))
+     assign(tmp_merge_name, tmp_merge_df)
+     rm(list = ls(pattern = "tmp_"))
+}
+```
+
+4. Save a new phyloseq object
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(i)
+     tmp_tab <- get(purrr::map_chr(i, ~ paste0(., "_indval_summary")))
+     tmp_list <- tmp_tab[,1]
+     tmp_ps <- prune_taxa(tmp_list, tmp_get)
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_ind"))
+     assign(tmp_name, tmp_ps)
+     tmp_ps@phy_tree <- NULL
+     tmp_ps <- prune_samples(sample_sums(tmp_ps) > 0, tmp_ps)
+     tmp_ps_tree <- rtree(ntaxa(tmp_ps), rooted = TRUE,
+                            tip.label = taxa_names(tmp_ps))
+     tmp_ps <- merge_phyloseq(tmp_ps, sample_data, tmp_ps_tree)
+     assign(tmp_name, tmp_ps)
+     rm(list = ls(pattern = "tmp_"))
+}
+```
+
+## Indicator Summary
+
+```{r, echo=FALSE}
+rm(ssu_inval_sum_tab)
+ssu_inval_sum_tab <- c()
+for (i in objects(pattern = "_ind$")) {
+  tmp_ps <- get(i)
+  tmp_o_ps <- get(gsub("_ind", "", i))
+
+  tmp_rc <- sum(readcount(tmp_ps))
+  tmp_rc_o <- sum(readcount(tmp_o_ps))
+  tmp_per_rc <- 100*(sum(readcount(tmp_ps)) / sum(readcount(tmp_o_ps)))
+
+  tmp_tc <- ntaxa(tmp_ps)
+  tmp_tc_o <- ntaxa(tmp_o_ps)
+  tmp_per_tc <- 100*(ntaxa(tmp_ps) / ntaxa(tmp_o_ps))
+  tmp_ds <- stringr::str_remove(i, ".*_ps_") %>%
+                 stringr::str_remove(., "_.*")
+  tmp_year <- stringr::str_remove(i, "_ind") %>%
+                 stringr::str_remove(., ".*_Y")  %>%
+                 paste("Year", ., sep = " ")
+
+  ssu_inval_sum_tab <- data.frame(rbind(ssu_inval_sum_tab, c(tmp_ds, tmp_year,
+                                                     tmp_rc_o, tmp_rc, tmp_per_rc, 
+                                                     tmp_tc_o, tmp_tc, tmp_per_tc)))
+  ssu_inval_sum_tab <- ssu_inval_sum_tab %>% dplyr::rename("dataset" = 1, "year" = 2,
+                                                   "total_reads" = 3, "indval_reads" = 4, "per_reads" = 5, 
+                                                   "total_asvs" = 6, "indval_asvs" = 7, "per_asvs" = 8) 
+
+  rm(list = ls(pattern = "tmp_"))
+}
+tmp_tab <- ssu_inval_sum_tab
+tmp_tab <- tmp_tab %>% dplyr::slice(10:12,1:9)
+tmp_tab$dataset <- gsub("work", "FULL data set", tmp_tab$dataset)
+tmp_tab$dataset <- gsub("filt", "Arbitrary filtered", tmp_tab$dataset)
+tmp_tab$dataset <- gsub("perfect", "PERFect filtered", tmp_tab$dataset)
+tmp_tab$dataset <- gsub("pime", "PIME filtered", tmp_tab$dataset)
+
+tmp_tab <- purrr::modify_at(tmp_tab, .at = c(5,8), ~as.numeric(as.character(.)))
+tmp_tab <- purrr::modify_at(tmp_tab, .at = c(3:4,6:7), ~as.integer(as.character(.)))
+ssu_inval_sum_tab <- tmp_tab
+rm(tmp_tab)
+```
+
+
+<small>`r caption_tab_ssu("ssu_inval_sum_tab")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_inval_sum_tab)
+```
+
+```{r, echo=FALSE, eval=TRUE, layout="l-page"}
+indval_summ_table(seq_table)
+rm(seq_table)
+```
+
+</br>
+
+### FULL data set 
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+
+#### Year 0
+
+<small>`r caption_tab_ssu("ssu_isa_full_Y0")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_work_Y0_indval_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+indval_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+<small>`r caption_tab_ssu("ssu_isa_full_Y1")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_work_Y1_indval_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+indval_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+<small>`r caption_tab_ssu("ssu_isa_full_Y4")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_work_Y4_indval_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+indval_table(seq_table)
+rm(seq_table)
+```
+:::
+:::
+:::
+
+
+</br>
+
+### Arbitrary filtered data set 
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+#### Year 0
+
+<small>`r caption_tab_ssu("ssu_isa_filt_Y0")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_filt_Y0_indval_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+indval_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+<small>`r caption_tab_ssu("ssu_isa_filt_Y1")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_filt_Y1_indval_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+indval_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+<small>`r caption_tab_ssu("ssu_isa_filt_Y4")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_filt_Y4_indval_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+indval_table(seq_table)
+rm(seq_table)
+```
+:::
+:::
+:::
+
+</br>
+
+### PERFect filtered data set 
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+#### Year 0
+
+<small>`r caption_tab_ssu("ssu_isa_perfect_Y0")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_perfect_Y0_indval_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+indval_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+<small>`r caption_tab_ssu("ssu_isa_perfect_Y1")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_perfect_Y1_indval_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+indval_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+<small>`r caption_tab_ssu("ssu_isa_perfect_Y4")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_perfect_Y4_indval_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+indval_table(seq_table)
+rm(seq_table)
+```
+:::
+:::
+:::
+
+</br>
+
+### PIME filtered data set 
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+#### Year 0
+
+<small>`r caption_tab_ssu("ssu_isa_pime_Y0")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_pime_Y0_indval_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+indval_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+<small>`r caption_tab_ssu("ssu_isa_pime_Y1")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_pime_Y1_indval_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+indval_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+<small>`r caption_tab_ssu("ssu_isa_pime_Y4")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_pime_Y4_indval_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+indval_table(seq_table)
+rm(seq_table)
+```
+:::
+:::
+:::
+
+```{r, echo=FALSE}
+for (i in objects(pattern = "_indval_final")) {
+  tmp_get <- get(i)
+  tmp_get <- tmp_get %>% dplyr::rename("reads" = "reads_total")
+  tmp_get <- tmp_get %>% dplyr::select(-contains("freq_")) %>% 
+                         dplyr::select(-contains("reads_"))
+  tmp_get$group <- gsub("^Y[0-9]_", "", tmp_get$group)
+
+  tmp_year <- stringr::str_remove(i, "_indval_final") %>%
+                 stringr::str_remove(., ".*_")
+  tmp_ds <- stringr::str_remove(i, "_indval_final") %>%
+                 stringr::str_remove(., "_Y[0-9]")
+  tmp_group <- paste("group", tmp_year, sep = "_")
+  tmp_indval <- paste("indval", tmp_year, sep = "_")
+  tmp_pval <- paste("pval", tmp_year, sep = "_")
+  tmp_freq <- paste("freq", tmp_year, sep = "_")
+  tmp_reads <- paste("reads", tmp_year, sep = "_")
+
+  tmp_new_names <- c(tmp_group, tmp_indval, tmp_pval, tmp_freq, tmp_reads)
+  tmp_old_names <- c("group", "indval", "pval", "freq", "reads")
+  tmp_get <- tmp_get %>% dplyr::rename_with(~tmp_new_names, tmp_old_names)
+  tmp_df_name <- paste(tmp_ds, "_", tmp_year, "_to_comb", sep = "")
+  assign(tmp_df_name, tmp_get)
+  rm(list = ls(pattern = "tmp_"))
+}
+```
+
+```{r, echo=FALSE}
+join_list <- c("ASV_ID", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "ASV_SEQ")
+reorder_list <- c("ASV_ID", "group_Y0", "group_Y1", "group_Y4", "reads_Y0", "reads_Y1", "reads_Y4", 
+                  "freq_Y0", "freq_Y1", "freq_Y4", "indval_Y0", "indval_Y1", "indval_Y4", 
+                  "pval_Y0", "pval_Y1", "pval_Y4", 
+                  "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "ASV_SEQ")
+ssu_ps_work_isa_combo <- dplyr::full_join(ssu_ps_work_Y0_to_comb, ssu_ps_work_Y1_to_comb, by = join_list) %>%
+  dplyr::full_join(., ssu_ps_work_Y4_to_comb, by = join_list) %>% 
+  dplyr::select(all_of(reorder_list))
+
+ssu_ps_filt_isa_combo <- dplyr::full_join(ssu_ps_filt_Y0_to_comb, ssu_ps_filt_Y1_to_comb, by = join_list) %>%
+  dplyr::full_join(., ssu_ps_filt_Y4_to_comb, by = join_list) %>% 
+  dplyr::select(all_of(reorder_list))
+
+ssu_ps_perfect_isa_combo <- dplyr::full_join(ssu_ps_perfect_Y0_to_comb, ssu_ps_perfect_Y1_to_comb, by = join_list) %>%
+  dplyr::full_join(., ssu_ps_perfect_Y4_to_comb, by = join_list) %>% 
+  dplyr::select(all_of(reorder_list))
+
+ssu_ps_pime_isa_combo <- dplyr::full_join(ssu_ps_pime_Y0_to_comb, ssu_ps_pime_Y1_to_comb, by = join_list) %>%
+  dplyr::full_join(., ssu_ps_pime_Y4_to_comb, by = join_list) %>% 
+  dplyr::select(all_of(reorder_list))
+
+rm(list = ls(pattern = "_to_comb$"))
+```
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+#### FULL data set 
+
+<small>`r caption_tab_ssu("ssu_ps_work_isa_combo")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_work_isa_combo)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+combo_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Arbitrary filtered
+
+<small>`r caption_tab_ssu("ssu_ps_filt_isa_combo")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_filt_isa_combo)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+combo_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### PERFect filtered
+
+<small>`r caption_tab_ssu("ssu_ps_perfect_isa_combo")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_perfect_isa_combo)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+combo_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### PIME filtered
+
+<small>`r caption_tab_ssu("ssu_ps_pime_isa_combo")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_pime_isa_combo)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+combo_table(seq_table)
+rm(seq_table)
+```
+:::
+:::
+:::
+
+## LEfSe Analysis
+
+<aside>
+From [@segata2011metagenomic].
+</aside>
+
+Linear discriminant analysis (LDA) effect size (LEfSe) is a method to support high-dimensional class comparisons with a particular focus on microbial community analyses. LEfSe determines the features (organisms, clades, operational taxonomic units, genes, or functions) most likely to explain differences between classes by coupling standard tests for statistical significance with additional tests encoding biological consistency and effect relevance. Class comparison methods typically predict biomarkers consisting of features that violate a null hypothesis of no difference between classes. The effect size provides an estimation of the magnitude of the observed phenomenon due to each characterizing feature and it is thus a valuable tool for ranking the relevance of different biological aspects and for addressing further investigations and analyses. 
+
+
+First, a little data tidying and subsetting only ASV data from the taxonomy table.
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+  tmp_get <- get(i)
+  tax_table(tmp_get) <- tax_table(tmp_get)[,c(1:6)]
+  tax_table(tmp_get) <- cbind(tax_table(tmp_get),
+                           rownames(tax_table(tmp_get)))
+  colnames(tax_table(tmp_get)) <- c("Kingdom", "Phylum", "Class", "Order", 
+                                    "Family", "Genus", "Species")
+  tmp_name <- purrr::map_chr(i, ~ paste0(., "_rf_all"))
+  assign(tmp_name, tmp_get)
+  tax_table(tmp_get) <- tax_table(tmp_get)[,c(7)]
+  tmp_name_asv <- purrr::map_chr(i, ~ paste0(., "_rf_asv"))
+  assign(tmp_name_asv, tmp_get)
+  rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern = "_rf")
+```
+
+1. Choose and set the LEfSe cutoff values.
+
+```{r}
+lefse_lda <- 2
+lefse_kw <- 0.05
+lefse_wc <- 0.05
+```
+
+```{r, warnings = FALSE, error = FALSE, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_rf_asv")))
+     tmp_lefse <- run_lefse(ps = tmp_get, norm = "CPM", group = "TREAT", strict = "2", 
+                        lda_cutoff = lefse_lda, 
+                        kw_cutoff = lefse_kw, 
+                        wilcoxon_cutoff = lefse_wc, 
+                        bootstrap_n = 30, bootstrap_fraction = 2/3, 
+                        sample_min = 10, multigrp_strat = FALSE, curv = FALSE)
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_lefse_asv"))
+     assign(tmp_name, tmp_lefse)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern = "_lefse_asv")
+
+for (i in samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_rf_all")))
+     tmp_lefse <- run_lefse(ps = tmp_get, norm = "CPM", group = "TREAT", strict = "2", 
+                        lda_cutoff = lefse_lda, 
+                        kw_cutoff = lefse_kw, 
+                        wilcoxon_cutoff = lefse_wc, 
+                        bootstrap_n = 30, bootstrap_fraction = 2/3, 
+                        sample_min = 10, multigrp_strat = FALSE, curv = FALSE)
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_lefse_all"))
+     assign(tmp_name, tmp_lefse)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern = "_lefse_asv")
+objects(pattern = "_lefse_all")
+```
+
+```{r, echo=FALSE}
+# DONT RUN, TESTING ONLY
+#tmp_tab <- data.frame(marker_table(ssu_ps_pime_lefse_asv))
+#tmp_tab$feature <- gsub('s__', '', tmp_tab$feature)
+
+#tmp_ps <- data.frame(t(otu_table(ssu_ps_pime_rf_asv)))
+#tmp_ps <- tmp_ps %>% tibble::rownames_to_column("feature")
+#write.table(dplyr::left_join(tmp_tab, tmp_ps, by = "feature"), "test.txt", quote = FALSE, sep = "\t")
+```
+
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+    tmp_o_tax <- data.frame(tax_table(get(i)))
+    tmp_o_tax$ASV_ID <- NULL 
+    tmp_o_tax <- tmp_o_tax %>% tibble::rownames_to_column("ASV_ID")
+    tmp_year <- stringr::str_extract(i, "Y[0-9]") 
+    
+    tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_lefse_asv")))
+    tmp_mt <- data.frame(marker_table(tmp_get))
+    tmp_mt$feature <- gsub('s__', '', tmp_mt$feature)
+    tmp_mt <- tmp_mt %>% dplyr::rename(c("ASV_ID" = 1, "group" = 2, "pval" = 4)) %>%
+          tibble::remove_rownames()
+    tmp_sum <- dplyr::left_join(tmp_mt, tmp_o_tax, by = "ASV_ID")
+    
+    tmp_sum$group <- stringr::str_replace(tmp_sum$group, "^", paste(tmp_year, "_", sep = ""))
+    #tmp_sum$group <- stringr::str_replace(tmp_sum$group, "^3$", "W3")
+
+    tmp_sum <- tmp_sum[order(as.numeric(gsub("[A-Z]{3}", "", tmp_sum$ASV_ID))),]
+    
+    tmp_res_name <- purrr::map_chr(i, ~ paste0(., "_lefse_asv_summary"))
+    assign(tmp_res_name, tmp_sum)
+    rm(list = ls(pattern = "tmp_"))
+}
+
+objects(pattern = "_lefse_asv_summary")
+ssu_ps_filt_Y0_lefse_asv_summary
+```
+
+Now we can save a few files and display the data.
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_year <- stringr::str_extract(i, "Y[0-9]") 
+
+     tmp_ctl <- paste(tmp_year, "CTL", sep = "_")
+     tmp_n <- paste(tmp_year, "N", sep = "_")
+     tmp_p <- paste(tmp_year, "P", sep = "_")
+     tmp_np <- paste(tmp_year, "NP", sep = "_")
+
+     tmp_get <- get(i)
+     tmp_df <- data.frame(t(otu_table(tmp_get)))
+     #tmp_get[,1] <- NULL
+     #tmp_df <- as.data.frame(t(tmp_otu))
+     tmp_col_names <- colnames(tmp_df)
+     tmp_col_names <- tmp_col_names %>%
+              stringr::str_replace("[A-Z]{2}_S[0-9]{2}_T[0-9]{3}_", "") %>%
+              stringr::str_replace("_[A-Z]{3}_", "_")
+     colnames(tmp_df) <- tmp_col_names
+     
+     tmp_df$freq <- apply(tmp_df > 0, 1, sum)
+
+     tmp_df$freq_CTL <- apply(tmp_df[ , (names(tmp_df) %in% tmp_ctl)] > 0, 1, sum)
+     tmp_df$freq_N <- apply(tmp_df[ , (names(tmp_df) %in% tmp_n)] > 0, 1, sum)
+     tmp_df$freq_P <- apply(tmp_df[ , (names(tmp_df) %in% tmp_p)] > 0, 1, sum)
+     tmp_df$freq_NP <- apply(tmp_df[ , (names(tmp_df) %in% tmp_np)] > 0, 1, sum)
+
+     tmp_df$reads_total <- base::rowSums(tmp_df[ , (names(tmp_df) %in% 
+                                            c(tmp_ctl, tmp_n, tmp_p, tmp_np))])
+     
+     tmp_df$reads_CTL <- base::rowSums(tmp_df[ , (names(tmp_df) %in% tmp_ctl)])
+     tmp_df$reads_N <- base::rowSums(tmp_df[ , (names(tmp_df) %in% tmp_n)])
+     tmp_df$reads_P <- base::rowSums(tmp_df[ , (names(tmp_df) %in% tmp_p)])
+     tmp_df$reads_NP <- base::rowSums(tmp_df[ , (names(tmp_df) %in% tmp_np)])
+
+     tmp_df <- tmp_df[,!grepl("^[Y]", names(tmp_df))]
+     tmp_df <- tmp_df %>% tibble::rownames_to_column("ASV_ID")
+     
+     tmp_get_lefse <- get(purrr::map_chr(i, ~ paste0(., "_lefse_asv_summary")))
+     tmp_merge_df <- merge(tmp_df, tmp_get_lefse, by = "ASV_ID", all = FALSE)
+     tmp_merge_df$padj <- NULL # remove since value unchanged
+
+     tmp_merge_df <- tmp_merge_df[,c(1,12:14,2:11,15:21)]
+     tmp_merge_df <- tmp_merge_df[order(tmp_merge_df$reads_total, decreasing = TRUE), ]
+     tmp_merge_name <- purrr::map_chr(i, ~ paste0(., "_lefse_asv_final"))
+     assign(tmp_merge_name, tmp_merge_df)
+     rm(list = ls(pattern = "_lefse_final"))
+}
+objects(pattern = "_lefse_asv_final")
+ssu_ps_filt_Y0_lefse_asv_final
+```
+
+Save a new phyloseq object
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(i)
+     tmp_tab <- get(purrr::map_chr(i, ~ paste0(., "_lefse_asv_summary")))
+     tmp_list <- tmp_tab[,1]
+     tmp_ps <- prune_taxa(tmp_list, tmp_get)
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_lefse_asv_ps"))
+     assign(tmp_name, tmp_ps)
+     tmp_ps@phy_tree <- NULL
+     tmp_ps <- prune_samples(sample_sums(tmp_ps) > 0, tmp_ps)
+     tmp_ps_tree <- rtree(ntaxa(tmp_ps), rooted = TRUE,
+                            tip.label = taxa_names(tmp_ps))
+     tmp_ps <- merge_phyloseq(tmp_ps, sample_data, tmp_ps_tree)
+     assign(tmp_name, tmp_ps)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern = "_lefse_asv_ps$")
+
+```
+
+## LEfSe Summaries 
+
+### ASV summary data 
+
+```{r, echo=FALSE}
+rm(ssu_lefse_sum_tab)
+ssu_lefse_sum_tab <- c()
+for (i in objects(pattern = "_lefse_asv_ps$")) {
+  tmp_ps <- get(i)
+  tmp_o_ps <- get(gsub("_lefse_asv_ps", "", i))
+
+  tmp_rc <- sum(readcount(tmp_ps))
+  tmp_rc_o <- sum(readcount(tmp_o_ps))
+  tmp_per_rc <- 100*(sum(readcount(tmp_ps)) / sum(readcount(tmp_o_ps)))
+
+  tmp_tc <- ntaxa(tmp_ps)
+  tmp_tc_o <- ntaxa(tmp_o_ps)
+  tmp_per_tc <- 100*(ntaxa(tmp_ps) / ntaxa(tmp_o_ps))
+  tmp_ds <- stringr::str_remove(i, ".*_ps_") %>%
+                 stringr::str_remove(., "_.*")
+  tmp_year <- stringr::str_remove(i, "_lefse_asv_ps") %>%
+                 stringr::str_remove(., ".*_Y")  %>%
+                 paste("Year", ., sep = " ")
+
+  ssu_lefse_sum_tab <- data.frame(rbind(ssu_lefse_sum_tab, c(tmp_ds, tmp_year,
+                                                     tmp_rc_o, tmp_rc, tmp_per_rc, 
+                                                     tmp_tc_o, tmp_tc, tmp_per_tc)))
+  ssu_lefse_sum_tab <- ssu_lefse_sum_tab %>% dplyr::rename("dataset" = 1, "year" = 2,
+                                                   "total_reads" = 3, "lefse_reads" = 4, "per_reads" = 5, 
+                                                   "total_asvs" = 6, "lefse_asvs" = 7, "per_asvs" = 8) 
+
+  rm(list = ls(pattern = "tmp_"))
+}
+
+tmp_tab <- ssu_lefse_sum_tab
+tmp_tab <- tmp_tab %>% dplyr::slice(10:12,1:9)
+tmp_tab$dataset <- gsub("work", "FULL data set", tmp_tab$dataset)
+tmp_tab$dataset <- gsub("filt", "Arbitrary filtered", tmp_tab$dataset)
+tmp_tab$dataset <- gsub("perfect", "PERFect filtered", tmp_tab$dataset)
+tmp_tab$dataset <- gsub("pime", "PIME filtered", tmp_tab$dataset)
+
+tmp_tab <- purrr::modify_at(tmp_tab, .at = c(5,8), ~as.numeric(as.character(.)))
+tmp_tab <- purrr::modify_at(tmp_tab, .at = c(3:4,6:7), ~as.integer(as.character(.)))
+ssu_lefse_sum_tab <- tmp_tab
+ssu_lefse_sum_tab
+rm(tmp_tab)
+```
+
+
+<small>`r caption_tab_ssu("ssu_lefse_sum_tab")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_lefse_sum_tab)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_summ_table(seq_table)
+rm(seq_table)
+```
+
+</br>
+
+### FULL data set 
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+#### Year 0
+
+<small>`r caption_tab_ssu("ssu_lefse_full_Y0")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_work_Y0_lefse_asv_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+<small>`r caption_tab_ssu("ssu_lefse_full_Y1")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_work_Y1_lefse_asv_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+<small>`r caption_tab_ssu("ssu_lefse_full_Y4")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_work_Y4_lefse_asv_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_table(seq_table)
+rm(seq_table)
+```
+:::
+:::
+:::
+
+</br>
+
+### Arbitrary filtered data set 
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+#### Year 0
+
+<small>`r caption_tab_ssu("ssu_lefse_filt_Y0")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_filt_Y0_lefse_asv_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+<small>`r caption_tab_ssu("ssu_lefse_filt_Y1")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_filt_Y1_lefse_asv_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+<small>`r caption_tab_ssu("ssu_lefse_filt_Y4")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_filt_Y4_lefse_asv_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_table(seq_table)
+rm(seq_table)
+```
+:::
+:::
+:::
+
+</br>
+
+### PERFect filtered data set 
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+#### Year 0
+
+<small>`r caption_tab_ssu("ssu_lefse_perfect_Y0")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_perfect_Y0_lefse_asv_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+<small>`r caption_tab_ssu("ssu_lefse_perfect_Y1")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_perfect_Y1_lefse_asv_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+<small>`r caption_tab_ssu("ssu_lefse_perfect_Y4")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_perfect_Y4_lefse_asv_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_table(seq_table)
+rm(seq_table)
+```
+:::
+:::
+:::
+
+</br>
+
+### PIME filtered data set 
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+#### Year 0
+
+<small>`r caption_tab_ssu("ssu_lefse_pime_Y0")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_pime_Y0_lefse_asv_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 1
+
+<small>`r caption_tab_ssu("ssu_lefse_pime_Y1")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_pime_Y1_lefse_asv_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+<small>`r caption_tab_ssu("ssu_lefse_pime_Y4")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_pime_Y4_lefse_asv_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_table(seq_table)
+rm(seq_table)
+```
+:::
+:::
+:::
+
+
+```{r, echo=FALSE}
+for (i in objects(pattern = "_lefse_asv_final")) {
+  tmp_get <- get(i)
+  tmp_get <- tmp_get %>% dplyr::rename("reads" = "reads_total")
+  tmp_get <- tmp_get %>% dplyr::select(-contains("freq_")) %>% 
+                         dplyr::select(-contains("reads_"))
+  tmp_get$group <- gsub("^Y[0-9]_", "", tmp_get$group)
+
+  tmp_year <- stringr::str_remove(i, "_lefse_asv_final") %>%
+                 stringr::str_remove(., ".*_")
+  tmp_ds <- stringr::str_remove(i, "_lefse_asv_final") %>%
+                 stringr::str_remove(., "_Y[0-9]")
+  tmp_group <- paste("group", tmp_year, sep = "_")
+  tmp_lefse <- paste("lda", tmp_year, sep = "_")
+  tmp_pval <- paste("pval", tmp_year, sep = "_")
+  tmp_freq <- paste("freq", tmp_year, sep = "_")
+  tmp_reads <- paste("reads", tmp_year, sep = "_")
+
+  tmp_new_names <- c(tmp_group, tmp_lefse, tmp_pval, tmp_freq, tmp_reads)
+  tmp_old_names <- c("group", "ef_lda", "pval", "freq", "reads")
+  tmp_get <- tmp_get %>% dplyr::rename_with(~tmp_new_names, tmp_old_names)
+  tmp_df_name <- paste(tmp_ds, "_", tmp_year, "_to_comb", sep = "")
+  assign(tmp_df_name, tmp_get)
+  rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern = "_to_comb")
+```
+
+```{r, echo=FALSE}
+join_list <- c("ASV_ID", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "ASV_SEQ")
+reorder_list <- c("ASV_ID", "group_Y0", "group_Y1", "group_Y4", "reads_Y0", "reads_Y1", "reads_Y4", 
+                  "freq_Y0", "freq_Y1", "freq_Y4", "lda_Y0", "lda_Y1", "lda_Y4", 
+                  "pval_Y0", "pval_Y1", "pval_Y4", 
+                  "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "ASV_SEQ")
+ssu_ps_work_lefse_asv_combo <- dplyr::full_join(ssu_ps_work_Y0_to_comb, ssu_ps_work_Y1_to_comb, by = join_list) %>%
+  dplyr::full_join(., ssu_ps_work_Y4_to_comb, by = join_list) %>% 
+  dplyr::select(all_of(reorder_list))
+
+ssu_ps_filt_lefse_asv_combo <- dplyr::full_join(ssu_ps_filt_Y0_to_comb, ssu_ps_filt_Y1_to_comb, by = join_list) %>%
+  dplyr::full_join(., ssu_ps_filt_Y4_to_comb, by = join_list) %>% 
+  dplyr::select(all_of(reorder_list))
+
+ssu_ps_perfect_lefse_asv_combo <- dplyr::full_join(ssu_ps_perfect_Y0_to_comb, ssu_ps_perfect_Y1_to_comb, by = join_list) %>%
+  dplyr::full_join(., ssu_ps_perfect_Y4_to_comb, by = join_list) %>% 
+  dplyr::select(all_of(reorder_list))
+
+ssu_ps_pime_lefse_asv_combo <- dplyr::full_join(ssu_ps_pime_Y0_to_comb, ssu_ps_pime_Y1_to_comb, by = join_list) %>%
+  dplyr::full_join(., ssu_ps_pime_Y4_to_comb, by = join_list) %>% 
+  dplyr::select(all_of(reorder_list))
+
+rm(list = ls(pattern = "_to_comb$"))
+```
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+#### FULL data set 
+
+<small>`r caption_tab_ssu("ssu_ps_work_lefse_combo")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_work_lefse_asv_combo)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_combo_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Arbitrary filtered
+
+<small>`r caption_tab_ssu("ssu_ps_filt_lefse_combo")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_filt_lefse_asv_combo)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_combo_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### PERFect filtered
+
+<small>`r caption_tab_ssu("ssu_ps_perfect_lefse_combo")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_perfect_lefse_asv_combo)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_combo_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### PIME filtered
+
+<small>`r caption_tab_ssu("ssu_ps_pime_lefse_combo")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_pime_lefse_asv_combo)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_combo_table(seq_table)
+rm(seq_table)
+```
+:::
+:::
+:::
+
+## Marker summary data 
+
+```{r, code_folding=TRUE}
+lda_cutoff <- 2
+for (i in samp_ps) {
+    tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_lefse_all")))
+    tmp_mt <- data.frame(marker_table(tmp_get))
+    tmp_mt <- tmp_mt[, c(2:4,1)]
+    tmp_mt <- tmp_mt %>% dplyr::rename(c("group" = 1, "pval" = 3))
+    tmp_mt <- tmp_mt %>% tibble::rownames_to_column("marker")
+    tmp_mt <- tmp_mt %>% tidyr::separate(col = "feature", 
+                                         into = c("Kingdom", "Phylum", "Class", 
+                                                  "Order", "Family", "Genus", "ASV_ID"), 
+                                         sep = "\\|\\w__")
+    tmp_mt$Kingdom <- gsub('k__', '', tmp_mt$Kingdom)
+
+    tmp_mt <- tmp_mt %>% dplyr::filter(ef_lda >= lda_cutoff)
+    tmp_mt <- tmp_mt  %>% dplyr::mutate(group = factor(group, levels = row_order)) %>% 
+                           dplyr::arrange(group)
+    tmp_res_name <- purrr::map_chr(i, ~ paste0(., "_lefse_marker_final"))
+    assign(tmp_res_name, tmp_mt)
+    rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern =  "_lefse_marker_final")
+```
+
+</br>
+
+### FULL
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+
+#### Year 0
+
+<small>`r caption_tab_ssu("ssu_lefse_marker_work_Y0")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_work_Y0_lefse_marker_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_marker_table(seq_table)
+rm(seq_table)
+```
+
+:::
+
+::: {.panel}
+#### Year 1
+
+<small>`r caption_tab_ssu("ssu_lefse_marker_work_Y1")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_work_Y1_lefse_marker_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_marker_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+<small>`r caption_tab_ssu("ssu_lefse_marker_work_Y4")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_work_Y4_lefse_marker_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_marker_table(seq_table)
+rm(seq_table)
+```
+::: 
+::: 
+::: 
+
+### Arbitrary filtered
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+
+#### Year 0
+
+<small>`r caption_tab_ssu("ssu_lefse_marker_filt_Y0")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_filt_Y0_lefse_marker_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_marker_table(seq_table)
+rm(seq_table)
+```
+
+:::
+
+::: {.panel}
+#### Year 1
+
+<small>`r caption_tab_ssu("ssu_lefse_marker_filt_Y1")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_filt_Y1_lefse_marker_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_marker_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+<small>`r caption_tab_ssu("ssu_lefse_marker_filt_Y4")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_filt_Y4_lefse_marker_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_marker_table(seq_table)
+rm(seq_table)
+```
+::: 
+::: 
+::: 
+
+### PERFect filtered
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+
+#### Year 0
+
+<small>`r caption_tab_ssu("ssu_lefse_marker_perfect_Y0")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_perfect_Y0_lefse_marker_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_marker_table(seq_table)
+rm(seq_table)
+```
+
+:::
+
+::: {.panel}
+#### Year 1
+
+<small>`r caption_tab_ssu("ssu_lefse_marker_perfect_Y1")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_perfect_Y1_lefse_marker_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_marker_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+<small>`r caption_tab_ssu("ssu_lefse_marker_perfect_Y4")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_perfect_Y4_lefse_marker_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_marker_table(seq_table)
+rm(seq_table)
+```
+::: 
+::: 
+::: 
+
+### PIME filtered
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+
+#### Year 0
+
+<small>`r caption_tab_ssu("ssu_lefse_marker_pime_Y0")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_pime_Y0_lefse_marker_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_marker_table(seq_table)
+rm(seq_table)
+```
+
+:::
+
+::: {.panel}
+#### Year 1
+
+<small>`r caption_tab_ssu("ssu_lefse_marker_pime_Y1")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_pime_Y1_lefse_marker_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_marker_table(seq_table)
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Year 4
+
+<small>`r caption_tab_ssu("ssu_lefse_marker_pime_Y4")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+download_this_fun(ssu_ps_pime_Y4_lefse_marker_final)
+```
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+lefse_marker_table(seq_table)
+rm(seq_table)
+```
+::: 
+::: 
+::: 
+
+
+<br/>
+
+## LEfSe ASV Visualizations
+
+```{r, code_folding=TRUE}
+row_order <- c("CTL", "N", "P", "NP") 
+min_lda_score <- 3
+ssu_asv_no_hits <- c()
+for (i in samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_lefse_asv")))
+     tmp_mt <- data.frame(marker_table(tmp_get))
+     tmp_mt$feature <- gsub('s__', '', tmp_mt$feature)
+     ### To select top x%
+     ### see here for more suggestions: https://stackoverflow.com/questions/33220693/dplyr-group-by-and-select-top-x
+     #tmp_mt <- tmp_mt %>% dplyr::select(everything()) %>% 
+     #  dplyr::arrange(enrich_group, desc(ef_lda)) %>% 
+     #  dplyr::group_by(enrich_group) %>% 
+     #  dplyr::slice(seq(n()*.2))
+     tmp_mt <- tmp_mt %>% dplyr::filter(ef_lda >= min_lda_score)
+     tmp_mt <- tmp_mt  %>% dplyr::mutate(enrich_group = factor(enrich_group, levels = row_order)) %>% 
+                           dplyr::arrange(enrich_group)
+     
+     tmp_mt <- if(nrow(tmp_mt) > 0) {
+          tmp_mt <- marker_table(tmp_mt)
+        } else {
+          ssu_asv_no_hits <- c(append(ssu_asv_no_hits, i))
+          print(paste(i, "has no markers with an LDA score greater than", min_lda_score, sep = " "))
+        }
+     
+     #tmp_mt <- marker_table(tmp_mt)
+     tmp_res_name <- purrr::map_chr(i, ~ paste0(., "_lefse_asv_viz_trim"))
+     assign(tmp_res_name, tmp_mt)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern = "_lefse_asv_viz_trim")
+```
+
+```{r, code_folding=TRUE}
+asv_viz_plot <- function(asv_viz_trim) {
+if (class(asv_viz_trim) ==  "character") {
+            print(stringr::str_remove(asv_viz_trim, "ssu_ps_") %>%
+            stringr::str_replace(., "_", " "))
+            } else {
+            plot_ef_bar(asv_viz_trim) +
+            scale_fill_manual(values = agua_col) + 
+            theme(axis.text = element_text(size = 8)) +
+            guides(fill = guide_legend(reverse = TRUE))
+            }
+}
+```
+
+
+</br>
+
+```{r, echo=FALSE}
+agua_col <- c("#B26322", "#29B222", "#2271B2", "#AB22B2")
+```
+
+### FULL data set 
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+asv_viz_plot(ssu_ps_work_Y0_lefse_asv_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_asv_full_Y0")`</small>
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+asv_viz_plot(ssu_ps_work_Y1_lefse_asv_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_asv_full_Y1")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+asv_viz_plot(ssu_ps_work_Y4_lefse_asv_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_asv_full_Y1")`</small>
+:::
+:::
+:::
+
+
+### Arbitrary filtered 
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+asv_viz_plot(ssu_ps_filt_Y0_lefse_asv_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_asv_filt_Y0")`</small>
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+asv_viz_plot(ssu_ps_filt_Y1_lefse_asv_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_asv_filt_Y1")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+asv_viz_plot(ssu_ps_filt_Y4_lefse_asv_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_asv_filt_Y1")`</small>
+:::
+:::
+:::
+
+### PERFect filtered
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+asv_viz_plot(ssu_ps_perfect_Y0_lefse_asv_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_asv_perfect_Y0")`</small>
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+asv_viz_plot(ssu_ps_perfect_Y1_lefse_asv_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_asv_perfect_Y1")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+asv_viz_plot(ssu_ps_perfect_Y4_lefse_asv_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_asv_perfect_Y1")`</small>
+:::
+:::
+:::
+
+### PIME filtered 
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+asv_viz_plot(ssu_ps_pime_Y0_lefse_asv_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_asv_pime_Y0")`</small>
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+asv_viz_plot(ssu_ps_pime_Y1_lefse_asv_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_asv_pime_Y1")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+asv_viz_plot(ssu_ps_pime_Y4_lefse_asv_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_asv_pime_Y1")`</small>
+:::
+:::
+:::
+
+### Marker visualizations
+
+```{r, code_folding=TRUE}
+row_order <- c("CTL", "N", "P", "NP") 
+min_lda_score <- 3
+ssu_mark_no_hits <- c()
+
+for (i in samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_lefse_all")))
+     tmp_mt <- data.frame(marker_table(tmp_get))
+     tmp_mt <- tmp_mt %>% dplyr::filter(ef_lda >= min_lda_score)
+     tmp_mt <- tmp_mt  %>% dplyr::mutate(enrich_group = factor(enrich_group, levels = row_order)) %>% 
+                           dplyr::arrange(enrich_group)
+     
+     tmp_mt <- if(nrow(tmp_mt) > 0) {
+          tmp_mt <- marker_table(tmp_mt)
+        } else {
+          ssu_mark_no_hits <- c(append(ssu_mark_no_hits, i))
+          print(paste(i, "has no markers with an LDA score greater than", min_lda_score, sep = " "))
+        }
+     #tmp_mt  <-  tmp_mt %>% filter(ef_lda >= 4)
+     #tmp_mt <- marker_table(tmp_mt)
+     tmp_res_name <- purrr::map_chr(i, ~ paste0(., "_lefse_all_viz_trim"))
+     assign(tmp_res_name, tmp_mt)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern = "_lefse_all_viz_trim")
+
+```
+
+```{r, code_folding=TRUE}
+all_viz_plot <- function(all_viz_trim) {
+if (class(all_viz_trim) ==  "character") {
+            print(stringr::str_remove(all_viz_trim, "ssu_ps_") %>%
+            stringr::str_replace(., "_", " "))
+            } else {
+            plot_ef_bar(all_viz_trim) +
+            scale_fill_manual(values = agua_col) + 
+            theme(axis.text = element_text(size = 8)) +
+            guides(fill = guide_legend(reverse = TRUE))
+            }
+}
+```
+
+
+<br/>
+
+### FULL data set 
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+all_viz_plot(ssu_ps_work_Y0_lefse_all_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_all_full_Y0")`</small>
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+all_viz_plot(ssu_ps_work_Y1_lefse_all_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_all_full_Y1")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+all_viz_plot(ssu_ps_work_Y4_lefse_all_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_all_full_Y1")`</small>
+:::
+:::
+:::
+
+### Arbitrary filtered 
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+all_viz_plot(ssu_ps_filt_Y0_lefse_all_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_all_filt_Y0")`</small>
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+all_viz_plot(ssu_ps_filt_Y1_lefse_all_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_all_filt_Y1")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+all_viz_plot(ssu_ps_filt_Y4_lefse_all_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_all_filt_Y1")`</small>
+:::
+:::
+:::
+
+### PERFect filtered
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+all_viz_plot(ssu_ps_perfect_Y0_lefse_all_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_all_perfect_Y0")`</small>
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+all_viz_plot(ssu_ps_perfect_Y1_lefse_all_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_all_perfect_Y1")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+all_viz_plot(ssu_ps_perfect_Y4_lefse_all_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_all_perfect_Y1")`</small>
+:::
+:::
+:::
+
+### PIME filtered 
+
+::: l-body
+::: {.panelset}
+
+::: {.panel}
+
+#### Year 0
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+all_viz_plot(ssu_ps_pime_Y0_lefse_all_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_all_pime_Y0")`</small>
+:::
+
+::: {.panel}
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+all_viz_plot(ssu_ps_pime_Y1_lefse_all_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_all_pime_Y1")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body"}
+all_viz_plot(ssu_ps_pime_Y4_lefse_all_viz_trim)
+```
+<small>`r caption_fig_ssu("ssu_lefse_all_pime_Y1")`</small>
+:::
+:::
+:::
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####################################################
+############# S
+############# T
+############# A
+############# R
+############# T
+############# HERE
+####################################################
+
+
+
+```{r}
+shap_test <-  function(alpha_div_tab) {
+  shap_deparse <- deparse(substitute(alpha_div_tab))
+  shap_year <- gsub(".*_", "", shap_deparse)
+  shap_test_list <- c()
+  for (i in colnames(alpha_div_tab[,9:ncol(alpha_div_tab)])) {
+      tmp_name <- purrr::map_chr(i, ~ paste0("ssu_shap_", shap_year, "_", .))
+      shap_test_list <- append(shap_test_list, tmp_name)
+      tmp_test <- eval(shapiro.test(alpha_div_tab[[i]]))
+      tmp_test$data.name <- tmp_name
+      assign(tmp_name, tmp_test, envir = parent.frame() )
+      rm(list = ls(pattern = "tmp_"))
+  }
+}
+
+```
+
+
+```{r}
+rm(ssu_asv_chart)
+min_lda_score <- 3
+max_p_value <- 0.05
+ssu_asv_chart <- c()
+for (i in objects(pattern = "_lefse_asv_final$")) {
+     tmp_get <- get(i)
+     tmp_get <- tmp_get[, 1:4]
+     tmp_ds <- stringr::str_remove(i, "_Y[0-9]_lefse_asv_final") %>%
+               stringr::str_remove(., "ssu_ps_")
+       
+     tmp_year <- stringr::str_remove(i, "_lefse_asv_final") %>%
+                 stringr::str_remove(., ".*_")
+     tmp_get$year <- tmp_year
+     tmp_get$dataset <- tmp_ds
+     tmp_get <- tmp_get %>% relocate(c(dataset, year), .after  = ASV_ID)
+     tmp_get$group <- gsub("^Y[0-9]_", "", tmp_get$group)
+     
+     tmp_get <- tmp_get %>% dplyr::filter(ef_lda >= min_lda_score & pval <= max_p_value)
+     
+     ssu_asv_chart <- rbind(ssu_asv_chart, tmp_get)
+     tmp_res_name <- purrr::map_chr(i, ~ paste0(., "_testing"))
+     assign(tmp_res_name, tmp_get)
+     rm(list = ls(pattern = "tmp_"))
+}
+```
+
+
+```{r}
+row_order <- c("CTL", "N", "P", "NP") 
+ds_order <- c("work", "filt", "perfect", "pime") 
+ssu_asv_chart <- ssu_asv_chart  %>% dplyr::mutate(group = factor(group, levels = row_order)) %>% 
+                           dplyr::arrange(group)
+ssu_asv_chart <- ssu_asv_chart  %>% dplyr::mutate(dataset = factor(dataset, levels = ds_order)) %>% 
+                           dplyr::arrange(dataset)
+tmp_df <- ssu_asv_chart %>% count(dataset, group, year, sort = TRUE)
+
+
+ggplot(tmp_df, aes(x = year, y = n, fill = group)) + 
+  geom_col(position = "fill") + 
+#  geom_label(aes(label = percent(percent)), position = "fill", color = "white", vjust = 1, show.legend = FALSE) +
+#  scale_y_continuous(labels = percent) +
+  facet_grid(~dataset)
+
+
+
+ssu_asv_chart <- do.call(rbind, datalist)
+objects(pattern = "_testing")
+
+     
+      ssu_asv_chart <- c()
+      ssu_asv_chart <- c(append(ssu_asv_chart, tmp_get))
+
+
+     if(tmp_get$dataset[tmp_get$dataset == "work"]) {
+          tmp_get$dataset <- "full" 
+     } else {
+       tmp_get$dataset <- tmp_ds
+     }
+
+
+
+ggplot(ssu_asv_chart, aes(x = dataset, fill = group)) + geom_bar()
+
+```
+
+
+
+
+
+
+## Response of select taxa
+
+In this section of the workflow we use the [`microbiomeMarker`](https://github.com/yiluheihei/microbiomeMarker) package to assess the response of taxonomic lineages to soil warming. In the first step we need to fix the selected data set to make it compatible with the various functions. For this analysis we use the PERFect filtered data set.
+
+```{r, eval=FALSE, echo=FALSE}
+#TEMP LOAD ONLY REMOVE WHEN WORKFLOW FINISHED
+remove(list = ls())
+load("page_build/da_wf.rdata")
+gdata::keep("ssu_ps_work_rf_all", 
+            "ssu_ps_work_rf_asv", 
+            "ssu_ps_filt_rf_all", 
+            "ssu_ps_filt_rf_asv", 
+            "ssu_ps_perfect_rf_all", 
+            "ssu_ps_perfect_rf_asv", 
+            "ssu_ps_pime_rf_all", 
+            "ssu_ps_pime_rf_asv", 
+            sure = TRUE)
+objects()
+```
+
+```{r, code_folding=TRUE}
+## FIX ps object
+ssu_ps <- ssu_ps_perfect_rf_all
+tmp_tax1 <- data.frame(tax_table(ssu_ps))
+#tmp_tax1$ASV_SEQ <- NULL
+tmp_rn <- row.names(tmp_tax1)
+tmp_tax <- data.frame(lapply(tmp_tax1, function(x) {gsub("\\(|)", "", x)}))
+row.names(tmp_tax) <- tmp_rn
+identical(row.names(tmp_tax), row.names(tmp_tax1))
+#dplyr::filter(tmp_tax, Phylum == "Acidobacteriota")
+ps_tax_new <- as.matrix(tmp_tax)
+tmp_ps <- phyloseq(otu_table(ssu_ps),
+                     phy_tree(ssu_ps),
+                     tax_table(ps_tax_new),
+                     sample_data(ssu_ps))
+ssu_ps <- tmp_ps
+phyloseq::rank_names(ssu_ps)
+data.frame(tax_table(ssu_ps))
+```
+
+Next we run a statistical test for multiple groups using the `run_test_multiple_groups` function.
+
+```{r, code_folding=TRUE}
+ssu_group_anova <-  run_test_multiple_groups(ssu_ps, group = "TEMP", 
+                                             taxa_rank = "all", 
+                                             method = "anova")
+ssu_group_anova@marker_table
+marker_table(ssu_group_anova)
+```
+
+```{r, echo=FALSE}
+## Loop through different norms
+#norm: 
+#default = TSS
+#CSS = NONE = RLE = TMM
+#meth <- c("none", "rarefy", "TSS", "CLR")
+#for (i in meth) {
+#  tmp_pht <- run_posthoc_test(ssu_ps, group = "TEMP", method = "tukey", norm = i, transform = "log10")
+#  tmp_name <- purrr::map_chr(i, ~ paste0(., "_results"))
+#  assign(tmp_name, tmp_pht)
+#  rm(list = ls(pattern = "tmp_"))
+#}
+## Filter results
+#filter(data.frame(CLR_results@result), group_name == "k__Bacteria|p__Actinobacteriota|c__Thermoleophilia|o__Gaiellales")
+#filter(data.frame(CSS_results@result), group_name == "k__Bacteria|p__Actinobacteriota|c__Thermoleophilia|o__Gaiellales")
+#filter(data.frame(none_results@result), group_name == "k__Bacteria|p__Actinobacteriota|c__Thermoleophilia|o__Gaiellales")
+#filter(data.frame(rarefy_results@result), group_name == "k__Bacteria|p__Actinobacteriota|c__Thermoleophilia|o__Gaiellales")
+#filter(data.frame(RLE_results@result), group_name == "k__Bacteria|p__Actinobacteriota|c__Thermoleophilia|o__Gaiellales")
+#filter(data.frame(TMM_results@result), group_name == "k__Bacteria|p__Actinobacteriota|c__Thermoleophilia|o__Gaiellales")
+```
+
+And then conduct ost hoc pairwise comparisons for multiple groups test using the `run_posthoc_test` function.
+
+
+```{r, code_folding=TRUE}
+ssu_default_pht <- run_posthoc_test(ssu_ps, group = "TEMP", 
+                                    method = "tukey", transform = "log10")
+```
+
+We can filter out a select taxa and plot the results. 
+
+```{r, eval=TRUE, echo=TRUE}
+filter(data.frame(ssu_default_pht@result), group_name == "k__Bacteria|p__Actinobacteriota|c__Thermoleophilia|o__Gaiellales")
+plot_postHocTest(ssu_default_pht, feature = "k__Bacteria|p__Actinobacteriota|c__Thermoleophilia|o__Gaiellales") & theme_bw()
+```
+
+But what we really want to do is get all of the markers that are significant from the analysis, excluding any significant ASVs so we can look at high taxa ranks.
+
+```{r, code_folding=TRUE}
+ssu_pht <- ssu_default_pht
+ssu_pht_filt <- filter(data.frame(ssu_pht@result), pvalue <= "0.05")[!grepl("ASV", filter(data.frame(ssu_pht@result), pvalue <= "0.05")$group_name),]
+ssu_pht_filt <- ssu_pht_filt[!grepl("[a-z]__$", ssu_pht_filt$group_name),]
+ssu_pht_filt <- unique(ssu_pht_filt$group_name)
+length(ssu_pht_filt)
+save.image("page_build/mmarker_wf.rdata")
+```
+
+There are **`r length(ssu_pht_filt)`** significantly different lineage markers.
+
+<details markdown="1">
+<summary>**Click here** to see a list of significantly different lineage markers.</summary>
+
+```{r, eval=TRUE, echo=FALSE}
+ssu_pht_filt
+```
+</details>
+
+```{r, echo=FALSE}
+source("hack_code/plot_postHocTest_jjs.R")
+environment(plot_postHocTest_jjs) <- asNamespace('microbiomeMarker')
+```
+
+Now we select a subset of the `r length(ssu_pht_filt)` markers to plot and visualize the results.
+
+```{r, code_folding=TRUE}
+ssu_select <- c(
+"k__Bacteria|p__Acidobacteriota|c__Acidobacteriae|o__Subgroup_2", 
+"k__Bacteria|p__Bacteroidota|c__Bacteroidia|o__Chitinophagales|f__Saprospiraceae", 
+"k__Bacteria|p__Bacteroidota|c__Bacteroidia|o__Cytophagales", 
+"k__Bacteria|p__Bacteroidota|c__Bacteroidia|o__Flavobacteriales", 
+"k__Bacteria|p__Bacteroidota|c__Bacteroidia|o__Sphingobacteriales", 
+"k__Bacteria|p__Myxococcota|c__Polyangia|o__mle1-27", 
+"k__Bacteria|p__Proteobacteria|c__Gammaproteobacteria|o__Burkholderiales|f__Comamonadaceae|g__Rubrivivax", 
+"k__Bacteria|p__Actinobacteriota|c__Acidimicrobiia|o__Microtrichales", 
+"k__Bacteria|p__Actinobacteriota|c__Thermoleophilia|o__Gaiellales", 
+"k__Bacteria|p__Firmicutes|c__Bacilli|o__Bacillales", 
+"k__Bacteria|p__Myxococcota|c__Myxococcia|o__Myxococcales|f__Myxococcaceae|g__Corallococcus", 
+"k__Bacteria|p__Proteobacteria|c__Gammaproteobacteria|o__Burkholderiales|f__Burkholderiaceae|g__Ralstonia" 
+)
+```
+
+```{r, echo=FALSE}
+swel_col <- c("#2271B2", "#71B222", "#B22271")
+for (i in ssu_select) {
+  tmp_select_feat <- i
+  tmp_plot <- plot_postHocTest_jjs(ssu_pht, feature = tmp_select_feat) & theme_bw() 
+  tmp_plot <- tmp_plot + geom_boxplot(fill = swel_col) + 
+    scale_colour_manual(values = c("#191919", "#191919", "#191919")) + 
+    geom_point(size = 2, show.legend = FALSE) + 
+    ylab("Relative abundance (% total reads)")
+  tmp_name <- purrr::map_chr(i, ~ paste0(., "_tax_plot"))
+  #tmp_name <- purrr::map_chr(gsub(pattern = "^.*[a-z]\\|", x = i, replacement = ""), ~ paste0(., "_tax_plot"))
+  assign(tmp_name, tmp_plot)
+  ggplot2::ggsave(tmp_plot, file = paste0("files/da/figures/", i,".png", sep = ""), height = 7, width = 9, units = 'cm', dpi = 600, bg = "white")
+  ggplot2::ggsave(tmp_plot, file = paste0("files/da/figures/", i,".pdf", sep = ""), height = 5, width = 6.5)
+  rm(list = ls(pattern = "tmp_"))
+} 
+
+```
+
+```{r, echo=FALSE}
+ssu_title <- c(
+"Subgroup_2 (Acidobacteriota)", 
+"Saprospiraceae (Bacteroidota)", 
+"Cytophagales (Bacteroidota)", 
+"Flavobacteriales (Bacteroidota)", 
+"Sphingobacteriales (Bacteroidota)", 
+"mle1-27 (Myxococcota)", 
+"Rubrivivax (Proteobacteria)", 
+"Microtrichales (Actinobacteriota)", 
+"Gaiellales (Actinobacteriota)", 
+"Bacillales (Firmicutes)", 
+"Corallococcus (Myxococcota)", 
+"Ralstonia (Proteobacteria)"
+)
+```
+
+```{r, echo=FALSE}
+tmp_1 <- get(purrr::map_chr(ssu_select[1], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(ssu_title[1])
+tmp_2 <- get(purrr::map_chr(ssu_select[2], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(ssu_title[2])
+tmp_3 <- get(purrr::map_chr(ssu_select[3], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(ssu_title[3])
+   
+tmp_4 <- get(purrr::map_chr(ssu_select[4], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(ssu_title[4])
+tmp_5 <- get(purrr::map_chr(ssu_select[5], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(ssu_title[5])
+tmp_6 <- get(purrr::map_chr(ssu_select[6], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(ssu_title[6])
+  
+tmp_7 <- get(purrr::map_chr(ssu_select[7], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(ssu_title[7])
+tmp_8 <- get(purrr::map_chr(ssu_select[8], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(ssu_title[8])
+tmp_9 <- get(purrr::map_chr(ssu_select[9], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(ssu_title[9])
+
+tmp_10 <- get(purrr::map_chr(ssu_select[10], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(ssu_title[10])
+tmp_11 <- get(purrr::map_chr(ssu_select[11], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(ssu_title[11])
+tmp_12 <- get(purrr::map_chr(ssu_select[12], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(ssu_title[12])
+
+ssu_taxa_combo_plot <- ((tmp_1 + tmp_2 + tmp_3) / (tmp_4 + tmp_5 + tmp_6) / (tmp_7 + tmp_8 + tmp_9) / (tmp_10 + tmp_11 + tmp_12))
+ssu_taxa_combo_plot
+```
+
+```{r, echo=FALSE}
+ggplot2::ggsave(ssu_taxa_combo_plot, path = "files/da/figures/combo_plots", filename =  "ssu_taxa_marker.png", height = 32, width = 36,
+    units = 'cm', dpi = 600, bg = "white")
+ggplot2::ggsave(ssu_taxa_combo_plot, path = "files/da/figures/combo_plots", filename = "ssu_taxa_marker.pdf", height = 12, width = 12)
+```
+
+```{r, echo=FALSE}
+system("cp files/da/figures/combo_plots/ssu_taxa_marker.png include/da/ssu_taxa_marker.png")
+```
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-body-outset'}
+knitr::include_graphics("include/da/ssu_taxa_marker.png")
+```
+<small>`r caption_fig_ssu("ssu_taxa_marker_plot")`</small>
+
+```{r, echo=FALSE}
+save.image("page_build/mmarker_wf.rdata")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ITS
+
+```{r, include=FALSE}
+## Initial Load for  ANALYSIS #1
+remove(list = ls())
+its_ps_work <- readRDS("files/data-prep/rdata/its_ps_work.rds")
+its_ps_filt <- readRDS("files/perfect/rdata/its_ps_filt.rds")
+its_ps_perfect <- readRDS("files/perfect/rdata/its_ps_perfect.rds")
+its_ps_pime <- readRDS("files/pime/rdata/its_ps_pime.rds")
+```
+
+
+```{r, echo=FALSE}	
+samp_ps <- c("its_ps_work", "its_ps_filt", "its_ps_perfect", "its_ps_pime")	
+for (i in samp_ps) {	
+	  tmp_get <- get(i)	
+	  tmp_path <- file.path("files/alpha/rdata/")	
+	  tmp_read <- readRDS(paste(tmp_path, i, ".rds", sep = ""))	
+	  tmp_sam_data <- sample_data(tmp_read)	
+	  tmp_tax_data <- data.frame(tax_table(tmp_get))	
+	  #tmp_tax_data[,c(1:6)]	
+	  tmp_tax_data$ASV_ID <- NULL # Some have, some do not	
+	  tmp_tax_data[] <- data.frame(lapply(tmp_tax_data, gsub, 	
+	                                      pattern = "^[k | p | c | o | f]_.*", 	
+	                                      replacement = NA, fixed = FALSE))	
+	  tmp_tax_data <- as.matrix(tmp_tax_data)	
+	  tmp_ps <- phyloseq(otu_table(tmp_get),	
+	                     tax_table(tmp_tax_data),	
+	                     tmp_sam_data)	
+	  assign(i, tmp_ps)	
+	  rm(list = ls(pattern = "tmp_"))	
+}	
+objects()	
+```
+
+
+```{r, echo=FALSE}
+swel_col <- c("#2271B2", "#71B222", "#B22271")
+```
+
+## Indicator Analysis
+
+1. Choose a data set(s) & set the p-value cutoff.
+
+```{r}
+samp_ps <- c("its_ps_work", "its_ps_filt", "its_ps_perfect", "its_ps_pime")	
+indval_pval <- 0.05
+```
+
+2. Format Data Frame
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(i)
+     tmp_df <- data.frame(otu_table(tmp_get))
+     tmp_df <- tmp_df[, which(colSums(tmp_df) != 0)]
+     tmp_row_names <- row.names(tmp_df)
+     tmp_row_names <- tmp_row_names %>%
+              stringr::str_replace("P[0-9]{2}_D[0-9]{2}_[0-9]{3}_", "") %>%
+              stringr::str_replace("[A-Z]$", "")
+     tmp_df <- tmp_df %>% tibble::add_column(tmp_row_names, .before = 1)
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_seq_tab"))
+     assign(tmp_name, tmp_df)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects()
+```
+
+3. Run Indicator Analysis
+
+```{r, code_folding=TRUE}
+set.seed(1191)
+for (i in samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_seq_tab")))
+     tmp_iva <- indval(tmp_get[,-1], tmp_get[,1])
+     tmp_gr <- tmp_iva$maxcls[tmp_iva$pval <= indval_pval]
+     tmp_iv <- tmp_iva$indcls[tmp_iva$pval <= indval_pval]
+     tmp_pv <- tmp_iva$pval[tmp_iva$pval <= indval_pval]
+     tmp_fr <- apply(tmp_get[,-1] > 0, 2, sum)[tmp_iva$pval <= indval_pval]
+     tmp_sum <- data.frame(group = tmp_gr, indval = tmp_iv,
+                                  pval = tmp_pv, freq = tmp_fr)
+     tmp_sum <- tmp_sum[order(tmp_sum$group, -tmp_sum$indval),]
+
+     tmp_tax_df <- data.frame(tax_table(get(i)))
+     tmp_tax_df$ASV_ID <- NULL
+     tmp_sum_tax <- merge(tmp_sum, tmp_tax_df, by = "row.names", all = TRUE)
+     tmp_sum_tax <- tmp_sum_tax[!(is.na(tmp_sum_tax$group)),]
+     class(tmp_sum_tax$group) <- "character"
+     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^1$", "C0")
+     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^2$", "W3")
+     tmp_sum_tax$group <- stringr::str_replace(tmp_sum_tax$group, "^3$", "W8")
+     tmp_sum_tax <- tmp_sum_tax %>% dplyr::rename("ASV_ID" = "Row.names")
+     tmp_sum_tax <- tmp_sum_tax[order(as.numeric(gsub("[A-Z]{3}", "", tmp_sum_tax$ASV_ID))),]
+     tmp_sum_tax$ASV_ID <-  as.character(tmp_sum_tax$ASV_ID)
+     tmp_sum.prob.corrected <- p.adjust(tmp_sum$pval, "bonferroni")
+     tmp_res_name <- purrr::map_chr(i, ~ paste0(., "_indval_summary"))
+     assign(tmp_res_name, tmp_sum_tax)
+     rm(list = ls(pattern = "tmp_"))
+}
+```
+
+Now we can save a few files and display the data.
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_seq_tab")))
+     tmp_get[,1] <- NULL
+     tmp_df <- as.data.frame(t(tmp_get))
+     tmp_col_names <- colnames(tmp_df)
+     tmp_col_names <- tmp_col_names %>%
+              stringr::str_replace("P[0-9]{2}_D[0-9]{2}_[0-9]{3}_", "") %>%
+              stringr::str_replace("[A-Z]$", "")
+     colnames(tmp_df) <- tmp_col_names
+     #tmp_df$freq_all <- apply(tmp_df > 0, 1, sum)
+     tmp_df$freq_C0 <- apply(tmp_df[ , (names(tmp_df) %in% "C0")] > 0, 1, sum)
+     tmp_df$freq_W3 <- apply(tmp_df[ , (names(tmp_df) %in% "W3")] > 0, 1, sum)
+     tmp_df$freq_W8 <- apply(tmp_df[ , (names(tmp_df) %in% "W8")] > 0, 1, sum)
+     tmp_df$reads_total <- base::rowSums(tmp_df[ , (names(tmp_df) %in% c("C0", 
+                                                                         "W3", 
+                                                                         "W8"))])
+     tmp_df$reads_C0 <- base::rowSums(tmp_df[ , (names(tmp_df) %in% "C0")])
+     tmp_df$reads_W3 <- base::rowSums(tmp_df[ , (names(tmp_df) %in% "W3")])
+     tmp_df$reads_W8 <- base::rowSums(tmp_df[ , (names(tmp_df) %in% "W8")])
+     tmp_df <- tmp_df[,!grepl("^[C | W]", names(tmp_df))]
+     tmp_df <- tmp_df %>% tibble::rownames_to_column("ASV_ID")
+
+     tmp_get_indval <- get(purrr::map_chr(i, ~ paste0(., "_indval_summary")))
+     tmp_merge_df <- merge(tmp_df, tmp_get_indval, by = "ASV_ID", all = FALSE)
+     tmp_merge_df <- tmp_merge_df[,c(1,9:12,2:8,13:19)]
+     tmp_merge_df <- tmp_merge_df[order(tmp_merge_df$reads_total, decreasing = TRUE), ]
+     tmp_merge_name <- purrr::map_chr(i, ~ paste0(., "_indval_final"))
+     assign(tmp_merge_name, tmp_merge_df)
+     rm(list = ls(pattern = "tmp_"))
+}
+```
+
+4. Save a new phyloseq object
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(i)
+     tmp_tab <- get(purrr::map_chr(i, ~ paste0(., "_indval_summary")))
+     tmp_list <- tmp_tab[,1]
+     tmp_ps <- prune_taxa(tmp_list, tmp_get)
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_ind"))
+     assign(tmp_name, tmp_ps)
+     tmp_ps@phy_tree <- NULL
+     tmp_ps <- prune_samples(sample_sums(tmp_ps) > 0, tmp_ps)
+     tmp_ps_tree <- rtree(ntaxa(tmp_ps), rooted = TRUE,
+                            tip.label = taxa_names(tmp_ps))
+     tmp_ps <- merge_phyloseq(tmp_ps, sample_data, tmp_ps_tree)
+     assign(tmp_name, tmp_ps)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects()
+```
+
+## Indicator Summary
+
+</br>
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+#### FULL
+
+```{r, echo=FALSE, eval=TRUE}
+seq_table <- its_ps_work_indval_final
+seq_table %>%
+  download_this(
+    output_name = "its_isa_results_full",
+    output_extension = ".csv",
+    button_label = "Download data as csv file",
+    button_type = "default",
+    csv2 = FALSE,
+    has_icon = TRUE,
+    icon = "fa fa-save")
+```
+
+<small>`r caption_tab_its("its_isa_full")`</small>
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+reactable(seq_table,
+  defaultColDef = colDef(headerStyle = list(fontSize = "0.8em"),
+    header = function(value) gsub("_", " ", value, fixed = TRUE),
+    cell = function(value) format(value, nsmall = 0),
+    align = "left", filterable = TRUE, sortable = TRUE, resizable = TRUE
+    ), 
+  columns = list(
+    ASV_ID = colDef(name = "ASV_ID", 
+                       sticky = "left", 
+                       style = list(borderRight = "5px solid #eee"),
+                       headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em"), 
+                       align = "left",
+                       minWidth = 100), 
+    group = colDef(name = "enriched", align = "center"),
+    indval = colDef(name = "indval score", align = "center", filterable = FALSE,
+                       minWidth = 130),
+    pval = colDef(name = "p-value", align = "center", filterable = FALSE,
+                  style = list(borderRight = "5px solid #eee"),
+                  headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    freq = colDef(name = "all samples", align = "center", filterable = FALSE),
+    freq_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    freq_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    freq_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    reads_total = colDef(name = "all", align = "center", filterable = FALSE),
+    reads_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    reads_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    reads_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    ASV_SEQ = colDef(name = "ASV sequence", filterable = FALSE)
+    ),
+  columnGroups = list(
+      colGroup(name = "Indicator analysis results", sticky = "left",
+             columns = c("group", "indval", "pval"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Frequency", 
+             columns = c("freq", "freq_C0", "freq_W3", "freq_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Read totals", 
+             columns = c("reads_total", "reads_C0", "reads_W3", "reads_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Lineage", align = "left",
+             columns = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
+      ),
+  searchable = TRUE, defaultPageSize = 5, 
+  pageSizeOptions = c(5, 10, nrow(seq_table)), 
+  showPageSizeOptions = TRUE, highlight = TRUE, 
+  bordered = TRUE, striped = TRUE, compact = FALSE, 
+  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
+  theme = reactableTheme(style = list(fontSize = "0.8em")))
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Arbitrary filtered
+
+```{r, echo=FALSE, eval=TRUE}
+seq_table <- its_ps_filt_indval_final
+seq_table %>%
+  download_this(
+    output_name = "its_isa_results_arbitrary",
+    output_extension = ".csv",
+    button_label = "Download data as csv file",
+    button_type = "default",
+    csv2 = FALSE,
+    has_icon = TRUE,
+    icon = "fa fa-save")
+```
+
+<small>`r caption_tab_its("its_isa_filt")`</small>
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+reactable(seq_table,
+  defaultColDef = colDef(headerStyle = list(fontSize = "0.8em"),
+    header = function(value) gsub("_", " ", value, fixed = TRUE),
+    cell = function(value) format(value, nsmall = 0),
+    align = "left", filterable = TRUE, sortable = TRUE, resizable = TRUE,
+    footerStyle = list(fontWeight = "bold")
+    ), 
+  columns = list(
+    ASV_ID = colDef(name = "ASV_ID", 
+                       sticky = "left", 
+                       style = list(borderRight = "5px solid #eee"),
+                       headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em"), 
+                       align = "left",
+                       minWidth = 100), 
+    group = colDef(name = "enriched", align = "center"),
+    indval = colDef(name = "indval score", align = "center", filterable = FALSE,
+                       minWidth = 130),
+    pval = colDef(name = "p-value", align = "center", filterable = FALSE,
+                  style = list(borderRight = "5px solid #eee"),
+                  headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    freq = colDef(name = "all samples", align = "center", filterable = FALSE),
+    freq_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    freq_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    freq_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    reads_total = colDef(name = "all", align = "center", filterable = FALSE),
+    reads_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    reads_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    reads_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    ASV_SEQ = colDef(name = "ASV sequence", filterable = FALSE)
+    ),
+  columnGroups = list(
+      colGroup(name = "Indicator analysis results", sticky = "left",
+             columns = c("group", "indval", "pval"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Frequency", 
+             columns = c("freq", "freq_C0", "freq_W3", "freq_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Read totals", 
+             columns = c("reads_total", "reads_C0", "reads_W3", "reads_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Lineage", align = "left",
+             columns = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
+      ),
+  searchable = TRUE, defaultPageSize = 5, 
+  pageSizeOptions = c(5, 10, nrow(seq_table)), 
+  showPageSizeOptions = TRUE, highlight = TRUE, 
+  bordered = TRUE, striped = TRUE, compact = FALSE, 
+  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
+  theme = reactableTheme(style = list(fontSize = "0.8em")))
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### PERfect filtered
+
+```{r, echo=FALSE, eval=TRUE}
+seq_table <- its_ps_perfect_indval_final
+seq_table %>%
+  download_this(
+    output_name = "its_isa_results_perfect",
+    output_extension = ".csv",
+    button_label = "Download data as csv file",
+    button_type = "default",
+    csv2 = FALSE,
+    has_icon = TRUE,
+    icon = "fa fa-save")
+```
+
+<small>`r caption_tab_its("its_isa_perfect")`</small>
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+reactable(seq_table,
+  defaultColDef = colDef(headerStyle = list(fontSize = "0.8em"),
+    header = function(value) gsub("_", " ", value, fixed = TRUE),
+    cell = function(value) format(value, nsmall = 0),
+    align = "left", filterable = TRUE, sortable = TRUE, resizable = TRUE,
+    footerStyle = list(fontWeight = "bold")
+    ), 
+  columns = list(
+    ASV_ID = colDef(name = "ASV_ID", 
+                       sticky = "left", 
+                       style = list(borderRight = "5px solid #eee"),
+                       headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em"), 
+                       align = "left",
+                       minWidth = 100), 
+    group = colDef(name = "enriched", align = "center"),
+    indval = colDef(name = "indval score", align = "center", filterable = FALSE,
+                       minWidth = 130),
+    pval = colDef(name = "p-value", align = "center", filterable = FALSE,
+                  style = list(borderRight = "5px solid #eee"),
+                  headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    freq = colDef(name = "all samples", align = "center", filterable = FALSE),
+    freq_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    freq_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    freq_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    reads_total = colDef(name = "all", align = "center", filterable = FALSE),
+    reads_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    reads_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    reads_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    ASV_SEQ = colDef(name = "ASV sequence", filterable = FALSE)
+    ),
+  columnGroups = list(
+      colGroup(name = "Indicator analysis results", sticky = "left",
+             columns = c("group", "indval", "pval"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Frequency", 
+             columns = c("freq", "freq_C0", "freq_W3", "freq_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Read totals", 
+             columns = c("reads_total", "reads_C0", "reads_W3", "reads_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Lineage", align = "left",
+             columns = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
+      ),
+  searchable = TRUE, defaultPageSize = 5, 
+  pageSizeOptions = c(5, 10, nrow(seq_table)), 
+  showPageSizeOptions = TRUE, highlight = TRUE, 
+  bordered = TRUE, striped = TRUE, compact = FALSE, 
+  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
+  theme = reactableTheme(style = list(fontSize = "0.8em")))
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### PIME filtered
+
+```{r, echo=FALSE, eval=TRUE}
+seq_table <- its_ps_pime_indval_final
+seq_table %>%
+  download_this(
+    output_name = "its_isa_results_pime",
+    output_extension = ".csv",
+    button_label = "Download data as csv file",
+    button_type = "default",
+    csv2 = FALSE,
+    has_icon = TRUE,
+    icon = "fa fa-save")
+```
+
+<small>`r caption_tab_its("its_isa_pime")`</small>
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+reactable(seq_table,
+  defaultColDef = colDef(headerStyle = list(fontSize = "0.8em"),
+    header = function(value) gsub("_", " ", value, fixed = TRUE),
+    cell = function(value) format(value, nsmall = 0),
+    align = "left", filterable = TRUE, sortable = TRUE, resizable = TRUE,
+    footerStyle = list(fontWeight = "bold")
+    ), 
+  columns = list(
+    ASV_ID = colDef(name = "ASV_ID", 
+                       sticky = "left", 
+                       style = list(borderRight = "5px solid #eee"),
+                       headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em"), 
+                       align = "left",
+                       minWidth = 100), 
+    group = colDef(name = "enriched", align = "center"),
+    indval = colDef(name = "indval score", align = "center", filterable = FALSE,
+                       minWidth = 130),
+    pval = colDef(name = "p-value", align = "center", filterable = FALSE,
+                  style = list(borderRight = "5px solid #eee"),
+                  headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    freq = colDef(name = "all samples", align = "center", filterable = FALSE),
+    freq_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    freq_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    freq_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    reads_total = colDef(name = "all", align = "center", filterable = FALSE),
+    reads_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    reads_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    reads_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    ASV_SEQ = colDef(name = "ASV sequence", filterable = FALSE)
+    ),
+  columnGroups = list(
+      colGroup(name = "Indicator analysis results", sticky = "left",
+             columns = c("group", "indval", "pval"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Frequency", 
+             columns = c("freq", "freq_C0", "freq_W3", "freq_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Read totals", 
+             columns = c("reads_total", "reads_C0", "reads_W3", "reads_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Lineage", align = "left",
+             columns = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
+      ),
+  searchable = TRUE, defaultPageSize = 5, 
+  pageSizeOptions = c(5, 10, nrow(seq_table)), 
+  showPageSizeOptions = TRUE, highlight = TRUE, 
+  bordered = TRUE, striped = TRUE, compact = FALSE, 
+  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
+  theme = reactableTheme(style = list(fontSize = "0.8em")))
+rm(seq_table)
+```
+:::
+
+::: 
+::: 
+
+## LEfSe Analysis
+
+Details about LEFSE
+
+[microbiomeMarker](https://github.com/yiluheihei/microbiomeMarker)
+
+Remove ASV seq, subset only ASVs
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+  tmp_get <- get(i)
+  tax_table(tmp_get) <- tax_table(tmp_get)[,c(1:6)]
+  tax_table(tmp_get) <- cbind(tax_table(tmp_get),
+                           rownames(tax_table(tmp_get)))
+  colnames(tax_table(tmp_get)) <- c("Kingdom", "Phylum", "Class", "Order", 
+                                    "Family", "Genus", "Species")
+  tmp_name <- purrr::map_chr(i, ~ paste0(., "_rf_all"))
+  assign(tmp_name, tmp_get)
+  tax_table(tmp_get) <- tax_table(tmp_get)[,c(7)]
+  tmp_name_asv <- purrr::map_chr(i, ~ paste0(., "_rf_asv"))
+  assign(tmp_name_asv, tmp_get)
+  rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern = "_rf")
+```
+
+1. Choose a data set(s) & set the LEfSe cutoff values.	
+		
+```{r}	
+samp_ps <- c("its_ps_work", "its_ps_filt", "its_ps_perfect", "its_ps_pime")	
+lefse_lda <- 2	
+lefse_kw <- 0.05	
+lefse_wc <- 0.05	
+```	
+
+
+```{r, warnings = FALSE, error = FALSE, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_rf_asv")))
+     tmp_lefse <- run_lefse(tmp_get, norm = "CPM", class = "TEMP", correct = "2", 
+                        lda_cutoff = lefse_lda, kw_cutoff = lefse_kw, wilcoxon_cutoff = lefse_wc, 
+                        bootstrap_n = 30, bootstrap_fraction = 2/3, 
+                        sample_min = 10, multicls_strat = FALSE, curv = FALSE)
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_lefse_asv"))
+     assign(tmp_name, tmp_lefse)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern = "_lefse_asv")
+
+for (i in samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_rf_all")))
+     tmp_lefse <- run_lefse(tmp_get, norm = "CPM", class = "TEMP", correct = "2", 
+                        lda_cutoff = lefse_lda, kw_cutoff = lefse_kw, wilcoxon_cutoff = lefse_wc, 
+                        bootstrap_n = 30, bootstrap_fraction = 2/3, 
+                        sample_min = 10, multicls_strat = FALSE, curv = FALSE)
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_lefse_all"))
+     assign(tmp_name, tmp_lefse)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern = "_lefse_asv")
+objects(pattern = "_lefse_all")
+```
+
+```{r, echo=FALSE}
+# DONT RUN, TESTING ONLY
+#tmp_tab <- data.frame(marker_table(its_ps_pime_lefse_asv))
+#tmp_tab$feature <- gsub('s__', '', tmp_tab$feature)
+
+#tmp_ps <- data.frame(t(otu_table(its_ps_pime_rf_asv)))
+#tmp_ps <- tmp_ps %>% tibble::rownames_to_column("feature")
+#write.table(dplyr::left_join(tmp_tab, tmp_ps, by = "feature"), "test.txt", quote = FALSE, sep = "\t")
+```
+
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+    tmp_o_tax <- data.frame(tax_table(get(i)))
+    tmp_o_tax$ASV_ID <- NULL 
+    tmp_o_tax <- tmp_o_tax %>% tibble::rownames_to_column("ASV_ID")
+    
+    tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_lefse_asv")))
+    tmp_mt <- data.frame(marker_table(tmp_get))
+    tmp_mt$feature <- gsub('s__', '', tmp_mt$feature)
+    tmp_mt <- tmp_mt %>% dplyr::rename(c("ASV_ID" = 1, "group" = 2, "pval" = 4)) %>%
+          tibble::remove_rownames()
+    tmp_sum <- dplyr::left_join(tmp_mt, tmp_o_tax, by = "ASV_ID")
+    tmp_sum$group <- stringr::str_replace(tmp_sum$group, "^0$", "C0")
+    tmp_sum$group <- stringr::str_replace(tmp_sum$group, "^3$", "W3")
+    tmp_sum$group <- stringr::str_replace(tmp_sum$group, "^8$", "W8")
+
+    tmp_sum <- tmp_sum[order(as.numeric(gsub("[A-Z]{3}", "", tmp_sum$ASV_ID))),]
+    
+    tmp_res_name <- purrr::map_chr(i, ~ paste0(., "_lefse_summary"))
+    assign(tmp_res_name, tmp_sum)
+    rm(list = ls(pattern = "tmp_"))
+}
+```
+
+Now we can save a few files and display the data.
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(i)
+     tmp_df <- data.frame(t(otu_table(tmp_get)))
+     #tmp_get[,1] <- NULL
+     #tmp_df <- as.data.frame(t(tmp_otu))
+     tmp_col_names <- colnames(tmp_df)
+     tmp_col_names <- tmp_col_names %>%
+              stringr::str_replace("P[0-9]{2}_D[0-9]{2}_[0-9]{3}_", "") %>%
+              stringr::str_replace("[A-Z]$", "")
+     colnames(tmp_df) <- tmp_col_names
+     tmp_df$freq <- apply(tmp_df > 0, 1, sum)
+     tmp_df$freq_C0 <- apply(tmp_df[ , (names(tmp_df) %in% "C0")] > 0, 1, sum)
+     tmp_df$freq_W3 <- apply(tmp_df[ , (names(tmp_df) %in% "W3")] > 0, 1, sum)
+     tmp_df$freq_W8 <- apply(tmp_df[ , (names(tmp_df) %in% "W8")] > 0, 1, sum)
+     tmp_df$reads_total <- base::rowSums(tmp_df[ , (names(tmp_df) %in% c("C0", "W3", "W8"))])
+     tmp_df$reads_C0 <- base::rowSums(tmp_df[ , (names(tmp_df) %in% "C0")])
+     tmp_df$reads_W3 <- base::rowSums(tmp_df[ , (names(tmp_df) %in% "W3")])
+     tmp_df$reads_W8 <- base::rowSums(tmp_df[ , (names(tmp_df) %in% "W8")])
+     tmp_df <- tmp_df[,!grepl("^[C | W]", names(tmp_df))]
+     tmp_df <- tmp_df %>% tibble::rownames_to_column("ASV_ID")
+
+     tmp_get_lefse <- get(purrr::map_chr(i, ~ paste0(., "_lefse_summary")))
+     tmp_merge_df <- merge(tmp_df, tmp_get_lefse, by = "ASV_ID", all = FALSE)
+
+     tmp_merge_df <- tmp_merge_df[,c(1,10:12,2:9,14:20)]
+     tmp_merge_df <- tmp_merge_df[order(tmp_merge_df$reads_total, decreasing = TRUE), ]
+     tmp_merge_name <- purrr::map_chr(i, ~ paste0(., "_lefse_final"))
+     assign(tmp_merge_name, tmp_merge_df)
+     rm(list = ls(pattern = "tmp_"))
+}
+
+```
+
+Save a new phyloseq object
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(i)
+     tmp_tab <- get(purrr::map_chr(i, ~ paste0(., "_lefse_summary")))
+     tmp_list <- tmp_tab[,1]
+     tmp_ps <- prune_taxa(tmp_list, tmp_get)
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_lefse"))
+     assign(tmp_name, tmp_ps)
+     tmp_ps@phy_tree <- NULL
+     tmp_ps <- prune_samples(sample_sums(tmp_ps) > 0, tmp_ps)
+     tmp_ps_tree <- rtree(ntaxa(tmp_ps), rooted = TRUE,
+                            tip.label = taxa_names(tmp_ps))
+     tmp_ps <- merge_phyloseq(tmp_ps, sample_data, tmp_ps_tree)
+     assign(tmp_name, tmp_ps)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects()
+```
+
+## LEfSe Summaries (ASVs & Markers)
+
+### ASV summary data
+<br/>
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+
+#### FULL
+
+```{r, echo=FALSE, eval=TRUE}
+seq_table <- its_ps_work_lefse_final
+seq_table %>%
+  download_this(
+    output_name = "its_lefse_results_full",
+    output_extension = ".csv",
+    button_label = "Download data as csv file",
+    button_type = "default",
+    csv2 = FALSE,
+    has_icon = TRUE,
+    icon = "fa fa-save")
+```
+
+<small>`r caption_tab_its("its_lefse_full")`</small>
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+reactable(seq_table,
+  defaultColDef = colDef(headerStyle = list(fontSize = "0.8em"),
+    header = function(value) gsub("_", " ", value, fixed = TRUE),
+    cell = function(value) format(value, nsmall = 0),
+    align = "left", filterable = TRUE, sortable = TRUE, resizable = TRUE,
+    footerStyle = list(fontWeight = "bold")
+    ), 
+  columns = list(
+    ASV_ID = colDef(name = "ASV_ID", 
+                       sticky = "left", 
+                       style = list(borderRight = "5px solid #eee"),
+                       headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em"), 
+                       align = "left",
+                       minWidth = 100), 
+    group = colDef(name = "enriched", align = "center"),
+    ef_lda = colDef(name = "LDA score", align = "center", filterable = FALSE,
+                       minWidth = 100),
+    pval = colDef(name = "p-value", align = "center", filterable = FALSE,
+                  style = list(borderRight = "5px solid #eee"),
+                  headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    freq = colDef(name = "all samples", align = "center", filterable = FALSE),
+    freq_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    freq_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    freq_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    reads_total = colDef(name = "all", align = "center", filterable = FALSE),
+    reads_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    reads_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    reads_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    ASV_SEQ = colDef(name = "ASV sequence", filterable = FALSE)
+    ),
+  columnGroups = list(
+      colGroup(name = "LEfSe results", sticky = "left",
+             columns = c("group", "ef_lda", "pval"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Frequency", 
+             columns = c("freq", "freq_C0", "freq_W3", "freq_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Read totals", 
+             columns = c("reads_total", "reads_C0", "reads_W3", "reads_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Lineage", align = "left",
+             columns = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
+      ),
+  searchable = TRUE, defaultPageSize = 5, 
+  pageSizeOptions = c(5, 10, nrow(seq_table)), 
+  showPageSizeOptions = TRUE, highlight = TRUE, 
+  bordered = TRUE, striped = TRUE, compact = FALSE, 
+  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
+  theme = reactableTheme(style = list(fontSize = "0.8em")))
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+
+#### Arbitrary filtered
+
+```{r, echo=FALSE, eval=TRUE}
+seq_table <- its_ps_filt_lefse_final
+seq_table %>%
+  download_this(
+    output_name = "its_lefse_results_arbitrary",
+    output_extension = ".csv",
+    button_label = "Download data as csv file",
+    button_type = "default",
+    csv2 = FALSE,
+    has_icon = TRUE,
+    icon = "fa fa-save")
+```
+
+<small>`r caption_tab_its("its_lefse_filt")`</small>
+
+```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
+reactable(seq_table,
+  defaultColDef = colDef(headerStyle = list(fontSize = "0.8em"),
+    header = function(value) gsub("_", " ", value, fixed = TRUE),
+    cell = function(value) format(value, nsmall = 0),
+    align = "left", filterable = TRUE, sortable = TRUE, resizable = TRUE,
+    footerStyle = list(fontWeight = "bold")
+    ), 
+  columns = list(
+    ASV_ID = colDef(name = "ASV_ID", 
+                       sticky = "left", 
+                       style = list(borderRight = "5px solid #eee"),
+                       headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em"), 
+                       align = "left",
+                       minWidth = 100), 
+    group = colDef(name = "enriched", align = "center"),
+    lda = colDef(name = "LDA score", align = "center", filterable = FALSE,
+                       minWidth = 100),
+    pval = colDef(name = "p-value", align = "center", filterable = FALSE,
+                  style = list(borderRight = "5px solid #eee"),
+                  headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    freq = colDef(name = "all samples", align = "center", filterable = FALSE),
+    freq_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    freq_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    freq_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    reads_total = colDef(name = "all", align = "center", filterable = FALSE),
+    reads_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    reads_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    reads_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    ASV_SEQ = colDef(name = "ASV sequence", filterable = FALSE)
+    ),
+  columnGroups = list(
+      colGroup(name = "LEfSe results", sticky = "left",
+             columns = c("group", "lda", "pval"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Frequency", 
+             columns = c("freq", "freq_C0", "freq_W3", "freq_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Read totals", 
+             columns = c("reads_total", "reads_C0", "reads_W3", "reads_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Lineage", align = "left",
+             columns = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
+      ),
+  searchable = TRUE, defaultPageSize = 5, 
+  pageSizeOptions = c(5, 10, nrow(seq_table)), 
+  showPageSizeOptions = TRUE, highlight = TRUE, 
+  bordered = TRUE, striped = TRUE, compact = FALSE, 
+  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
+  theme = reactableTheme(style = list(fontSize = "0.8em")))
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### PERfect filtered
+
+```{r, echo=FALSE, eval=TRUE}
+seq_table <- its_ps_perfect_lefse_final
+seq_table %>%
+  download_this(
+    output_name = "its_lefse_results_perfect",
+    output_extension = ".csv",
+    button_label = "Download data as csv file",
+    button_type = "default",
+    csv2 = FALSE,
+    has_icon = TRUE,
+    icon = "fa fa-save")
+```
+
+<small>`r caption_tab_its("its_lefse_perfect")`</small>
+
+```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
+reactable(seq_table,
+  defaultColDef = colDef(headerStyle = list(fontSize = "0.8em"),
+    header = function(value) gsub("_", " ", value, fixed = TRUE),
+    cell = function(value) format(value, nsmall = 0),
+    align = "left", filterable = TRUE, sortable = TRUE, resizable = TRUE,
+    footerStyle = list(fontWeight = "bold")
+    ), 
+  columns = list(
+    ASV_ID = colDef(name = "ASV_ID", 
+                       sticky = "left", 
+                       style = list(borderRight = "5px solid #eee"),
+                       headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em"), 
+                       align = "left",
+                       minWidth = 100), 
+    group = colDef(name = "enriched", align = "center"),
+    lda = colDef(name = "LDA score", align = "center", filterable = FALSE,
+                       minWidth = 100),
+    pval = colDef(name = "p-value", align = "center", filterable = FALSE,
+                  style = list(borderRight = "5px solid #eee"),
+                  headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    freq = colDef(name = "all samples", align = "center", filterable = FALSE),
+    freq_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    freq_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    freq_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    reads_total = colDef(name = "all", align = "center", filterable = FALSE),
+    reads_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    reads_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    reads_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    ASV_SEQ = colDef(name = "ASV sequence", filterable = FALSE)
+    ),
+  columnGroups = list(
+      colGroup(name = "LEfSe results", sticky = "left",
+             columns = c("group", "lda", "pval"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Frequency", 
+             columns = c("freq", "freq_C0", "freq_W3", "freq_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Read totals", 
+             columns = c("reads_total", "reads_C0", "reads_W3", "reads_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Lineage", align = "left",
+             columns = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
+      ),
+  searchable = TRUE, defaultPageSize = 5, 
+  pageSizeOptions = c(5, 10, nrow(seq_table)), 
+  showPageSizeOptions = TRUE, highlight = TRUE, 
+  bordered = TRUE, striped = TRUE, compact = FALSE, 
+  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
+  theme = reactableTheme(style = list(fontSize = "0.8em")))
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+
+#### PIME filtered
+
+```{r, echo=FALSE, eval=TRUE}
+seq_table <- its_ps_pime_lefse_final
+seq_table %>%
+  download_this(
+    output_name = "its_lefse_results_pime",
+    output_extension = ".csv",
+    button_label = "Download data as csv file",
+    button_type = "default",
+    csv2 = FALSE,
+    has_icon = TRUE,
+    icon = "fa fa-save")
+```
+
+<small>`r caption_tab_its("its_lefse_pime")`</small>
+
+```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
+reactable(seq_table,
+  defaultColDef = colDef(headerStyle = list(fontSize = "0.8em"),
+    header = function(value) gsub("_", " ", value, fixed = TRUE),
+    cell = function(value) format(value, nsmall = 0),
+    align = "left", filterable = TRUE, sortable = TRUE, resizable = TRUE,
+    footerStyle = list(fontWeight = "bold")
+    ), 
+  columns = list(
+    ASV_ID = colDef(name = "ASV_ID", 
+                       sticky = "left", 
+                       style = list(borderRight = "5px solid #eee"),
+                       headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em"), 
+                       align = "left",
+                       minWidth = 100), 
+    group = colDef(name = "enriched", align = "center"),
+    lda = colDef(name = "LDA score", align = "center", filterable = FALSE,
+                       minWidth = 100),
+    pval = colDef(name = "p-value", align = "center", filterable = FALSE,
+                  style = list(borderRight = "5px solid #eee"),
+                  headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    freq = colDef(name = "all samples", align = "center", filterable = FALSE),
+    freq_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    freq_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    freq_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    reads_total = colDef(name = "all", align = "center", filterable = FALSE),
+    reads_C0 = colDef(name = "control", align = "center", filterable = FALSE),
+    reads_W3 = colDef(name = "+3°C", align = "center", filterable = FALSE),
+    reads_W8 = colDef(name = "+8°C", align = "center", filterable = FALSE, 
+                     style = list(borderRight = "5px solid #eee"),
+                     headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    ASV_SEQ = colDef(name = "ASV sequence", filterable = FALSE)
+    ),
+  columnGroups = list(
+      colGroup(name = "LEfSe results", sticky = "left",
+             columns = c("group", "lda", "pval"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Frequency", 
+             columns = c("freq", "freq_C0", "freq_W3", "freq_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Read totals", 
+             columns = c("reads_total", "reads_C0", "reads_W3", "reads_W8"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Lineage", align = "left",
+             columns = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
+      ),
+  searchable = TRUE, defaultPageSize = 5, 
+  pageSizeOptions = c(5, 10, nrow(seq_table)), 
+  showPageSizeOptions = TRUE, highlight = TRUE, 
+  bordered = TRUE, striped = TRUE, compact = FALSE, 
+  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
+  theme = reactableTheme(style = list(fontSize = "0.8em")))
+rm(seq_table)
+```
+:::
+:::
+:::
+
+### ASV Visualizations
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_lefse_asv")))
+     tmp_mt <- data.frame(marker_table(tmp_get))
+     tmp_mt  <-  tmp_mt %>% filter(ef_lda >= 3)
+     tmp_mt <- marker_table(tmp_mt)
+     tmp_res_name <- purrr::map_chr(i, ~ paste0(., "_lefse_asv_viz_trim"))
+     assign(tmp_res_name, tmp_mt)
+     rm(list = ls(pattern = "tmp_"))
+}
+
+objects(pattern = "_lefse_asv_viz_trim")
+```
+
+</br>
+
+
+::: l-body-outset
+::: {.panelset}
+
+::: {.panel}
+
+#### FULL
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body-outset"}
+plot_ef_bar(its_ps_work_lefse_asv_viz_trim) +
+  scale_fill_manual(values = c("0" = "#2271B2", "3" = "#71B222", "8" = "#B22271")) + 
+  theme(axis.text = element_text(size = 8))
+```
+<small>`r caption_fig_its("its_lefse_asv_full")`</small>
+:::
+
+::: {.panel}
+
+#### Arbitrary filtered
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body-outset"}
+plot_ef_bar(its_ps_filt_lefse_asv_viz_trim) +
+  scale_fill_manual(values = c("0" = "#2271B2", "3" = "#71B222", "8" = "#B22271")) + 
+  theme(axis.text = element_text(size = 8))
+```
+<small>`r caption_fig_its("its_lefse_asv_filt")`</small>
+:::
+
+::: {.panel}
+
+#### PIME filtered
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body-outset"}
+plot_ef_bar(its_ps_pime_lefse_asv_viz_trim) +
+  scale_fill_manual(values = c("0" = "#2271B2", "3" = "#71B222", "8" = "#B22271")) + 
+  theme(axis.text = element_text(size = 5))
+```
+<small>`r caption_fig_its("its_lefse_asv_perfect")`</small>
+:::
+
+::: {.panel}
+#### PERfect filtered
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body-outset"}
+plot_ef_bar(its_ps_perfect_lefse_asv_viz_trim) +
+  scale_fill_manual(values = c("0" = "#2271B2", "3" = "#71B222", "8" = "#B22271")) + 
+  theme(axis.text = element_text(size = 6))
+```
+<small>`r caption_fig_its("its_lefse_asv_pime")`</small>
+:::
+:::
+:::
+
+### Marker summary data
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+    tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_lefse_all")))
+    tmp_mt <- data.frame(marker_table(tmp_get))
+    tmp_mt <- tmp_mt[, c(2:4,1)]
+    tmp_mt <- tmp_mt %>% dplyr::rename(c("group" = 1, "pval" = 3))
+    tmp_mt$group <- stringr::str_replace(tmp_mt$group, "^0$", "C0")
+    tmp_mt$group <- stringr::str_replace(tmp_mt$group, "^3$", "W3")
+    tmp_mt$group <- stringr::str_replace(tmp_mt$group, "^8$", "W8")
+    tmp_mt <- tmp_mt %>% tibble::rownames_to_column("marker")
+    tmp_mt <- tmp_mt %>% tidyr::separate(col = "feature", 
+                                         into = c("Kingdom", "Phylum", "Class", 
+                                                  "Order", "Family", "Genus", "ASV_ID"), 
+                                         sep = "\\|\\w__")
+    
+    tmp_mt$Kingdom <- gsub('k__', '', tmp_mt$Kingdom)
+    tmp_res_name <- purrr::map_chr(i, ~ paste0(., "_lefse_marker_final"))
+    assign(tmp_res_name, tmp_mt)
+    rm(list = ls(pattern = "tmp_"))
+}
+```
+
+<br/>
+
+::: l-page
+::: {.panelset}
+::: {.panel}
+
+#### FULL
+
+```{r, echo=FALSE, eval=TRUE}
+seq_table <- its_ps_work_lefse_marker_final
+seq_table %>%
+  download_this(
+    output_name = "its_lefse_marker_results_full",
+    output_extension = ".csv",
+    button_label = "Download data as csv file",
+    button_type = "default",
+    csv2 = FALSE,
+    has_icon = TRUE,
+    icon = "fa fa-save")
+```
+
+<small>`r caption_tab_its("its_lefse_marker_full")`</small>
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+reactable(seq_table,
+  defaultColDef = colDef(headerStyle = list(fontSize = "0.8em"),
+    header = function(value) gsub("_", " ", value, fixed = TRUE),
+    cell = function(value) format(value, nsmall = 0),
+    align = "left", filterable = TRUE, sortable = TRUE, resizable = TRUE,
+    footerStyle = list(fontWeight = "bold")
+    ), 
+  columns = list(
+    marker = colDef(name = "Marker", 
+                       sticky = "left", 
+                       style = list(borderRight = "5px solid #eee"),
+                       headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em"), 
+                       align = "left",
+                       minWidth = 100), 
+    group = colDef(name = "enriched", align = "center"),
+    ef_lda = colDef(name = "LDA score", align = "center", filterable = FALSE,
+                       minWidth = 100),
+    pval = colDef(name = "p-value", align = "center", filterable = FALSE,
+                  style = list(borderRight = "5px solid #eee"),
+                  headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    ASV_ID = colDef(name = "ASV ID", filterable = FALSE)
+    ),
+  columnGroups = list(
+      colGroup(name = "LEfSe results", sticky = "left",
+             columns = c("group", "ef_lda", "pval"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Lineage", align = "left",
+             columns = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
+      ),
+  searchable = TRUE, defaultPageSize = 5, 
+  pageSizeOptions = c(5, 10, nrow(seq_table)), 
+  showPageSizeOptions = TRUE, highlight = TRUE, 
+  bordered = TRUE, striped = TRUE, compact = FALSE, 
+  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
+  theme = reactableTheme(style = list(fontSize = "0.8em")))
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### Arbitrary filtered 
+
+```{r, echo=FALSE, eval=TRUE}
+seq_table <- its_ps_filt_lefse_marker_final
+seq_table %>%
+  download_this(
+    output_name = "its_lefse_marker_results_arbitrary",
+    output_extension = ".csv",
+    button_label = "Download data as csv file",
+    button_type = "default",
+    csv2 = FALSE,
+    has_icon = TRUE,
+    icon = "fa fa-save")
+```
+
+<small>`r caption_tab_its("its_lefse_marker_filt")`</small>
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+reactable(seq_table,
+  defaultColDef = colDef(headerStyle = list(fontSize = "0.8em"),
+    header = function(value) gsub("_", " ", value, fixed = TRUE),
+    cell = function(value) format(value, nsmall = 0),
+    align = "left", filterable = TRUE, sortable = TRUE, resizable = TRUE,
+    footerStyle = list(fontWeight = "bold")
+    ), 
+  columns = list(
+    marker = colDef(name = "Marker", 
+                       sticky = "left", 
+                       style = list(borderRight = "5px solid #eee"),
+                       headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em"), 
+                       align = "left",
+                       minWidth = 100), 
+    group = colDef(name = "enriched", align = "center"),
+    lda = colDef(name = "LDA score", align = "center", filterable = FALSE,
+                       minWidth = 100),
+    pval = colDef(name = "p-value", align = "center", filterable = FALSE,
+                  style = list(borderRight = "5px solid #eee"),
+                  headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    ASV_ID = colDef(name = "ASV ID", filterable = FALSE)
+    ),
+  columnGroups = list(
+      colGroup(name = "LEfSe results", sticky = "left",
+             columns = c("group", "lda", "pval"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Lineage", align = "left",
+             columns = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
+      ),
+  searchable = TRUE, defaultPageSize = 5, 
+  pageSizeOptions = c(5, 10, nrow(seq_table)), 
+  showPageSizeOptions = TRUE, highlight = TRUE, 
+  bordered = TRUE, striped = TRUE, compact = FALSE, 
+  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
+  theme = reactableTheme(style = list(fontSize = "0.8em")))
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### PERfect filtered
+
+```{r, echo=FALSE, eval=TRUE}
+seq_table <- its_ps_perfect_lefse_marker_final
+seq_table %>%
+  download_this(
+    output_name = "its_lefse_marker_results_perfect",
+    output_extension = ".csv",
+    button_label = "Download data as csv file",
+    button_type = "default",
+    csv2 = FALSE,
+    has_icon = TRUE,
+    icon = "fa fa-save")
+```
+
+<small>`r caption_tab_its("its_lefse_marker_perfect")`</small>
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+reactable(seq_table,
+  defaultColDef = colDef(headerStyle = list(fontSize = "0.8em"),
+    header = function(value) gsub("_", " ", value, fixed = TRUE),
+    cell = function(value) format(value, nsmall = 0),
+    align = "left", filterable = TRUE, sortable = TRUE, resizable = TRUE,
+    footerStyle = list(fontWeight = "bold")
+    ), 
+  columns = list(
+    marker = colDef(name = "Marker", 
+                       sticky = "left", 
+                       style = list(borderRight = "5px solid #eee"),
+                       headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em"), 
+                       align = "left",
+                       minWidth = 100), 
+    group = colDef(name = "enriched", align = "center"),
+    lda = colDef(name = "LDA score", align = "center", filterable = FALSE,
+                       minWidth = 100),
+    pval = colDef(name = "p-value", align = "center", filterable = FALSE,
+                  style = list(borderRight = "5px solid #eee"),
+                  headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    ASV_ID = colDef(name = "ASV ID", filterable = FALSE)
+    ),
+  columnGroups = list(
+      colGroup(name = "LEfSe results", sticky = "left",
+             columns = c("group", "lda", "pval"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Lineage", align = "left",
+             columns = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
+      ),
+  searchable = TRUE, defaultPageSize = 5, 
+  pageSizeOptions = c(5, 10, nrow(seq_table)), 
+  showPageSizeOptions = TRUE, highlight = TRUE, 
+  bordered = TRUE, striped = TRUE, compact = FALSE, 
+  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
+  theme = reactableTheme(style = list(fontSize = "0.8em")))
+rm(seq_table)
+```
+:::
+
+::: {.panel}
+#### PIME filtered
+
+```{r, echo=FALSE, eval=TRUE}
+seq_table <- its_ps_pime_lefse_marker_final
+seq_table %>%
+  download_this(
+    output_name = "its_lefse_marker_results_pime",
+    output_extension = ".csv",
+    button_label = "Download data as csv file",
+    button_type = "default",
+    csv2 = FALSE,
+    has_icon = TRUE,
+    icon = "fa fa-save")
+```
+
+<small>`r caption_tab_its("its_lefse_marker_pime")`</small>
+
+```{r, echo=FALSE, layout="l-page", eval=TRUE}
+reactable(seq_table,
+  defaultColDef = colDef(headerStyle = list(fontSize = "0.8em"),
+    header = function(value) gsub("_", " ", value, fixed = TRUE),
+    cell = function(value) format(value, nsmall = 0),
+    align = "left", filterable = TRUE, sortable = TRUE, resizable = TRUE,
+    footerStyle = list(fontWeight = "bold")
+    ), 
+  columns = list(
+    marker = colDef(name = "Marker", 
+                       sticky = "left", 
+                       style = list(borderRight = "5px solid #eee"),
+                       headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em"), 
+                       align = "left",
+                       minWidth = 100), 
+    group = colDef(name = "enriched", align = "center"),
+    lda = colDef(name = "LDA score", align = "center", filterable = FALSE,
+                       minWidth = 100),
+    pval = colDef(name = "p-value", align = "center", filterable = FALSE,
+                  style = list(borderRight = "5px solid #eee"),
+                  headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em")),
+    ASV_ID = colDef(name = "ASV ID", filterable = FALSE)
+    ),
+  columnGroups = list(
+      colGroup(name = "LEfSe results", sticky = "left",
+             columns = c("group", "lda", "pval"), 
+             headerStyle = list(fontSize = "1.2em", borderRight = "5px solid #eee")),
+      colGroup(name = "Lineage", align = "left",
+             columns = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
+      ),
+  searchable = TRUE, defaultPageSize = 5, 
+  pageSizeOptions = c(5, 10, nrow(seq_table)), 
+  showPageSizeOptions = TRUE, highlight = TRUE, 
+  bordered = TRUE, striped = TRUE, compact = FALSE, 
+  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
+  theme = reactableTheme(style = list(fontSize = "0.8em")))
+rm(seq_table)
+```
+::: 
+::: 
+::: 
+
+### Marker visualizations
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_lefse_all")))
+     tmp_mt <- data.frame(marker_table(tmp_get))
+     tmp_mt  <-  tmp_mt %>% filter(ef_lda >= 3.5)
+     tmp_mt <- marker_table(tmp_mt)
+     tmp_res_name <- purrr::map_chr(i, ~ paste0(., "_lefse_all_viz_trim"))
+     assign(tmp_res_name, tmp_mt)
+     rm(list = ls(pattern = "tmp_"))
+}
+
+objects(pattern = "_lefse_all_viz_trim")
+```
+
+::: l-body-outset
+::: {.panelset}
+::: {.panel}
+
+#### FULL 
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body-outset"}
+plot_ef_bar(its_ps_work_lefse_all_viz_trim) +
+  scale_fill_manual(values = c("0" = "#2271B2", "3" = "#71B222", "8" = "#B22271")) + 	
+	  theme(axis.text = element_text(size = 8))
+```
+<small>`r caption_fig_its("its_lefse_marker_full")`</small>
+:::
+
+::: {.panel}
+
+#### Arbitrary filtered 
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body-outset"}
+plot_ef_bar(its_ps_filt_lefse_all_viz_trim) +
+  scale_fill_manual(values = c("0" = "#2271B2", "3" = "#71B222", "8" = "#B22271")) + 	
+	  theme(axis.text = element_text(size = 8))
+```
+<small>`r caption_fig_its("its_lefse_marker_filt")`</small>
+:::
+
+::: {.panel}
+#### PERfect filtered
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body-outset"}
+plot_ef_bar(its_ps_perfect_lefse_all_viz_trim) +
+  scale_fill_manual(values = c("0" = "#2271B2", "3" = "#71B222", "8" = "#B22271")) + 	
+	  theme(axis.text = element_text(size = 8))
+```
+<small>`r caption_fig_its("its_lefse_marker_perfect")`</small>
+:::
+
+::: {.panel}
+
+#### PIME filtered
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout="l-body-outset"}
+plot_ef_bar(its_ps_pime_lefse_all_viz_trim) +
+  scale_fill_manual(values = c("0" = "#2271B2", "3" = "#71B222", "8" = "#B22271")) + 	
+	  theme(axis.text = element_text(size = 8))
+```
+<small>`r caption_fig_its("its_lefse_marker_pime")`</small>
+:::
+:::
+:::
+
+## Response of select taxa
+
+The workflow here is basically a carbon copy of the workflow describe above. Presented here for posterity.
+
+<details markdown="1">
+<summary>**Click here** to see the ITS version of this workflow.</summary>
+
+```{r, eval=FALSE, echo=FALSE}
+#TEMP LOAD ONLY REMOVE WHEN WORKFLOW FINISHED
+remove(list = ls())
+load("page_build/da_wf.rdata")
+gdata::keep("its_ps_work_rf_all", 
+            "its_ps_work_rf_asv", 
+            "its_ps_filt_rf_all", 
+            "its_ps_filt_rf_asv", 
+            "its_ps_perfect_rf_all", 
+            "its_ps_perfect_rf_asv", 
+            "its_ps_pime_rf_all", 
+            "its_ps_pime_rf_asv", 
+            sure = TRUE)
+objects()
+```
+
+
+```{r}
+## FIX ps object
+ps <- its_ps_perfect_rf_all
+tmp_tax1 <- data.frame(tax_table(ps))
+tmp_tax1$ASV_SEQ <- NULL
+tmp_rn <- row.names(tmp_tax1)
+tmp_tax <- data.frame(lapply(tmp_tax1, function(x) {gsub("\\(|)", "", x)}))
+row.names(tmp_tax) <- tmp_rn
+identical(row.names(tmp_tax), row.names(tmp_tax1))
+#dplyr::filter(tmp_tax, Phylum == "Acidobacteriota")
+ps_tax_new <- as.matrix(tmp_tax)
+tmp_ps <- phyloseq(otu_table(ps),
+                     tax_table(ps_tax_new),
+                     sample_data(ps))
+its_ps <- tmp_ps
+phyloseq::rank_names(its_ps)
+data.frame(tax_table(its_ps))
+```
+
+
+```{r}
+its_group_anova <-  run_test_multiple_groups(its_ps, group = "TEMP", 
+                                             taxa_rank = "all", method = "anova")
+its_group_anova@marker_table
+marker_table(its_group_anova)
+```
+
+```{r}
+its_default_pht <- run_posthoc_test(its_ps, 
+                                    group = "TEMP", method = "tukey", 
+                                    transform = "log10")
+```
+
+
+```{r, echo=FALSE}
+#filter(data.frame(its_default_pht@result), group_name == "k__Bacteria|p__Actinobacteriota|c__Thermoleophilia|o__Gaiellales")
+#plot_postHocTest(its_default_pht, feature = "k__Bacteria|p__Actinobacteriota|c__Thermoleophilia|o__Gaiellales") & theme_bw()
+```
+
+
+```{r}
+its_pht <- its_default_pht
+its_pht_filt <- filter(data.frame(its_pht@result), pvalue <= "0.05")[!grepl("ASV", filter(data.frame(its_pht@result), pvalue <= "0.05")$group_name),]
+its_pht_filt <- its_pht_filt[!grepl("[a-z]__$", its_pht_filt$group_name),]
+its_pht_filt <- unique(its_pht_filt$group_name)
+length(its_pht_filt)
+```
+
+There are **`r length(its_pht_filt)`** significantly different lineage markers.
+
+<details markdown="1">
+<summary>**Click here** to see a list of significantly different lineage markers.</summary>
+
+```{r, eval=TRUE, echo=FALSE}
+its_pht_filt
+```
+</details>
+
+```{r, echo=FALSE}
+source("hack_code/plot_postHocTest_jjs.R")
+environment(plot_postHocTest_jjs) <- asNamespace('microbiomeMarker')
+```
+
+```{r, echo=FALSE}
+its_select <- c(
+"k__Fungi|p__Ascomycota|c__Sordariomycetes|o__Xylariales|f__Microdochiaceae", 
+"k__Fungi|p__Basidiomycota|c__Agaricomycetes|o__Agaricales|f__Entolomataceae", 
+"k__Fungi|p__Basidiomycota|c__Agaricomycetes|o__Agaricales|f__Clavariaceae", 
+"k__Fungi|p__Basidiomycota|c__Agaricomycetes|o__Agaricales", 
+"k__Fungi|p__Basidiomycota|c__Microbotryomycetes|o__Sporidiobolales", 
+"k__Fungi|p__Rozellomycota|c__Rozellomycotina_cls_Incertae_sedis", 
+"k__Fungi|p__Ascomycota|c__Eurotiomycetes|o__Eurotiales|f__Trichocomaceae|g__Talaromyces", 
+"k__Fungi|p__Ascomycota|c__Pezizomycetes|o__Pezizales|f__Pyronemataceae", 
+"k__Fungi|p__Ascomycota|c__Sordariomycetes|o__Hypocreales|f__Nectriaceae|g__Fusarium", 
+"k__Fungi|p__Ascomycota|c__Saccharomycetes|o__Saccharomycetales|f__Metschnikowiaceae", 
+"k__Fungi|p__Glomeromycota|c__Glomeromycetes|o__Glomerales", 
+"k__Fungi|p__Mortierellomycota|c__Mortierellomycetes|o__Mortierellales"
+)
+```
+
+```{r, echo=FALSE}
+swel_col <- c("#2271B2", "#71B222", "#B22271")
+for (i in its_select) {
+  tmp_select_feat <- i
+  tmp_plot <- plot_postHocTest_jjs(its_pht, feature = tmp_select_feat) & theme_bw() 
+  tmp_plot <- tmp_plot + geom_boxplot(fill = swel_col) + 
+    scale_colour_manual(values = c("#191919", "#191919", "#191919")) + 
+    geom_point(size = 2, show.legend = FALSE) + 
+    ylab("Relative abundance (% total reads)")
+  tmp_name <- purrr::map_chr(i, ~ paste0(., "_tax_plot"))
+  #tmp_name <- purrr::map_chr(gsub(pattern = "^.*[a-z]\\|", x = i, replacement = ""), ~ paste0(., "_tax_plot"))
+  assign(tmp_name, tmp_plot)
+  ggplot2::ggsave(tmp_plot, file = paste0("files/da/figures/", i,".png", sep = ""), height = 7, width = 9, units = 'cm', dpi = 600, bg = "white")
+  ggplot2::ggsave(tmp_plot, file = paste0("files/da/figures/", i,".pdf", sep = ""), height = 5, width = 6.5)
+  rm(list = ls(pattern = "tmp_"))
+} 
+```
+
+
+```{r, echo=FALSE}
+its_title <- c(
+"Microdochiaceae (Ascomycota)", 
+"Entolomataceae (Basidiomycota)", 
+"Clavariaceae (Basidiomycota)", 
+"Agaricales (Basidiomycota)", 
+"Sporidiobolales (Basidiomycota)", 
+"Rozellomycotina (Rozellomycota)", 
+"Talaromyces (Ascomycota)", 
+"Pyronemataceae (Ascomycota)", 
+"Fusarium (Ascomycota)", 
+"Metschnikowiaceae (Ascomycota)", 
+"Glomerales (Glomeromycota)", 
+"Mortierellales (Mortierellomycota)"
+)
+```
+
+```{r, echo=FALSE}
+tmp_1 <- get(purrr::map_chr(its_select[1], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(its_title[1])
+tmp_2 <- get(purrr::map_chr(its_select[2], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(its_title[2])
+tmp_3 <- get(purrr::map_chr(its_select[3], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(its_title[3])
+   
+tmp_4 <- get(purrr::map_chr(its_select[4], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(its_title[4])
+tmp_5 <- get(purrr::map_chr(its_select[5], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(its_title[5])
+tmp_6 <- get(purrr::map_chr(its_select[6], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(its_title[6])
+  
+tmp_7 <- get(purrr::map_chr(its_select[7], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(its_title[7])
+tmp_8 <- get(purrr::map_chr(its_select[8], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(its_title[8])
+tmp_9 <- get(purrr::map_chr(its_select[9], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(its_title[9])
+
+tmp_10 <- get(purrr::map_chr(its_select[10], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(its_title[10])
+tmp_11 <- get(purrr::map_chr(its_select[11], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(its_title[11])
+tmp_12 <- get(purrr::map_chr(its_select[12], ~ paste0(., "_tax_plot"))) + 
+  geom_point(show.legend = FALSE) + ggtitle(its_title[12])
+
+its_taxa_combo_plot <- ((tmp_1 + tmp_2 + tmp_3) / (tmp_4 + tmp_5 + tmp_6) / (tmp_7 + tmp_8 + tmp_9) / (tmp_10 + tmp_11 + tmp_12))
+its_taxa_combo_plot
+```
+
+```{r, echo=FALSE}
+ggplot2::ggsave(its_taxa_combo_plot, path = "files/da/figures/combo_plots", filename =  "its_taxa_marker.png", height = 32, width = 36,
+    units = 'cm', dpi = 600, bg = "white")
+ggplot2::ggsave(its_taxa_combo_plot, path = "files/da/figures/combo_plots", filename = "its_taxa_marker.pdf", height = 12, width = 12)
+```
+
+```{r, echo=FALSE}
+system("cp files/da/figures/combo_plots/its_taxa_marker.png include/da/its_taxa_marker.png")
+```
+</details>
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-body-outset'}
+knitr::include_graphics("include/da/ssu_taxa_marker.png")
+```
+<small>`r caption_fig_its("its_taxa_marker_plot")`</small>
+
+# Visualizing DA ASVs in Anvi’o
+
+Next, we will combine the results of the ISA and LEfSe analyses with the distribution of ASVs across each sample. We are going to do the analysis in [anvi’o](https://github.com/merenlab/anvio)---an advanced analysis and visualization platform for ‘omics data [@eren2015anvi]---using the `anvi-interactive` command. Anvi’o likes databases but it also understands that sometimes you do not have a database. So it offers a manual mode. If you type this command you can have a look at the relevant pieces we need for the visualization, specifically those under the headings MANUAL INPUTS and ADDITIONAL STUFF.
+
+```bash
+anvi-interactive -h
+```
+
+```
+MANUAL INPUTS:
+  Mandatory input parameters to start the interactive interface without
+  anvi'o databases.
+
+--manual-mode           We need this flag to run anvi'o in an ad hoc
+                        manner, i.e., no database.
+-f FASTA, --fasta-file FASTA
+                        A FASTA-formatted input file. This is sort of
+                        optional
+-d VIEW_DATA, --view-data VIEW_DATA
+                        A TAB-delimited file for view data. This is the ASV
+                        by sample matrix. We need this
+-t NEWICK, --tree NEWICK
+                        NEWICK formatted tree structure. How the ASVs are
+                        ordered in our case.
+ADDITIONAL STUFF:
+  Parameters to provide additional layers, views, or layer data.
+
+-V ADDITIONAL_VIEW, --additional-view ADDITIONAL_VIEW
+                        A TAB-delimited file for an additional view to be used
+                        in the interface. This file should contain all split
+                        names, and values for each of them in all samples.
+                        Each column in this file must correspond to a sample
+                        name. Content of this file will be called 'user_view',
+                        which will be available as a new item in the 'views'
+                        combo box in the interface
+-A ADDITIONAL_LAYERS, --additional-layers ADDITIONAL_LAYERS
+                        A TAB-delimited file for additional layer info. In
+                        our case this is info about each ASV. The first column
+                        of the file must be the ASV names, and
+                        the remaining columns should be unique attributes.
+```
+
+There are also a few files we generate that cannot be loaded directly. So, in addition to the files that can be loaded when running the interactive, we also have files that must be added to the database created by anvi’o.
+
+Here is a nice tutorial on [Working with anvi’o additional data tables](http://merenlab.org/2017/12/11/additional-data-tables/). A lot of what we need is covered in this tutorial. To get the most out the visualization we need to create a few files to give anvi’o when we fire up the interactive interface.
+
+1. View data: in our case, a sample by ASV abundance matrix.
+2. Additional info about each ASV.
+3. Additional info about each sample.
+4. Taxa abundance data for each sample at some rank.
+5. Dendrograms ordering the ASVs and samples (based on view data).
+6. Fasta file of all ASVs in the analysis.
+
+## Main Steps
+
+### 1. View data
+
+Let’s start with the `-d` or `--view-data` file. This file needs to be an ASV by sample matrix of read counts. To simplify the visualization, we will use ***all*** ASVs represented by 100 or more total reads, including those identified as differentially abundant by the ISA and/or LEfSe. 
+
+```{r, code_folding=TRUE}
+samp_ps_all <- c("ssu_ps_filt", "ssu_ps_pime", "ssu_ps_perfect")
+samp_ps <- c("ssu_ps_filt", "ssu_ps_pime", "ssu_ps_perfect")
+samp_ps_org <- c("ssu_ps_work")
+samp_ps_pime <- c("ssu_ps_pime")
+samp_ps_other <- c("ssu_ps_filt", "ssu_ps_perfect")
+
+trim_val <- 100
+for (i in samp_ps_pime) {
+     tmp_get <- get(i)
+     tmp_df <- prune_taxa(taxa_sums(tmp_get) > trim_val, tmp_get)
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_trim"))
+     assign(tmp_name, tmp_df)
+     rm(list = ls(pattern = "tmp_"))
+}
+
+trim_val <- 300
+for (i in samp_ps_other) {
+     tmp_get <- get(i)
+     tmp_df <- prune_taxa(taxa_sums(tmp_get) > trim_val, tmp_get)
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_trim"))
+     assign(tmp_name, tmp_df)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern = "_trim")
+```
+
+```{r, echo=FALSE}
+for (i in samp_ps) {
+     tmp_path <- file.path("files/anvio/ssu/")
+     dir.create(paste(tmp_path, i, sep = ""))
+     rm(list = ls(pattern = "tmp_"))
+}
+
+for (i in samp_ps_org) {
+     tmp_path <- file.path("files/anvio/ssu/")
+     dir.create(paste(tmp_path, i, sep = ""))
+     rm(list = ls(pattern = "tmp_"))
+}
+```
+
+
+```{r}
+for (i in samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_trim")))
+     tmp_df <- as.data.frame(t(otu_table(tmp_get)))
+     tmp_df <- tmp_df %>% rownames_to_column("Group")
+     tmp_path <- file.path("files/anvio/ssu/")
+     write.table(tmp_df, paste(tmp_path, i, "/", "data.txt", sep = ""),
+            quote = FALSE, sep = "\t", row.names = FALSE)
+     rm(list = ls(pattern = "tmp_"))
+}
+```
+
+Or export a table of transformed data.
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_trim")))
+     tmp_trans <- transform_sample_counts(tmp_get, function(x) 1e5 * {x/sum(x)})
+     tmp_df <- as.data.frame(t(otu_table(tmp_trans)))
+     tmp_df <- tmp_df %>% rownames_to_column("Group")
+     #tmp_name <- purrr::map_chr(i, ~ paste0(., "_trim_tab"))
+     #assign(tmp_name, tmp_df)
+     tmp_path <- file.path("files/anvio/ssu/")
+     write.table(tmp_df, paste(tmp_path, i, "/", "data_trans.txt", sep = ""),
+            quote = FALSE, sep = "\t", row.names = FALSE)
+     rm(list = ls(pattern = "tmp_"))
+}
+```
+
+### 2. Additional Layers for ASVs
+
+Next, we need some additional data **about the ASVs** to overlay on the visual. This can be anything however what I specifically want are the details of the ISA analysis, total reads, and lineage info. I warn you; this code will get ugly and I urge you to find a better way.
+
+Start with an ASV + lineage table for the ASVs in the new phyloseq object.
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get_indval <- get(purrr::map_chr(i, ~ paste0(., "_indval_final")))
+     tmp_get_indval <- tmp_get_indval %>% dplyr::rename("Group" = "ASV_ID") %>%
+                                          dplyr::rename("enrich_indval" = "group") %>%
+                                          dplyr::rename("test_indval" = "indval") %>%
+                                          dplyr::rename("pval_indval" = "pval")
+     tmp_get_indval <- tmp_get_indval[,1:5]
+
+     tmp_get_lefse <- get(purrr::map_chr(i, ~ paste0(., "_lefse_final")))
+     tmp_get_lefse <- tmp_get_lefse %>% dplyr::rename("Group" = "ASV_ID") %>%
+                                          dplyr::rename("enrich_lefse" = "group") %>%
+                                          dplyr::rename("test_lefse" = "lda") %>%
+                                          dplyr::rename("pval_lefse" = "pval")
+     tmp_get_lefse <- tmp_get_lefse[,1:4]
+     
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_trim")))
+     tmp_otu_df <- as.data.frame(t(otu_table(tmp_get)))
+     tmp_total <- cbind(tmp_otu_df, total_reads = rowSums(tmp_otu_df))
+     tmp_total <- rev(tmp_total)[1]
+     tmp_total <- tmp_total %>% tibble::rownames_to_column("Group")
+     tmp_tax_df <- as.data.frame(tax_table(tmp_get))
+     tmp_tax_df$ASV_SEQ <- NULL
+     tmp_tax_df$ASV_ID <- NULL
+     
+     tmp_tax_df <- tmp_tax_df %>% tibble::rownames_to_column("Group")
+     tmp_add_lay <- dplyr::left_join(tmp_tax_df, tmp_total, by = "Group") %>%
+                   dplyr::left_join(., tmp_get_indval, by = "Group") %>%
+                   dplyr::left_join(., tmp_get_lefse, by = "Group")
+     tmp_add_lay$ASV_ID <- tmp_add_lay$Group
+     tmp_add_lay <- tmp_add_lay[, c(1,16,8,12,9:11,13:15,2:7)]
+     tmp_path <- file.path("files/anvio/ssu/")
+     write.table(tmp_add_lay, paste(tmp_path, i, "/", "additional_layers.txt", sep = ""),
+            quote = FALSE, sep = "\t", row.names = FALSE, na = "")
+     rm(list = ls(pattern = "tmp_"))
+}
+```
+
+### 3. Additional Views for Samples
+
+Now we want some general data **about the samples** to overlay on the visual. Again, this can be anything. How about a table of alpha diversity metrics? We actually have such a table that was generated way back up the road. Just need to fix the column names.
+
+<aside>
+**Added** to  profile.db with  `anvi-import-misc-data` command &  `--target-data-table layers` flag.
+</aside>
+
+```{r, code_folding=TRUE}
+metadata_tab <- read.table("files/metadata/tables/metadata.txt",
+                           header = TRUE)
+
+tmp_x <- readRDS("files/alpha/rdata/ssu_ps_pime.rds")
+data.frame(sample_data(tmp_x))
+metadata_tab[,c(2:5)] <- list(NULL)
+for (i in samp_ps_all) {
+     tmp_get <- get(i)
+     tmp_df <- data.frame(sample_data(tmp_get))
+     tmp_df <- tmp_df[,c(2:9)]
+     tmp_df <- tmp_df %>% tibble::rownames_to_column("id")
+     tmp_df <- tmp_df %>% dplyr::rename("no_asvs" = "Observed")
+     tmp_rc <- data.frame(readcount(tmp_get))
+     tmp_rc <- tmp_rc %>% tibble::rownames_to_column("id")
+     tmp_rc <- tmp_rc %>% dplyr::rename("no_reads" = 2)
+     #identical(tmp_df$id, tmp_rc$id)
+     tmp_merge <- dplyr::left_join(tmp_df, tmp_rc)
+     tmp_merge <- tmp_merge[, c(1:6,10,7:9)]
+     tmp_final <- dplyr::left_join(tmp_merge, metadata_tab)
+     tmp_path <- file.path("files/anvio/ssu/")
+     write.table(tmp_final, paste(tmp_path, i, "/", "additional_views.txt", sep = ""),
+            quote = FALSE, sep = "\t", row.names = FALSE)
+     rm(list = ls(pattern = "tmp_"))
+}
+rm(metadata_tab)
+```
+
+### 4. Taxon rank abundance by sample
+
+Turned out this was a little tricky to figure out, but thanks to a [little nifty block of code](https://github.com/joey711/phyloseq/issues/418#issuecomment-262637034) written by [guoyanzhao](https://github.com/guoyanzhao) on the phyloseq Issues forum, it was a piece of cake. The code can be altered to take any rank. See the post for an explanation.
+
+Anyway, the goal is to sum each taxon at some rank and present that as a bar chart for each sample in the visualization. Anvi'o has a specific format it needs where each row is a sample and each column is a taxon. Taxa names need the prefix `t_<RANK>!`. For example, `t_class!` should be added for Class rank.
+
+<aside>
+**Added** to  profile.db with `anvi-import-misc-data` command & `--target-data-table layers` flag.
+</aside>
+
+```{r, code_folding=TRUE}
+pick_rank <- "Phylum"
+pick_rank_l <- "phylum"
+for (i in samp_ps_all) {
+# Make the table
+    tmp_get <- get(i)
+    tmp_glom <- tax_glom(tmp_get, taxrank = pick_rank)
+    tmp_melt <- psmelt(tmp_glom)
+    tmp_melt[[pick_rank]] <- as.character(tmp_melt[[pick_rank]])
+    tmp_abund <- aggregate(Abundance ~ Sample + tmp_melt[[pick_rank]], tmp_melt, FUN = sum)
+    colnames(tmp_abund)[2] <- "tax_rank"
+    library(reshape2)
+    tmp_abund <- as.data.frame(reshape::cast(tmp_abund, Sample ~ tax_rank))
+    tmp_abund <- tibble::remove_rownames(tmp_abund)
+    tmp_abund <- tibble::column_to_rownames(tmp_abund, "Sample")
+# Reorder table column by sum
+    tmp_layers <- tmp_abund[,names(sort(colSums(tmp_abund), decreasing = TRUE))]
+# Add the prefix
+    tmp_layers <- tmp_layers %>% dplyr::rename_all(function(x) paste0("t_", pick_rank_l,"!", x))
+    tmp_layers <- tibble::rownames_to_column (tmp_layers, "taxon")
+# save the table
+    tmp_path <- file.path("files/anvio/ssu/")
+    write.table(tmp_layers, paste(tmp_path, i, "/", "tax_layers.txt", sep = ""),
+            quote = FALSE, sep = "\t", row.names = FALSE)
+    rm(list = ls(pattern = "tmp_"))
+}
+```
+
+### 5. Construct Dendrograms
+
+The last piece we need is to generate dendrograms that order the ASVs by their distribution in the samples and the samples by their ASV composition. For this task we will use anvi'o.
+
+```bash
+anvi-matrix-to-newick data.txt --distance euclidean \
+                               --linkage ward \
+                               -o asv.tre
+anvi-matrix-to-newick data.txt --distance euclidean \
+                               --linkage ward \
+                               -o sample.tre \
+                               --transpose
+```
+
+The first command reads the view data we generated above and uses Euclidean distance and Ward linkage for hierarchical clustering of the ASVs. The second command transposes the view data table and then does the same for the samples. There are several distance metrics and linkage methods available. See the help menu for the command by typing `anvi-matrix-to-newick -h`.  Boom.
+
+```{r, echo=FALSE}
+#bash_commands <- c() USE this to combine all commands
+# including in loop creates separate files
+for (i in samp_ps) {
+      bash_commands <- c()
+      tmp_command_asv <- purrr::map_chr(i, ~ paste0("anvi-matrix-to-newick data.txt",
+                                                " --distance euclidean --linkage ward -o ",
+                                                "asv.tre"))
+      bash_commands <- append(bash_commands, tmp_command_asv)
+      tmp_command_samp <- purrr::map_chr(i, ~ paste0("anvi-matrix-to-newick data.txt",
+                                                " --distance braycurtis --linkage complete -o ",
+                                                "sample.tre --transpose"))
+      bash_commands <- append(bash_commands, tmp_command_samp)
+      tmp_path <- file.path("files/anvio/ssu/")
+      write(bash_commands, paste(tmp_path, i, "/", "tre.sh", sep = ""))
+      rm(list = ls(pattern = "tmp_"))
+}
+```
+
+```{r, echo=FALSE}
+# FOR TANSFORMED DATA
+for (i in samp_ps) {
+      bash_commands <- c()
+      tmp_command_asv <- purrr::map_chr(i, ~ paste0("anvi-matrix-to-newick data_trans.txt",
+                                                " --distance euclidean --linkage ward -o ",
+                                                "asv_trans.tre"))
+      bash_commands <- append(bash_commands, tmp_command_asv)
+      tmp_command_samp <- purrr::map_chr(i, ~ paste0("anvi-matrix-to-newick data_trans.txt",
+                                                " --distance braycurtis --linkage complete -o ",
+                                                "sample_trans.tre --transpose"))
+      bash_commands <- append(bash_commands, tmp_command_samp)
+      tmp_path <- file.path("files/anvio/ssu/")
+      write(bash_commands, paste(tmp_path, i, "/", "tre_transformed.sh", sep = ""))
+      rm(list = ls(pattern = "tmp_"))
+}
+```
+
+```{bash, echo=FALSE}
+#NEED to run in anvio from base dir
+cd ssu_ps_filt
+bash tre.sh
+bash tre_transformed.sh
+cd ../
+
+cd ssu_ps_filt_otu
+bash tre.sh
+bash tre_transformed.sh
+cd ../
+
+cd ssu_ps_perfect
+bash tre.sh
+bash tre_transformed.sh
+cd ../
+
+cd ssu_ps_perfect_otu
+bash tre.sh
+bash tre_transformed.sh
+cd ../
+
+cd ssu_ps_pime
+bash tre.sh
+bash tre_transformed.sh
+cd ../
+
+cd ssu_ps_pime_otu
+bash tre.sh
+bash tre_transformed.sh
+cd ../
+```
+
+Alternatively, we can generate dendrograms using `phyloseq::distance` and `hclust`. 
+
+```{r, code_folding=TRUE}
+pick_dist <- "bray"
+pick_clust <- "complete"
+
+for (i in samp_ps) {
+# Make the table
+    tmp_get <- get(i)
+    tmp_dist <- phyloseq::distance(physeq = tmp_get, method = pick_dist, type = "sample")
+    tmp_dend <- hclust(tmp_dist, method = pick_clust)
+    plot(tmp_dend, hang = -1)
+    tmp_tree <- as.phylo(tmp_dend) 
+    
+    tmp_path <- file.path("files/anvio/ssu/")
+    write.tree(phy = tmp_tree, file = paste(tmp_path, i, "/", "sample_", pick_dist, "_", pick_clust, ".tre", sep = ""))
+    rm(list = ls(pattern = "tmp_"))
+}
+```
+
+```{r, code_folding=TRUE}
+pick_dist_asv <- "euclidean"
+pick_clust_asv <- "ward"
+
+for (i in samp_ps) {
+# Make the table
+    tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_trim")))
+    tmp_dist <- phyloseq::distance(physeq = tmp_get, method = pick_dist_asv, type = "taxa")
+    tmp_dend <- hclust(tmp_dist, method = pick_clust_asv)
+    plot(tmp_dend, hang = -1)
+    tmp_tree <- as.phylo(tmp_dend) 
+    
+    tmp_path <- file.path("files/anvio/ssu/")
+    write.tree(phy = tmp_tree, file = paste(tmp_path, i, "/", "asv_", pick_dist_asv, "_", pick_clust_asv, ".tre", sep = ""))
+    rm(list = ls(pattern = "tmp_"))
+}
+```
+
+<aside>
+The file `asv.tre` is **loaded** with  `anvi-interactive` command & the `--tree` flag.
+</aside>
+
+
+The ASV tree is fine as is, but the sample tree needs a [special format](http://merenlab.org/2017/12/11/additional-data-tables/#layer-orders-additional-data-table). Specifically, the tree needs to be in a three column, tab delimited,  *table*. This way you can add multiple orderings to the same file and view them all in the interactive. The table needs to be in this format:
+
+| item_name	| data_type	| data_value                                          |
+|-----------|-----------|-----------------------------------------------------|
+| tree_1  	| newick	  | ((P01_D00_010_W8A:0.0250122,P05_D00_010_W8C:0.02,.. |
+| tree_2  	| newick	  | ((((((((OTU14195:0.0712585,OTU13230:0.0712585)0:,...|
+| (…)	      | (…)	      | (…)                                                 |
+
+This is easy to do by hand, but I *really* need the practice so I will do it in R. Anvi'o is very particular about formatting. For example, if this file ends with a blank line, which it will because when anvi'o made the initial dendrogram it add a new line. We need to get rid of that or we get an error when trying to import the table.
+
+<aside>
+The file `sample.tre` is **added** to the profile.db with  `anvi-import-misc-data` command &   `--target-data-table layer_orders` flag.
+</aside>
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+      tmp_path <- file.path("files/anvio/ssu/")
+      tmp_tree <- read_file(paste(tmp_path, i, "/", "sample.tre", sep = ""))
+      tmp_tree <- gsub("[\r\n]", "", tmp_tree)
+      tmp_item <- c("bray_complete")
+      tmp_type <- c("newick")
+      tmp_df <- c(tmp_tree)
+      tmp_tab <- data.frame(tmp_item, tmp_type, tmp_df)
+      library(janitor)
+      tmp_tab %>% remove_empty("rows")
+      colnames(tmp_tab) <- c("item_name",	"data_type",	"data_value")
+      write.table(tmp_tab, paste(tmp_path, i, "/", "sample.tre", sep = ""),
+            sep = "\t", quote = FALSE, row.names = FALSE, na = "")
+      rm(list = ls(pattern = "tmp_"))
+}
+```
+
+```{r, code_folding=TRUE}
+# FOR TRANSFORMED DATA
+for (i in samp_ps) {
+      tmp_path <- file.path("files/anvio/ssu/")
+      tmp_tree <- read_file(paste(tmp_path, i, "/","sample_trans.tre", sep = ""))
+      tmp_tree <- gsub("[\r\n]", "", tmp_tree)
+      tmp_item <- c("bray_complete")
+      tmp_type <- c("newick")
+      tmp_df <- c(tmp_tree)
+      tmp_tab <- data.frame(tmp_item, tmp_type, tmp_df)
+      library(janitor)
+      tmp_tab %>% remove_empty("rows")
+      colnames(tmp_tab) <- c("item_name",	"data_type",	"data_value")
+      write.table(tmp_tab, paste(tmp_path, i, "/", "sample_trans.tre", sep = ""),
+            sep = "\t", quote = FALSE, row.names = FALSE, na = "")
+      rm(list = ls(pattern = "tmp_"))
+}
+objects()
+```
+
+```{r, code_folding=TRUE}
+# FOR HCLUST TREE
+for (i in samp_ps) {
+      tmp_path <- file.path("files/anvio/ssu/")
+      tmp_tree <- read_file(paste(tmp_path, i, "/", "sample_", pick_dist, "_", pick_clust, ".tre", sep = ""))
+      tmp_tree <- gsub("[\r\n]", "", tmp_tree)
+      tmp_item <- c(paste(pick_dist, "_", pick_clust, "_hclust", sep = ""))
+      tmp_type <- c("newick")
+      tmp_df <- c(tmp_tree)
+      tmp_tab <- data.frame(tmp_item, tmp_type, tmp_df)
+      library(janitor)
+      tmp_tab %>% remove_empty("rows")
+      colnames(tmp_tab) <- c("item_name",	"data_type",	"data_value")
+      write.table(tmp_tab, paste(tmp_path, i, "/", "sample_", pick_dist, "_", pick_clust, ".tre", sep = ""),
+            sep = "\t", quote = FALSE, row.names = FALSE, na = "")
+      rm(list = ls(pattern = "tmp_"))
+}
+```
+
+### 6. Make a fasta file
+
+We don't need to add a fasta file, but it is a nice way to keep everything in one place. Plus, you can do BLAST searches directly in the interface by right clicking on the ASV of interest, so it is nice to have the sequences.
+
+<aside>
+**Loaded** with `anvi-interactive` command &  `--fasta-file` flag.
+</aside>
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+       tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_trim")))
+       tmp_tab <- tax_table(tmp_get)
+       tmp_tab <- tmp_tab[, 7]
+       tmp_df <- data.frame(row.names(tmp_tab), tmp_tab)
+       colnames(tmp_df) <- c("ASV_ID", "ASV_SEQ")
+       tmp_df$ASV_ID <- sub("^", ">", tmp_df$ASV_ID)
+       tmp_path <- file.path("files/anvio/ssu/")
+
+       write.table(tmp_df, paste(tmp_path, i, "/", i, ".fasta", sep = ""),
+            sep = "\n", col.names = FALSE, row.names = FALSE,
+            quote = FALSE, fileEncoding = "UTF-8")
+       rm(list = ls(pattern = "tmp_"))
+}
+```
+
+## Building the Profile Database
+
+Time to put all of these pieces together. This gets a little tricky since we do not have a database to start with because some of these files can be loaded directly in the interface but some need to be added to a database. When we fire up the interactive in `--manual` mode, we ***must*** give anvi'o the name of a database and it will *create* that database for us. Then we can shut down the interactive, add the necessary data files, and start back up.
+
+```bash
+anvi-interactive --view-data data.txt \
+                 --tree asv.tre \
+                 --additional-layers additional_layers.txt \
+                 --profile-db profile.db \
+                 --manual
+```
+
+Now we have a new profile database that we can add the sample metadata (`additional_layers.txt`) and the sample dendrogram (sample.tre) using the command `anvi-import-misc-data`. These commands add the table to the new `profile.db`. First, kill the interactive.
+
+```bash
+anvi-import-misc-data additional_views.txt \
+                      --pan-or-profile-db profile.db \
+                      --target-data-table layers
+anvi-import-misc-data sample.tre \
+                      --pan-or-profile-db profile.db \
+                      --target-data-table layer_orders
+```
+
+One last this is to get the table with the taxonomy total by sample (`tax_layers.txt`) into the profile database. We will run the same command we just used.
+
+```bash
+anvi-import-misc-data tax_layers.txt \
+                      --pan-or-profile-db profile.db \
+                      --target-data-table layers
+```
+
+In fact, we could just as easily append the taxonomy total data onto the `additional_layers.txt` and import in one command. But we didn't.
+
+## Interactive Interface
+
+With a populated database in hand, we can now begin modifying the visual by running the interactive command again.
+
+```bash
+anvi-interactive --view-data data.txt \
+                 --tree asv.tre \
+                 --additional-layers additional_layers.txt \
+                 --profile-db profile.db
+                 --fasta-file anvio.fasta \
+                 --manual
+```
+
+```{r, echo=FALSE, warning=FALSE, fig.height=2}
+knitr::include_graphics("figures/16s-da-asvs/before.png")
+```
+
+
+```{r, echo=FALSE}
+# ALL commands
+#anvi-interactive --view-data data_ssu_ps_pime.txt --tree asv_ssu_ps_pime.tre --additional-layers additional_layers_ssu_ps_pime.txt --profile-db profile_ssu_ps_pime.db --fasta-file ssu_ps_pime.fasta --manual
+
+#anvi-import-misc-data additional_views_ssu_ps_pime.txt --pan-or-profile-db profile_ssu_ps_pime.db --target-data-table layers
+
+#anvi-import-misc-data sample_ssu_ps_pime.tre --pan-or-profile-db profile_ssu_ps_pime.db --target-data-table layer_orders
+
+#anvi-import-misc-data tax_layers_ssu_ps_pime.txt --pan-or-profile-db profile_ssu_ps_pime.db --target-data-table layers
+
+#anvi-interactive --view-data data_ssu_ps_pime.txt --tree asv_ssu_ps_pime.tre --additional-layers additional_layers_ssu_ps_pime.txt --profile-db profile_ssu_ps_pime.db --fasta-file ssu_ps_pime.fasta --manual
+
+```
+
+
+
+<details markdown="1">
+<summary><strong>Click here</strong> for the ITS version of this workflow.</summary>
+
+<br/>
+
+The ITS version of the anvi'o workflow is basically a carbon copy of the workflow presented above. It is included here for posterity.
+
+### Visualizing DA ASVs in Anvi’o
+
+Next, we will combine the results of the ISA and LEfSe analyses with the distribution of ASVs across each sample. We are going to do the analysis in [anvi’o](https://github.com/merenlab/anvio)---an advanced analysis and visualization platform for ‘omics data [@eren2015anvi]---using the `anvi-interactive` command. Anvi’o likes databases but it also understands that sometimes you do not have a database. So it offers a manual mode. If you type this command you can have a look at the relevant pieces we need for the visualization, specifically those under the headings MANUAL INPUTS and ADDITIONAL STUFF.
+
+```bash
+anvi-interactive -h
+```
+
+```
+MANUAL INPUTS:
+  Mandatory input parameters to start the interactive interface without
+  anvi'o databases.
+
+--manual-mode           We need this flag to run anvi'o in an ad hoc
+                        manner, i.e., no database.
+-f FASTA, --fasta-file FASTA
+                        A FASTA-formatted input file. This is sort of
+                        optional
+-d VIEW_DATA, --view-data VIEW_DATA
+                        A TAB-delimited file for view data. This is the ASV
+                        by sample matrix. We need this
+-t NEWICK, --tree NEWICK
+                        NEWICK formatted tree structure. How the ASVs are
+                        ordered in our case.
+ADDITIONAL STUFF:
+  Parameters to provide additional layers, views, or layer data.
+
+-V ADDITIONAL_VIEW, --additional-view ADDITIONAL_VIEW
+                        A TAB-delimited file for an additional view to be used
+                        in the interface. This file should contain all split
+                        names, and values for each of them in all samples.
+                        Each column in this file must correspond to a sample
+                        name. Content of this file will be called 'user_view',
+                        which will be available as a new item in the 'views'
+                        combo box in the interface
+-A ADDITIONAL_LAYERS, --additional-layers ADDITIONAL_LAYERS
+                        A TAB-delimited file for additional layer info. In
+                        our case this is info about each ASV. The first column
+                        of the file must be the ASV names, and
+                        the remaining columns should be unique attributes.
+```
+
+There are also a few files we generate that cannot be loaded directly. So, in addition to the files that can be loaded when running the interactive, we also have files that must be added to the database created by anvi’o.
+
+Here is a nice tutorial on [Working with anvi’o additional data tables](http://merenlab.org/2017/12/11/additional-data-tables/). A lot of what we need is covered in this tutorial. To get the most out the visualization we need to create a few files to give anvi’o when we fire up the interactive interface.
+
+1. View data: in our case, a sample by ASV abundance matrix.
+2. Additional info about each ASV.
+3. Additional info about each sample.
+4. Taxa abundance data for each sample at some rank.
+5. Dendrograms ordering the ASVs and samples (based on view data).
+6. Fasta file of all ASVs in the analysis.
+
+### Main steps
+
+#### 1. View data
+
+Let’s start with the `-d` or `--view-data` file. This file needs to be an ASV by sample matrix of read counts. To simplify the visualization, we will use ***all*** ASVs represented by 100 or more total reads, including those identified as differentially abundant by the ISA and/or LEfSe. 
+
+```{r, code_folding=TRUE}
+samp_ps_all <- c("its_ps_filt", "its_ps_pime", "its_ps_perfect", 
+                 "its_ps_filt_otu", "its_ps_pime_otu", "its_ps_perfect_otu", 
+                 "its_ps_work", "its_ps_work_otu")
+samp_ps <- c("its_ps_filt", "its_ps_pime", "its_ps_perfect", 
+             "its_ps_filt_otu", "its_ps_pime_otu", "its_ps_perfect_otu")
+samp_ps_org <- c("its_ps_work", "its_ps_work_otu")
+samp_ps_pime <- c("its_ps_pime", "its_ps_pime_otu")
+samp_ps_other <- c("its_ps_filt", "its_ps_perfect", 
+                   "its_ps_filt_otu", "its_ps_perfect_otu")
+
+trim_val <- 50
+for (i in samp_ps_pime) {
+     tmp_get <- get(i)
+     tmp_df <- prune_taxa(taxa_sums(tmp_get) > trim_val, tmp_get)
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_trim"))
+     assign(tmp_name, tmp_df)
+     rm(list = ls(pattern = "tmp_"))
+}
+
+trim_val <- 300
+for (i in samp_ps_other) {
+     tmp_get <- get(i)
+     tmp_df <- prune_taxa(taxa_sums(tmp_get) > trim_val, tmp_get)
+     tmp_name <- purrr::map_chr(i, ~ paste0(., "_trim"))
+     assign(tmp_name, tmp_df)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects(pattern = "_trim")
+its_ps_filt_trim
+its_ps_pime_trim
+its_ps_perfect_trim
+its_ps_filt_otu_trim
+its_ps_pime_otu_trim
+its_ps_perfect_otu_trim
+```
+
+```{r, echo=FALSE}
+for (i in samp_ps) {
+     tmp_path <- file.path("files/anvio/its/")
+     dir.create(paste(tmp_path, i, sep = ""))
+     rm(list = ls(pattern = "tmp_"))
+}
+
+for (i in samp_ps_org) {
+     tmp_path <- file.path("files/anvio/its/")
+     dir.create(paste(tmp_path, i, sep = ""))
+     rm(list = ls(pattern = "tmp_"))
+}
+objects()
+```
+
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_trim")))
+     tmp_df <- as.data.frame(t(otu_table(tmp_get)))
+     tmp_df <- tmp_df %>% rownames_to_column("Group")
+     tmp_path <- file.path("files/anvio/its/")
+     write.table(tmp_df, paste(tmp_path, i, "/", "data.txt", sep = ""),
+            quote = FALSE, sep = "\t", row.names = FALSE)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects()
+```
+
+Or export a table of transformed data.
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_trim")))
+     tmp_trans <- transform_sample_counts(tmp_get, function(x) 1e5 * {x/sum(x)})
+     tmp_df <- as.data.frame(t(otu_table(tmp_trans)))
+     tmp_df <- tmp_df %>% rownames_to_column("Group")
+     #tmp_name <- purrr::map_chr(i, ~ paste0(., "_trim_tab"))
+     #assign(tmp_name, tmp_df)
+     tmp_path <- file.path("files/anvio/its/")
+     write.table(tmp_df, paste(tmp_path, i, "/", "data_trans.txt", sep = ""),
+            quote = FALSE, sep = "\t", row.names = FALSE)
+     rm(list = ls(pattern = "tmp_"))
+}
+objects()
+```
+
+#### 2. Additional Layers for ASVs
+
+Next, we need some additional data **about the ASVs** to overlay on the visual. This can be anything however what I specifically want are the details of the ISA analysis, total reads, and lineage info. I warn you; this code will get ugly and I urge you to find a better way.
+
+Start with an ASV + lineage table for the ASVs in the new phyloseq object.
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+     tmp_get_indval <- get(purrr::map_chr(i, ~ paste0(., "_indval_final")))
+     tmp_get_indval <- tmp_get_indval %>% dplyr::rename("Group" = "ASV_ID") %>%
+                                          dplyr::rename("enrich_indval" = "group") %>%
+                                          dplyr::rename("test_indval" = "indval") %>%
+                                          dplyr::rename("pval_indval" = "pval")
+     tmp_get_indval <- tmp_get_indval[,1:5]
+
+     tmp_get_lefse <- get(purrr::map_chr(i, ~ paste0(., "_lefse_final")))
+     tmp_get_lefse <- tmp_get_lefse %>% dplyr::rename("Group" = "ASV_ID") %>%
+                                          dplyr::rename("enrich_lefse" = "group") %>%
+                                          dplyr::rename("test_lefse" = "lda") %>%
+                                          dplyr::rename("pval_lefse" = "pval")
+     tmp_get_lefse <- tmp_get_lefse[,1:4]
+     
+     tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_trim")))
+     tmp_otu_df <- as.data.frame(t(otu_table(tmp_get)))
+     tmp_total <- cbind(tmp_otu_df, total_reads = rowSums(tmp_otu_df))
+     tmp_total <- rev(tmp_total)[1]
+     tmp_total <- tmp_total %>% tibble::rownames_to_column("Group")
+     tmp_tax_df <- as.data.frame(tax_table(tmp_get))
+     tmp_tax_df$ASV_SEQ <- NULL
+     tmp_tax_df$ASV_ID <- NULL
+     
+     tmp_tax_df <- tmp_tax_df %>% tibble::rownames_to_column("Group")
+     tmp_add_lay <- dplyr::left_join(tmp_tax_df, tmp_total, by = "Group") %>%
+                   dplyr::left_join(., tmp_get_indval, by = "Group") %>%
+                   dplyr::left_join(., tmp_get_lefse, by = "Group")
+     tmp_add_lay$ASV_ID <- tmp_add_lay$Group
+     tmp_add_lay <- tmp_add_lay[, c(1,16,8,12,9:11,13:15,2:7)]
+     tmp_path <- file.path("files/anvio/its/")
+     write.table(tmp_add_lay, paste(tmp_path, i, "/", "additional_layers.txt", sep = ""),
+            quote = FALSE, sep = "\t", row.names = FALSE, na = "")
+     rm(list = ls(pattern = "tmp_"))
+}
+```
+
+#### 3. Additional Views for Samples
+
+Now we want some general data **about the samples** to overlay on the visual. Again, this can be anything. How about a table of alpha diversity metrics? We actually have such a table that was generated way back up the road. Just need to fix the column names.
+
+<aside>
+**Added** to  profile.db with  `anvi-import-misc-data` command &  `--target-data-table layers` flag.
+</aside>
+
+```{r, code_folding=TRUE}
+metadata_tab <- read.table("files/metadata/tables/metadata.txt",
+                           header = TRUE)
+
+tmp_x <- readRDS("files/alpha/rdata/its_ps_pime.rds")
+data.frame(sample_data(tmp_x))
+metadata_tab[,c(2:5)] <- list(NULL)
+for (i in samp_ps_all) {
+     tmp_get <- get(i)
+     tmp_df <- data.frame(sample_data(tmp_get))
+     tmp_df <- tmp_df[,c(2:9)]
+     tmp_df <- tmp_df %>% tibble::rownames_to_column("id")
+     tmp_df <- tmp_df %>% dplyr::rename("no_asvs" = "Observed")
+     tmp_rc <- data.frame(readcount(tmp_get))
+     tmp_rc <- tmp_rc %>% tibble::rownames_to_column("id")
+     tmp_rc <- tmp_rc %>% dplyr::rename("no_reads" = 2)
+     #identical(tmp_df$id, tmp_rc$id)
+     tmp_merge <- dplyr::left_join(tmp_df, tmp_rc)
+     tmp_merge <- tmp_merge[, c(1:6,10,7:9)]
+     tmp_final <- dplyr::left_join(tmp_merge, metadata_tab)
+     tmp_path <- file.path("files/anvio/its/")
+     write.table(tmp_final, paste(tmp_path, i, "/", "additional_views.txt", sep = ""),
+            quote = FALSE, sep = "\t", row.names = FALSE)
+     rm(list = ls(pattern = "tmp_"))
+}
+rm(metadata_tab)
+```
+
+#### 4. Taxon rank abundance by sample
+
+Turned out this was a little tricky to figure out, but thanks to a [little nifty block of code](https://github.com/joey711/phyloseq/iitses/418#iitsecomment-262637034) written by [guoyanzhao](https://github.com/guoyanzhao) on the phyloseq Iitses forum, it was a piece of cake. The code can be altered to take any rank. See the post for an explanation.
+
+Anyway, the goal is to sum each taxon at some rank and present that as a bar chart for each sample in the visualization. Anvi'o has a specific format it needs where each row is a sample and each column is a taxon. Taxa names need the prefix `t_<RANK>!`. For example, `t_class!` should be added for Class rank.
+
+<aside>
+**Added** to  profile.db with `anvi-import-misc-data` command & `--target-data-table layers` flag.
+</aside>
+
+```{r, code_folding=TRUE}
+pick_rank <- "Order"
+pick_rank_l <- "order"
+for (i in samp_ps_all) {
+# Make the table
+    tmp_get <- get(i)
+    tmp_glom <- tax_glom(tmp_get, taxrank = pick_rank)
+    tmp_melt <- psmelt(tmp_glom)
+    tmp_melt[[pick_rank]] <- as.character(tmp_melt[[pick_rank]])
+    tmp_abund <- aggregate(Abundance ~ Sample + tmp_melt[[pick_rank]], tmp_melt, FUN = sum)
+    colnames(tmp_abund)[2] <- "tax_rank"
+    library(reshape2)
+    tmp_abund <- as.data.frame(reshape::cast(tmp_abund, Sample ~ tax_rank))
+    tmp_abund <- tibble::remove_rownames(tmp_abund)
+    tmp_abund <- tibble::column_to_rownames(tmp_abund, "Sample")
+# Reorder table column by sum
+    tmp_layers <- tmp_abund[,names(sort(colSums(tmp_abund), decreasing = TRUE))]
+# Add the prefix
+    tmp_layers <- tmp_layers %>% dplyr::rename_all(function(x) paste0("t_", pick_rank_l,"!", x))
+    tmp_layers <- tibble::rownames_to_column (tmp_layers, "taxon")
+# save the table
+    tmp_path <- file.path("files/anvio/its/")
+    write.table(tmp_layers, paste(tmp_path, i, "/", "tax_layers.txt", sep = ""),
+            quote = FALSE, sep = "\t", row.names = FALSE)
+    rm(list = ls(pattern = "tmp_"))
+}
+```
+
+
+#### 5. Construct Dendrograms
+
+The last piece we need is to generate dendrograms that order the ASVs by their distribution in the samples and the samples by their ASV composition. For this task we will use anvi'o.
+
+```bash
+anvi-matrix-to-newick data.txt --distance euclidean \
+                               --linkage ward \
+                               -o asv.tre
+anvi-matrix-to-newick data.txt --distance euclidean \
+                               --linkage ward \
+                               -o sample.tre \
+                               --transpose
+```
+
+The first command reads the view data we generated above and uses Euclidean distance and Ward linkage for hierarchical clustering of the ASVs. The second command transposes the view data table and then does the same for the samples. There are several distance metrics and linkage methods available. See the help menu for the command by typing `anvi-matrix-to-newick -h`.  Boom.
+
+```{r, echo=FALSE}
+#bash_commands <- c() USE this to combine all commands
+# including in loop creates separate files
+for (i in samp_ps) {
+      bash_commands <- c()
+      tmp_command_asv <- purrr::map_chr(i, ~ paste0("anvi-matrix-to-newick data.txt",
+                                                " --distance euclidean --linkage ward -o ",
+                                                "asv.tre"))
+      bash_commands <- append(bash_commands, tmp_command_asv)
+      tmp_command_samp <- purrr::map_chr(i, ~ paste0("anvi-matrix-to-newick data.txt",
+                                                " --distance braycurtis --linkage complete -o ",
+                                                "sample.tre --transpose"))
+      bash_commands <- append(bash_commands, tmp_command_samp)
+      tmp_path <- file.path("files/anvio/its/")
+      write(bash_commands, paste(tmp_path, i, "/", "tre.sh", sep = ""))
+      rm(list = ls(pattern = "tmp_"))
+}
+```
+
+```{r, echo=FALSE}
+# FOR TANSFORMED DATA
+for (i in samp_ps) {
+      bash_commands <- c()
+      tmp_command_asv <- purrr::map_chr(i, ~ paste0("anvi-matrix-to-newick data_trans.txt",
+                                                " --distance euclidean --linkage ward -o ",
+                                                "asv_trans.tre"))
+      bash_commands <- append(bash_commands, tmp_command_asv)
+      tmp_command_samp <- purrr::map_chr(i, ~ paste0("anvi-matrix-to-newick data_trans.txt",
+                                                " --distance braycurtis --linkage complete -o ",
+                                                "sample_trans.tre --transpose"))
+      bash_commands <- append(bash_commands, tmp_command_samp)
+      tmp_path <- file.path("files/anvio/its/")
+      write(bash_commands, paste(tmp_path, i, "/", "tre_transformed.sh", sep = ""))
+      rm(list = ls(pattern = "tmp_"))
+}
+```
+
+```{bash, echo=FALSE}
+#NEED to run in anvio from base dir
+cd its_ps_filt
+bash tre.sh
+bash tre_transformed.sh
+cd ../
+
+cd its_ps_filt_otu
+bash tre.sh
+bash tre_transformed.sh
+cd ../
+
+cd its_ps_perfect
+bash tre.sh
+bash tre_transformed.sh
+cd ../
+
+cd its_ps_perfect_otu
+bash tre.sh
+bash tre_transformed.sh
+cd ../
+
+cd its_ps_pime
+bash tre.sh
+bash tre_transformed.sh
+cd ../
+
+cd its_ps_pime_otu
+bash tre.sh
+bash tre_transformed.sh
+cd ../
+```
+
+Alternatively, we can generate dendrograms using `phyloseq::distance` and `hclust`. 
+
+```{r, code_folding=TRUE}
+pick_dist <- "bray"
+pick_clust <- "complete"
+
+for (i in samp_ps) {
+# Make the table
+    tmp_get <- get(i)
+    tmp_dist <- phyloseq::distance(physeq = tmp_get, method = pick_dist, type = "sample")
+    tmp_dend <- hclust(tmp_dist, method = pick_clust)
+    plot(tmp_dend, hang = -1)
+    tmp_tree <- as.phylo(tmp_dend) 
+    
+    tmp_path <- file.path("files/anvio/its/")
+    write.tree(phy = tmp_tree, file = paste(tmp_path, i, "/", "sample_", pick_dist, "_", pick_clust, ".tre", sep = ""))
+    rm(list = ls(pattern = "tmp_"))
+}
+```
+
+```{r, code_folding=TRUE}
+pick_dist_asv <- "euclidean"
+pick_clust_asv <- "ward"
+
+for (i in samp_ps) {
+# Make the table
+    tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_trim")))
+    tmp_dist <- phyloseq::distance(physeq = tmp_get, method = pick_dist_asv, type = "taxa")
+    tmp_dend <- hclust(tmp_dist, method = pick_clust_asv)
+    plot(tmp_dend, hang = -1)
+    tmp_tree <- as.phylo(tmp_dend) 
+    
+    tmp_path <- file.path("files/anvio/its/")
+    write.tree(phy = tmp_tree, file = paste(tmp_path, i, "/", "asv_", pick_dist_asv, "_", pick_clust_asv, ".tre", sep = ""))
+    rm(list = ls(pattern = "tmp_"))
+}
+```
+
+<aside>
+The file `asv.tre` is **loaded** with  `anvi-interactive` command & the `--tree` flag.
+</aside>
+
+
+The ASV tree is fine as is, but the sample tree needs a [special format](http://merenlab.org/2017/12/11/additional-data-tables/#layer-orders-additional-data-table). Specifically, the tree needs to be in a three column, tab delimited,  *table*. This way you can add multiple orderings to the same file and view them all in the interactive. The table needs to be in this format:
+
+| item_name	| data_type	| data_value                                          |
+|-----------|-----------|-----------------------------------------------------|
+| tree_1  	| newick	  | ((P01_D00_010_W8A:0.0250122,P05_D00_010_W8C:0.02,.. |
+| tree_2  	| newick	  | ((((((((OTU14195:0.0712585,OTU13230:0.0712585)0:,...|
+| (…)	      | (…)	      | (…)                                                 |
+
+This is easy to do by hand, but I *really* need the practice so I will do it in R. Anvi'o is very particular about formatting. For example, if this file ends with a blank line, which it will because when anvi'o made the initial dendrogram it add a new line. We need to get rid of that or we get an error when trying to import the table.
+
+<aside>
+The file `sample.tre` is **added** to the profile.db with  `anvi-import-misc-data` command &   `--target-data-table layer_orders` flag.
+</aside>
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+      tmp_path <- file.path("files/anvio/its/")
+      tmp_tree <- read_file(paste(tmp_path, i, "/", "sample.tre", sep = ""))
+      tmp_tree <- gsub("[\r\n]", "", tmp_tree)
+      tmp_item <- c("bray_complete")
+      tmp_type <- c("newick")
+      tmp_df <- c(tmp_tree)
+      tmp_tab <- data.frame(tmp_item, tmp_type, tmp_df)
+      library(janitor)
+      tmp_tab %>% remove_empty("rows")
+      colnames(tmp_tab) <- c("item_name",	"data_type",	"data_value")
+      write.table(tmp_tab, paste(tmp_path, i, "/", "sample.tre", sep = ""),
+            sep = "\t", quote = FALSE, row.names = FALSE, na = "")
+      rm(list = ls(pattern = "tmp_"))
+}
+```
+
+```{r, code_folding=TRUE}
+# FOR TRANSFORMED DATA
+for (i in samp_ps) {
+      tmp_path <- file.path("files/anvio/its/")
+      tmp_tree <- read_file(paste(tmp_path, i, "/","sample_trans.tre", sep = ""))
+      tmp_tree <- gsub("[\r\n]", "", tmp_tree)
+      tmp_item <- c("bray_complete")
+      tmp_type <- c("newick")
+      tmp_df <- c(tmp_tree)
+      tmp_tab <- data.frame(tmp_item, tmp_type, tmp_df)
+      library(janitor)
+      tmp_tab %>% remove_empty("rows")
+      colnames(tmp_tab) <- c("item_name",	"data_type",	"data_value")
+      write.table(tmp_tab, paste(tmp_path, i, "/", "sample_trans.tre", sep = ""),
+            sep = "\t", quote = FALSE, row.names = FALSE, na = "")
+      rm(list = ls(pattern = "tmp_"))
+}
+objects()
+```
+
+```{r, code_folding=TRUE}
+# FOR HCLUST TREE
+for (i in samp_ps) {
+      tmp_path <- file.path("files/anvio/its/")
+      tmp_tree <- read_file(paste(tmp_path, i, "/", "sample_", pick_dist, "_", pick_clust, ".tre", sep = ""))
+      tmp_tree <- gsub("[\r\n]", "", tmp_tree)
+      tmp_item <- c(paste(pick_dist, "_", pick_clust, "_hclust", sep = ""))
+      tmp_type <- c("newick")
+      tmp_df <- c(tmp_tree)
+      tmp_tab <- data.frame(tmp_item, tmp_type, tmp_df)
+      library(janitor)
+      tmp_tab %>% remove_empty("rows")
+      colnames(tmp_tab) <- c("item_name",	"data_type",	"data_value")
+      write.table(tmp_tab, paste(tmp_path, i, "/", "sample_", pick_dist, "_", pick_clust, ".tre", sep = ""),
+            sep = "\t", quote = FALSE, row.names = FALSE, na = "")
+      rm(list = ls(pattern = "tmp_"))
+}
+```
+
+#### 6. Make a fasta file
+
+We don't need to add a fasta file, but it is a nice way to keep everything in one place. Plus, you can do BLAST searches directly in the interface by right clicking on the ASV of interest, so it is nice to have the sequences.
+
+<aside>
+**Loaded** with `anvi-interactive` command &  `--fasta-file` flag.
+</aside>
+
+```{r, code_folding=TRUE}
+for (i in samp_ps) {
+       tmp_get <- get(purrr::map_chr(i, ~ paste0(., "_trim")))
+       tmp_tab <- tax_table(tmp_get)
+       tmp_tab <- tmp_tab[, 7]
+       tmp_df <- data.frame(row.names(tmp_tab), tmp_tab)
+       colnames(tmp_df) <- c("ASV_ID", "ASV_SEQ")
+       tmp_df$ASV_ID <- sub("^", ">", tmp_df$ASV_ID)
+       tmp_path <- file.path("files/anvio/its/")
+
+       write.table(tmp_df, paste(tmp_path, i, "/", i, ".fasta", sep = ""),
+            sep = "\n", col.names = FALSE, row.names = FALSE,
+            quote = FALSE, fileEncoding = "UTF-8")
+       rm(list = ls(pattern = "tmp_"))
+}
+```
+
+### Building the Profile Database
+
+Time to put all of these pieces together. This gets a little tricky since we do not have a database to start with because some of these files can be loaded directly in the interface but some need to be added to a database. When we fire up the interactive in `--manual` mode, we ***must*** give anvi'o the name of a database and it will *create* that database for us. Then we can shut down the interactive, add the necessary data files, and start back up.
+
+```bash
+anvi-interactive --view-data data.txt \
+                 --tree asv.tre \
+                 --additional-layers additional_layers.txt \
+                 --profile-db profile.db \
+                 --manual
+```
+
+Now we have a new profile database that we can add the sample metadata (`additional_layers.txt`) and the sample dendrogram (sample.tre) using the command `anvi-import-misc-data`. These commands add the table to the new `profile.db`. First, kill the interactive.
+
+```bash
+anvi-import-misc-data additional_views.txt \
+                      --pan-or-profile-db profile.db \
+                      --target-data-table layers
+anvi-import-misc-data sample.tre \
+                      --pan-or-profile-db profile.db \
+                      --target-data-table layer_orders
+```
+
+One last this is to get the table with the taxonomy total by sample (`tax_layers.txt`) into the profile database. We will run the same command we just used.
+
+```bash
+anvi-import-misc-data tax_layers.txt \
+                      --pan-or-profile-db profile.db \
+                      --target-data-table layers
+```
+
+In fact, we could just as easily append the taxonomy total data onto the `additional_layers.txt` and import in one command. But we didn't.
+
+### Interactive Interface
+
+With a populated database in hand, we can now begin modifying the visual by running the interactive command again.
+
+```bash
+anvi-interactive --view-data data.txt \
+                 --tree asv.tre \
+                 --additional-layers additional_layers.txt \
+                 --profile-db profile.db
+                 --fasta-file anvio.fasta \
+                 --manual
+```
+
+```{r, echo=FALSE, warning=FALSE, fig.height=2}
+knitr::include_graphics("figures/16s-da-asvs/before.png")
+```
+
+
+```{r, echo=FALSE}
+# ALL commands
+#anvi-interactive --view-data data_its_ps_pime.txt --tree asv_its_ps_pime.tre --additional-layers additional_layers_its_ps_pime.txt --profile-db profile_its_ps_pime.db --fasta-file its_ps_pime.fasta --manual
+
+#anvi-import-misc-data additional_views_its_ps_pime.txt --pan-or-profile-db profile_its_ps_pime.db --target-data-table layers
+
+#anvi-import-misc-data sample_its_ps_pime.tre --pan-or-profile-db profile_its_ps_pime.db --target-data-table layer_orders
+
+#anvi-import-misc-data tax_layers_its_ps_pime.txt --pan-or-profile-db profile_its_ps_pime.db --target-data-table layers
+
+#anvi-interactive --view-data data_its_ps_pime.txt --tree asv_its_ps_pime.tre --additional-layers additional_layers_its_ps_pime.txt --profile-db profile_its_ps_pime.db --fasta-file its_ps_pime.fasta --manual
+
+```
+</details>
+
+```{r, echo=FALSE}
+save.image("page_build/mmarker_wf.rdata")
+```
+
+
+##  Source Code {.appendix}
+
+The source code for this page can be accessed on GitHub by [clicking this link](https://github.com/sweltr/high-temp/blob/master/da.Rmd). 
+
+## Data Availability {.appendix}
+
+Data generated in this workflow and the Rdata need to run the workflow can be accessed on figshare at [10.25573/data.16828249](https://doi.org/10.25573/data.16828249).

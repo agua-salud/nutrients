@@ -10,7 +10,7 @@ author:
 bibliography: assets/cite.bib
 output:
     distill::distill_article:
-      css: ["assets/styles.css", "assets/styles_dada2.css"]
+      css: ["assets/css/styles.css", "assets/css/styles_dada2.css"]
       toc: true
       toc_depth: 1
 ---
@@ -40,31 +40,26 @@ knitr::opts_current$get(c(
   "autodep"
 ))
 ```
-</details>
-
-```{r, include=FALSE, eval=TRUE}
-remove(list = ls())
-```
 
 ```{r, echo=FALSE, eval=TRUE}
 xaringanExtra::use_panelset()
 ```
 
-```{r, echo = FALSE, eval = TRUE, results = 'hide'}
-# Create the caption(s) with captioner
-caption_tab_ssu <- captioner(prefix = "(16S rRNA) Table", suffix = " |", style = "b")
-caption_fig_ssu <- captioner(prefix = "(16S rRNA) Figure", suffix = " |", style = "b")
-
-caption_tab_its <- captioner(prefix = "(ITS) Table", suffix = " |", style = "b")
-caption_fig_its <- captioner(prefix = "(ITS) Figure", suffix = " |", style = "b")
-# Create a function for referring to the tables in text
-ref <- function(x) str_extract(x, "[^|]*") %>% 
-  trimws(which = "right", whitespace = "[ ]")
+```{r, message=FALSE, results = 'hide', eval=TRUE}
+remove(list = ls())
 ```
 
-```{r, echo = FALSE, eval = TRUE}
-source("assets/captions/captions_dada2.R")
+```{r, message=FALSE, results = 'hide', eval=TRUE}
+### COmmon formatting scripts
+### NOTE: captioner.R must be read BEFORE captions_XYZ.R
+source("assets/captioner/captioner.R")
+source("assets/captioner/captions/captions_dada2.R")
+source("assets/reactable/download_this_fun.R")
+source("assets/reactable/styles.R")
+source("assets/reactable/table_functions/dada2.R")
 ```
+
+</details>
 
 # Prerequisites
 
@@ -78,52 +73,24 @@ Because the workflows share many variable names, you must either split the workf
 
 # 16s rRNA Data
 
-## Overview
+## Sequence Files & Samples
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table <- read.table("files/dada2/tables/ssu_sample_seq_info.txt",
+```{r, echo=FALSE, eval=TRUE}
+ssu_sample_seq_info <- read.table("files/dada2/tables/ssu_sample_seq_info.txt",
                         header = TRUE, sep = "\t")
 ```
 
-## Sequence Files & Samples
+We sequenced a total of `r nrow(ssu_sample_seq_info)` samples collected from `r length(unique(ssu_sample_seq_info$Location))` different locations and `r length(unique(ssu_sample_seq_info$Forest_age))` forest ages.
 
-We sequenced a total of `r nrow(seq_table)` samples collected from `r length(unique(seq_table$Location))` different locations and `r length(unique(seq_table$Forest_age))` forest ages.
+<small>`r caption_tab_ssu("ssu_sample_seq_info")`</small>
 
-<small>`r caption_tab_ssu("seq_dets_ssu")`</small>
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(ssu_sample_seq_info)
+```
+
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "ssu_sample_seq_info",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = TRUE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads"), 
-    raw_reads = colDef(footer = function(values) sprintf("%.0f", sum(values)), 
-                       filterable = FALSE)
-    ), 
-  searchable = TRUE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+sample_summary_table(seq_table)
+rm(seq_table)
 ```
 
 </br>
@@ -212,7 +179,7 @@ system("cp files/dada2/figures/ssu_raw_plot_qscores_year_0.png include/dada2/ssu
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_raw_plot_qscores_year_0.png")
 ```
-<small>`r caption_fig_ssu("raw_qual_scores_ssu_y0")`</small>
+<small>`r caption_fig_ssu("ssu_raw_qual_scores_year_0")`</small>
 
 ```{r}
 fnFs.filtN <- file.path(path, basename(fnFs)) 
@@ -235,46 +202,19 @@ file.copy(file.path(path, list_of_files), path.cut)
 Now, for each sample, we can take a look at the total number of raw reads.
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/ssu_cut_year_0.txt",
+ssu_cutadapt_year_0 <- read.table("files/dada2/tables/ssu_cutadapt_year_0.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_ssu("seq_cutadapt_ssu_y0")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "ssu_cutadapt_year_0",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_ssu("ssu_cutadapt_year_0")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    raw_reads = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    pre_filt_reads = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    cutadapt_reads = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(ssu_cutadapt_year_0)
+```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+cutadapt_table(seq_table)
+rm(seq_table)
 ```
 
 > [Back to top of this section](#remove-primers)
@@ -331,7 +271,7 @@ system("cp files/dada2/figures/ssu_raw_plot_qscores_year_1.png include/dada2/ssu
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_raw_plot_qscores_year_1.png")
 ```
-<small>`r caption_fig_ssu("raw_qual_scores_ssu_y1")`</small>
+<small>`r caption_fig_ssu("ssu_raw_qual_scores_year_1")`</small>
 
 ### Define Primers
 
@@ -500,53 +440,26 @@ system("cp files/dada2/figures/ssu_cut_plot_qscores_year_1.png include/dada2/ssu
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_cut_plot_qscores_year_1.png")
 ```
-<small>`r caption_fig_ssu("cut_qual_scores_ssu_y1")`</small>
+<small>`r caption_fig_ssu("ssu_cut_qual_scores_year_1")`</small>
 
 Now, for each sample, we can take a look at how primer removal affected the total number of raw reads.
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/ssu_cut_year_1.txt",
+ssu_cutadapt_year_1 <- read.table("files/dada2/tables/ssu_cutadapt_year_1.txt",
                        header = TRUE, sep = "\t")
 ```
 
-<small>`r caption_tab_ssu("seq_cutadapt_ssu_y1")`</small>
+<small>`r caption_tab_ssu("ssu_cutadapt_year_1")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "ssu_cutadapt_year_1",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    raw_reads = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    pre_filt_reads = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    cutadapt_reads = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(ssu_cutadapt_year_1)
 ```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+cutadapt_table(seq_table)
+rm(seq_table)
+```
+
 > [Back to top of this section](#remove-primers)
 
 :::
@@ -601,7 +514,7 @@ system("cp files/dada2/figures/ssu_raw_plot_qscores_year_4.png include/dada2/ssu
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_raw_plot_qscores_year_4.png")
 ```
-<small>`r caption_fig_ssu("raw_qual_scores_ssu_y4")`</small>
+<small>`r caption_fig_ssu("ssu_raw_qual_scores_year_4")`</small>
 
 ### Define Primers
 
@@ -770,53 +683,26 @@ system("cp files/dada2/figures/ssu_cut_plot_qscores_year_4.png include/dada2/ssu
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_cut_plot_qscores_year_4.png")
 ```
-<small>`r caption_fig_ssu("cut_qual_scores_ssu_y4")`</small>
+<small>`r caption_fig_ssu("ssu_cut_qual_scores_year_4")`</small>
 
 Now, for each sample, we can take a look at how primer removal affected the total number of raw reads.
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/ssu_cut_year_4.txt",
+ssu_cutadapt_year_4 <- read.table("files/dada2/tables/ssu_cutadapt_year_4.txt",
                        header = TRUE, sep = "\t")
 ```
 
-<small>`r caption_tab_ssu("seq_cutadapt_ssu_y4")`</small>
+<small>`r caption_tab_ssu("ssu_cutadapt_year_4")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "ssu_cutadapt_year_4",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    raw_reads = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    pre_filt_reads = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    cutadapt_reads = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(ssu_cutadapt_year_4)
 ```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+cutadapt_table(seq_table)
+rm(seq_table)
+```
+
 > [Back to top of this section](#remove-primers)
 
 :::
@@ -850,7 +736,6 @@ First let's look at the quality of our reads. The numbers in brackets specify wh
 
 ### Filtering
 
-
 ```{r}
 out <- filterAndTrim(cutFs, filtFs, cutRs, filtRs,  
                      maxN = 0, maxEE = 2, truncQ = 2, 
@@ -868,46 +753,21 @@ And here is a table of how the filtering step affected the number of reads in ea
 <br/>
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/ssu_filt_year_0.txt",
+ssu_filter_year_0 <- read.table("files/dada2/tables/ssu_filter_year_0.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_ssu("filter_ssu_y0")`</small>
+
+<small>`r caption_tab_ssu("ssu_filter_year_0")`</small>
+
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(ssu_filter_year_0)
+```
 
 ```{r, echo=FALSE, layout="l-body", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "ssu_filter_year_0",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    reads_in = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    reads_out = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+filter_summary_table(seq_table)
+rm(seq_table)
 ```
+
 
 ```{r, layout="l-body-outset", warning=FALSE, fig.height=3}
 p1 <- plotQualityProfile(filtFs[1:59], aggregate = TRUE)
@@ -924,7 +784,7 @@ system("cp files/dada2/figures/ssu_post_filt_plot_qscores_year_0.png include/dad
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_post_filt_plot_qscores_year_0.png")
 ```
-<small>`r caption_fig_ssu("filt_qual_scores_ssu_y0")`</small>
+<small>`r caption_fig_ssu("ssu_filt_qual_scores_year_0")`</small>
 
 ### Learn Error Rates
 
@@ -957,7 +817,7 @@ system("cp files/dada2/figures/ssu_plot_errorF_1_year_0.png include/dada2/ssu_pl
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_plot_errorF_1_year_0.png")
 ```
-<small>`r caption_fig_ssu("error_F_ssu_y0")`</small>
+<small>`r caption_fig_ssu("ssu_error_F_year_0")`</small>
 
 #### Reverse Reads
 
@@ -986,7 +846,7 @@ system("cp files/dada2/figures/ssu_plot_errorR_1_year_0.png include/dada2/ssu_pl
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_plot_errorR_1_year_0.png")
 ```
-<small>`r caption_fig_ssu("error_R_ssu_y0")`</small>
+<small>`r caption_fig_ssu("ssu_error_R_year_0")`</small>
 
 The error rates for each possible transition (A to C, A to G, etc.) are shown. Points are the observed error rates for each consensus quality score. The black line shows the estimated error rates after convergence of the machine-learning algorithm. The red line shows the error rates expected under the nominal definition of the Q-score. Here the estimated error rates (black line) are a good fit to the observed rates (points), and the error rates drop with increased quality as expected.
 
@@ -1282,45 +1142,19 @@ And here is a table of how the filtering step affected the number of reads in ea
 <br/>
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/ssu_filt_year_1.txt",
+ssu_filter_year_1 <- read.table("files/dada2/tables/ssu_filter_year_1.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_ssu("filter_ssu_y1")`</small>
+
+<small>`r caption_tab_ssu("ssu_filter_year_1")`</small>
+
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(ssu_filter_year_1)
+```
 
 ```{r, echo=FALSE, layout="l-body", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "ssu_filter_year_1",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    reads_in = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    reads_out = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+filter_summary_table(seq_table)
+rm(seq_table)
 ```
 
 ```{r, layout="l-body-outset", warning=FALSE, fig.height=3}
@@ -1338,7 +1172,7 @@ system("cp files/dada2/figures/ssu_post_filt_plot_qscores_year_1.png include/dad
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_post_filt_plot_qscores_year_1.png")
 ```
-<small>`r caption_fig_ssu("filt_qual_scores_ssu_y1")`</small>
+<small>`r caption_fig_ssu("ssu_filt_qual_scores_year_1")`</small>
 
 ### Learn Error Rates
 
@@ -1371,7 +1205,7 @@ system("cp files/dada2/figures/ssu_plot_errorF_1_year_1.png include/dada2/ssu_pl
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_plot_errorF_1_year_1.png")
 ```
-<small>`r caption_fig_ssu("error_F_ssu_y1")`</small>
+<small>`r caption_fig_ssu("ssu_error_F_year_1")`</small>
 
 
 #### Reverse Reads
@@ -1401,7 +1235,7 @@ system("cp files/dada2/figures/ssu_plot_errorR_1_year_1.png include/dada2/ssu_pl
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_plot_errorR_1_year_1.png")
 ```
-<small>`r caption_fig_ssu("error_R_ssu_y1")`</small>
+<small>`r caption_fig_ssu("ssu_error_R_year_1")`</small>
 
 The error rates for each possible transition (A to C, A to G, etc.) are shown. Points are the observed error rates for each consensus quality score. The black line shows the estimated error rates after convergence of the machine-learning algorithm. The red line shows the error rates expected under the nominal definition of the Q-score. Here the estimated error rates (black line) are a good fit to the observed rates (points), and the error rates drop with increased quality as expected.
 
@@ -1664,45 +1498,19 @@ And here is a table of how the filtering step affected the number of reads in ea
 <br/>
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/ssu_filt_year_4.txt",
+ssu_filter_year_4 <- read.table("files/dada2/tables/ssu_filter_year_4.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_ssu("filter_ssu_y4")`</small>
+
+<small>`r caption_tab_ssu("ssu_filter_year_4")`</small>
+
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(ssu_filter_year_4)
+```
 
 ```{r, echo=FALSE, layout="l-body", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "ssu_filter_year_4",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    reads_in = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    reads_out = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+filter_summary_table(seq_table)
+rm(seq_table)
 ```
 
 ```{r, layout="l-body-outset", warning=FALSE, fig.height=3}
@@ -1720,7 +1528,7 @@ system("cp files/dada2/figures/ssu_post_filt_plot_qscores_year_4.png include/dad
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_post_filt_plot_qscores_year_4.png")
 ```
-<small>`r caption_fig_ssu("filt_qual_scores_ssu_y4")`</small>
+<small>`r caption_fig_ssu("ssu_filt_qual_scores_year_4")`</small>
 
 ### Learn Error Rates
 
@@ -1753,7 +1561,7 @@ system("cp files/dada2/figures/ssu_plot_errorF_1_year_4.png include/dada2/ssu_pl
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_plot_errorF_1_year_4.png")
 ```
-<small>`r caption_fig_ssu("error_F_ssu_y4")`</small>
+<small>`r caption_fig_ssu("ssu_error_F_year_4")`</small>
 
 #### Reverse Reads
 
@@ -1782,7 +1590,7 @@ system("cp files/dada2/figures/ssu_plot_errorR_1_year_4.png include/dada2/ssu_pl
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_plot_errorR_1_year_4.png")
 ```
-<small>`r caption_fig_ssu("error_R_ssu_y4")`</small>
+<small>`r caption_fig_ssu("ssu_error_R_year_4")`</small>
 
 The error rates for each possible transition (A to C, A to G, etc.) are shown. Points are the observed error rates for each consensus quality score. The black line shows the estimated error rates after convergence of the machine-learning algorithm. The red line shows the error rates expected under the nominal definition of the Q-score. Here the estimated error rates (black line) are a good fit to the observed rates (points), and the error rates drop with increased quality as expected.
 
@@ -2236,47 +2044,21 @@ Key parameters: OMEGA_A = 1e-40, OMEGA_C = 1e-40, BAND_SIZE = 16
 This output tells us how many true sequence variants the DADA2 algorithm inferred from the  unique sequences, in this case the sample 2.
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/ssu_denoise_year_0.txt",
+ssu_denoise_year_0 <- read.table("files/dada2/tables/ssu_denoise_year_0.txt",
                        header = TRUE, sep = "\t")
 ```
 
-<small>`r caption_tab_ssu("denoise_ssu_y0")`</small>
+<small>`r caption_tab_ssu("ssu_denoise_year_0")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "ssu_denoise_year_0",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    denoiseF = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseR = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(ssu_denoise_year_0)
 ```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+denoise_summary_table(seq_table)
+rm(seq_table)
+```
+
 > [Back to top of this section](#dada2-asv-inference)
 
 :::
@@ -2433,46 +2215,21 @@ Key parameters: OMEGA_A = 1e-40, OMEGA_C = 1e-40, BAND_SIZE = 16
 This output tells us how many true sequence variants the DADA2 algorithm inferred from the  unique sequences, in this case the sample 2.
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/ssu_denoise_year_1.txt",
+ssu_denoise_year_1 <- read.table("files/dada2/tables/ssu_denoise_year_1.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_ssu("denoise_ssu_y1")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "ssu_denoise_year_1",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_ssu("ssu_denoise_year_1")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    denoiseF = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseR = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(ssu_denoise_year_1)
 ```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+denoise_summary_table(seq_table)
+rm(seq_table)
+```
+
 > [Back to top of this section](#dada2-asv-inference)
 
 :::
@@ -2649,45 +2406,19 @@ Key parameters: OMEGA_A = 1e-40, OMEGA_C = 1e-40, BAND_SIZE = 16
 This output tells us how many true sequence variants the DADA2 algorithm inferred from the  unique sequences, in this case the sample 2.
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/ssu_denoise_year_4.txt",
+ssu_denoise_year_4 <- read.table("files/dada2/tables/ssu_denoise_year_4.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_ssu("denoise_ssu_y4")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "ssu_denoise_year_4",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_ssu("ssu_denoise_year_4")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    denoiseF = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseR = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(ssu_denoise_year_4)
+```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+denoise_summary_table(seq_table)
+rm(seq_table)
 ```
 > [Back to top of this section](#dada2-asv-inference)
 
@@ -2783,47 +2514,21 @@ head(mergers_year_0[[2]])
 ```
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/ssu_merge_year_0.txt",
+ssu_merge_year_0 <- read.table("files/dada2/tables/ssu_merge_year_0.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_ssu("merge_ssu_y0")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "ssu_merged_year_1",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_ssu("ssu_merge_year_0")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    denoiseF = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseR = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    merged = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(ssu_merge_year_0)
 ```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+merge_summary_table(seq_table)
+rm(seq_table)
+```
+
 
 ```{r}
 seqtab_year_0 <- makeSequenceTable(mergers_year_0)
@@ -2945,46 +2650,19 @@ head(mergers_year_1[[2]])
 
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/ssu_merge_year_1.txt",
+ssu_merge_year_1 <- read.table("files/dada2/tables/ssu_merge_year_1.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_ssu("merge_ssu_y1")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "ssu_merged_year_1",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_ssu("ssu_merge_year_1")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    denoiseF = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseR = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    merged = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(ssu_merge_year_1)
+```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+merge_summary_table(seq_table)
+rm(seq_table)
 ```
 
 ```{r}
@@ -3121,46 +2799,19 @@ head(mergers_year_4[[2]])
 
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/ssu_merge_year_4.txt",
+ssu_merge_year_4 <- read.table("files/dada2/tables/ssu_merge_year_4.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_ssu("merge_ssu_y4")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "ssu_merged_year_4",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_ssu("ssu_merge_year_4")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    denoiseF = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseR = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    merged = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(ssu_merge_year_4)
+```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+merge_summary_table(seq_table)
+rm(seq_table)
 ```
 
 ```{r}
@@ -3293,7 +2944,7 @@ system("cp files/dada2/figures/ssu_read_length_before_nopool_all.png include/dad
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
 knitr::include_graphics("include/dada2/ssu_read_length_before_nopool_all.png")
 ```
-<small>`r caption_fig_ssu("read_length_before_ssu")`</small>
+<small>`r caption_fig_ssu("ssu_read_length_before")`</small>
 
 # 4C. Collapse No Mismatch
 
@@ -3618,54 +3269,22 @@ write.table(track_changes, "files/dada2/tables/ssu_read_changes.txt",
                             sep = "\t", quote = FALSE, row.names = FALSE)
 ```
 
-
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table <- read.table("files/dada2/tables/ssu_read_changes.txt",
+```{r, echo=FALSE, eval=TRUE}
+ssu_read_changes <- read.table("files/dada2/tables/ssu_read_changes.txt",
                         header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_ssu("track_ssu")`</small>
+
+<small>`r caption_tab_ssu("ssu_read_changes")`</small>
+
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(ssu_read_changes)
+```
 
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "ssu_read_changes",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    year = colDef(filterable = TRUE),
-    raw = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    cut = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    filter = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseF = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseR = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    merged = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    nochim = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+merge_summary_table(seq_table)
+rm(seq_table)
 ```
+
 
 ## R Session Information & Code
 
@@ -3824,53 +3443,26 @@ loaded via a namespace (and not attached):
 
 # ITS
 
-## Overview
-
 ## Sequence Files & Samples
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table <- read.table("files/dada2/tables/its_sample_seq_info.txt",
+```{r, echo=FALSE, eval=TRUE}
+its_sample_seq_info <- read.table("files/dada2/tables/its_sample_seq_info.txt",
                         header = TRUE, sep = "\t")
 ```
 
-We sequenced a total of `r nrow(seq_table)` samples collected from `r length(unique(seq_table$Location))` different locations and `r length(unique(seq_table$Forest_age))` forest ages.
+We sequenced a total of `r nrow(its_sample_seq_info)` samples collected from `r length(unique(its_sample_seq_info$Location))` different locations and `r length(unique(its_sample_seq_info$Forest_age))` forest ages.
 
 <br/>
 
-<small>`r caption_tab_its("seq_dets_its")`</small>
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "its_sample_seq_info",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_its("its_sample_seq_info")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = TRUE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    raw_reads = colDef(footer = function(values) sprintf("%.0f", sum(values)), filterable = FALSE)
-    ), 
-  searchable = TRUE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(its_sample_seq_info)
+```
+
+```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
+sample_summary_table(seq_table)
+rm(seq_table)
 ```
 
 ### Workflow
@@ -3955,7 +3547,7 @@ system("cp files/dada2/figures/its_raw_plot_qscores_year_0.png include/dada2/its
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/its_raw_plot_qscores_year_0.png")
 ```
-<small>`r caption_fig_its("raw_qual_scores_its_y0")`</small>
+<small>`r caption_fig_its("its_raw_qual_scores_year_0")`</small>
 
 ### Define Primers
 
@@ -4124,52 +3716,26 @@ system("cp files/dada2/figures/its_cut_plot_qscores_year_0.png include/dada2/its
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/its_cut_plot_qscores_year_0.png")
 ```
-<small>`r caption_fig_its("cut_qual_scores_its_y1")`</small>
+<small>`r caption_fig_its("its_cut_qual_scores_year_0")`</small>
 
 Now, for each sample, we can take a look at how primer removal affected the total number of raw reads.
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/its_cut_year_0.txt",
+its_cutadapt_year_0 <- read.table("files/dada2/tables/its_cutadapt_year_0.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_its("seq_cutadapt_its_y0")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "its_cutadapt_year_0",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_its("its_cutadapt_year_0")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    raw_reads = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    pre_filt_reads = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    cutadapt_reads = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(its_cutadapt_year_0)
 ```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+cutadapt_table(seq_table)
+rm(seq_table)
+```
+
 > [Back to top of this section](#remove-primers-3)
 
 :::
@@ -4222,7 +3788,7 @@ system("cp files/dada2/figures/its_raw_plot_qscores_year_1.png include/dada2/its
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/its_raw_plot_qscores_year_1.png")
 ```
-<small>`r caption_fig_its("raw_qual_scores_its_y1")`</small>
+<small>`r caption_fig_its("its_raw_qual_scores_year_1")`</small>
 
 ### Define Primers
 
@@ -4376,54 +3942,28 @@ system("cp files/dada2/figures/its_cut_plot_qscores_year_1.png include/dada2/its
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/its_cut_plot_qscores_year_1.png")
 ```
-<small>`r caption_fig_its("cut_qual_scores_its_y1")`</small>
+<small>`r caption_fig_its("its_cut_qual_scores_year_1")`</small>
 
 Now, for each sample, we can take a look at how primer removal affected the total number of raw reads.
 
 <br/>
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/its_cut_year_1.txt",
+its_cutadapt_year_1 <- read.table("files/dada2/tables/its_cutadapt_year_1.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_its("seq_cutadapt_its_y1")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "its_cutadapt_year_1",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_its("its_cutadapt_year_1")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    raw_reads = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    pre_filt_reads = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    cutadapt_reads = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(its_cutadapt_year_1)
 ```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+cutadapt_table(seq_table)
+rm(seq_table)
+```
+
 > [Back to top of this section](#remove-primers-3)
 
 :::
@@ -4475,7 +4015,7 @@ system("cp files/dada2/figures/its_raw_plot_qscores_year_4.png include/dada2/its
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/its_raw_plot_qscores_year_4.png")
 ```
-<small>`r caption_fig_its("raw_qual_scores_its_y4")`</small>
+<small>`r caption_fig_its("its_raw_qual_scores_year_4")`</small>
 
 ### Define Primers
 
@@ -4629,51 +4169,24 @@ system("cp files/dada2/figures/its_cut_plot_qscores_year_4.png include/dada2/its
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/its_cut_plot_qscores_year_4.png")
 ```
-<small>`r caption_fig_its("cut_qual_scores_its_y4")`</small>
+<small>`r caption_fig_its("its_cut_qual_scores_year_4")`</small>
 
 Now, for each sample, we can take a look at how primer removal affected the total number of raw reads.
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/its_cut_year_4.txt",
+its_cutadapt_year_4 <- read.table("files/dada2/tables/its_cutadapt_year_4.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_its("seq_cutadapt_its_y4")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "its_cutadapt_year_4",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_its("its_cutadapt_year_4")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    raw_reads = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    pre_filt_reads = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    cutadapt_reads = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(its_cutadapt_year_4)
+```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+cutadapt_table(seq_table)
+rm(seq_table)
 ```
 > [Back to top of this section](#remove-primers-3)
 
@@ -4727,45 +4240,19 @@ And here is a table of how the filtering step affected the number of reads in ea
 <br/>
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/its_filt_year_0.txt",
+its_filter_year_0 <- read.table("files/dada2/tables/its_filter_year_0.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_its("filter_its_y0")`</small>
+
+<small>`r caption_tab_its("its_filter_year_0")`</small>
+
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(its_filter_year_0)
+```
 
 ```{r, echo=FALSE, layout="l-body", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "its_filter_year_0",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    reads_in = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    reads_out = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+filter_summary_table(seq_table)
+rm(seq_table)
 ```
 
 ```{r, layout="l-body-outset", warning=FALSE, fig.height=3}
@@ -4783,7 +4270,7 @@ system("cp files/dada2/figures/its_post_filt_plot_qscores_year_0.png include/dad
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/its_post_filt_plot_qscores_year_0.png")
 ```
-<small>`r caption_fig_its("filt_qual_scores_its_y0")`</small>
+<small>`r caption_fig_its("its_filt_qual_scores_year_0")`</small>
 
 ### Learn Error Rates
 
@@ -4816,7 +4303,7 @@ system("cp files/dada2/figures/its_plot_errorF_1_year_0.png include/dada2/its_pl
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
 knitr::include_graphics("include/dada2/its_plot_errorF_1_year_0.png")
 ```
-<small>`r caption_fig_its("error_F_its_y0")`</small>
+<small>`r caption_fig_its("its_error_F_year_0")`</small>
 
 #### Reverse Reads
 
@@ -4845,7 +4332,7 @@ system("cp files/dada2/figures/its_plot_errorR_1_year_0.png include/dada2/its_pl
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
 knitr::include_graphics("include/dada2/its_plot_errorR_1_year_0.png")
 ```
-<small>`r caption_fig_its("error_R_its_y0")`</small>
+<small>`r caption_fig_its("its_error_R_year_0")`</small>
 
 The error rates for each possible transition (A to C, A to G, etc.) are shown. Points are the observed error rates for each consensus quality score. The black line shows the estimated error rates after convergence of the machine-learning algorithm. The red line shows the error rates expected under the nominal definition of the Q-score. Here the estimated error rates (black line) are a good fit to the observed rates (points), and the error rates drop with increased quality as expected.
 
@@ -5152,46 +4639,21 @@ These parameters should be set based on the anticipated length of the amplicon a
 <br/>
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/its_filt_year_1.txt",
+its_filter_year_1 <- read.table("files/dada2/tables/its_filter_year_1.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_its("filter_its_y1")`</small>
+
+<small>`r caption_tab_its("its_filter_year_1")`</small>
+
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(its_filter_year_1)
+```
 
 ```{r, echo=FALSE, layout="l-body", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "its_filter_year_1",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    reads_in = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    reads_out = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+filter_summary_table(seq_table)
+rm(seq_table)
 ```
+
 ```{r, layout="l-body-outset", warning=FALSE, fig.height=3}
 p1 <- plotQualityProfile(filtFs[1:61], aggregate = TRUE)
 p2 <- plotQualityProfile(filtRs[1:61], aggregate = TRUE)
@@ -5208,7 +4670,7 @@ system("cp files/dada2/figures/its_post_filt_plot_qscores_year_1.png include/dad
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/its_post_filt_plot_qscores_year_1.png")
 ```
-<small>`r caption_fig_its("filt_qual_scores_its_y1")`</small>
+<small>`r caption_fig_its("its_filt_qual_scores_year_1")`</small>
 
 ### Learn Error Rates
 
@@ -5239,7 +4701,7 @@ system("cp files/dada2/figures/its_plot_errorF_1_year_1.png include/dada2/its_pl
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
 knitr::include_graphics("include/dada2/its_plot_errorF_1_year_1.png")
 ```
-<small>`r caption_fig_its("error_F_its_y1")`</small>
+<small>`r caption_fig_its("its_error_F_year_1")`</small>
 
 #### Reverse Reads
 
@@ -5268,7 +4730,7 @@ system("cp files/dada2/figures/its_plot_errorR_1_year_1.png include/dada2/its_pl
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
 knitr::include_graphics("include/dada2/its_plot_errorR_1_year_1.png")
 ```
-<small>`r caption_fig_its("error_R_its_y1")`</small>
+<small>`r caption_fig_its("its_error_R_year_1")`</small>
 
 ### Dereplicate Reads
 
@@ -5569,46 +5031,21 @@ And here is a table of how the filtering step affected the number of reads in ea
 <br/>
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/its_filt_year_4.txt",
+its_filter_year_4 <- read.table("files/dada2/tables/its_filter_year_4.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_its("filter_its_y4")`</small>
+
+<small>`r caption_tab_its("its_filter_year_4")`</small>
+
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(its_filter_year_4)
+```
 
 ```{r, echo=FALSE, layout="l-body", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "its_filter_year_4",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    reads_in = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    reads_out = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+filter_summary_table(seq_table)
+rm(seq_table)
 ```
+
 
 ```{r, layout="l-body-outset", warning=FALSE, fig.height=3}
 p1 <- plotQualityProfile(filtFs[1:61], aggregate = TRUE)
@@ -5625,7 +5062,7 @@ system("cp files/dada2/figures/its_post_filt_plot_qscores_year_4.png include/dad
 ```{r, echo=FALSE, layout="l-body", warning=FALSE, fig.height=4, fig.width=4, eval=TRUE}
 knitr::include_graphics("include/dada2/its_post_filt_plot_qscores_year_4.png")
 ```
-<small>`r caption_fig_its("filt_qual_scores_its_y4")`</small>
+<small>`r caption_fig_its("its_filt_qual_scores_year_4")`</small>
 
 ### Learn Error Rates
 
@@ -5657,7 +5094,7 @@ system("cp files/dada2/figures/its_plot_errorF_1_year_4.png include/dada2/its_pl
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
 knitr::include_graphics("include/dada2/its_plot_errorF_1_year_4.png")
 ```
-<small>`r caption_fig_its("error_F_its_y4")`</small>
+<small>`r caption_fig_its("its_error_F_year_4")`</small>
 
 #### Reverse Reads
 
@@ -5686,7 +5123,7 @@ system("cp files/dada2/figures/its_plot_errorR_1_year_4.png include/dada2/its_pl
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
 knitr::include_graphics("include/dada2/its_plot_errorR_1_year_4.png")
 ```
-<small>`r caption_fig_its("error_R_its_y4")`</small>
+<small>`r caption_fig_its("its_error_R_year_4")`</small>
 
 ### Dereplicate Reads
 
@@ -5951,6 +5388,7 @@ Encountered 3068 unique sequences from 11877 total sequences read.
 </code></pre>
 </details>
 > [Back to top of this section](#filtering-error-correction-dereplication-1)
+
 :::
 :::
 :::
@@ -6145,46 +5583,21 @@ Key parameters: OMEGA_A = 1e-40, OMEGA_C = 1e-40, BAND_SIZE = 16
 This output tells us how many true sequence variants the DADA2 algorithm inferred from the  unique sequences, in this case the sample 2.
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/its_denoise_year_0.txt",
+its_denoise_year_0 <- read.table("files/dada2/tables/its_denoise_year_0.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_its("denoise_its_y0")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "its_denoise_year_0",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_its("its_denoise_year_0")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    denoiseF = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseR = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(its_denoise_year_0)
 ```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+denoise_summary_table(seq_table)
+rm(seq_table)
+```
+
 > [Back to top of this section](#dada2-asv-inference-1)
 
 :::
@@ -6361,46 +5774,21 @@ This output tells us how many true sequence variants the DADA2 algorithm inferre
 
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/its_denoise_year_1.txt",
+its_denoise_year_1 <- read.table("files/dada2/tables/its_denoise_year_1.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_its("denoise_its_y1")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "its_denoise_year_1",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_its("its_denoise_year_1")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    denoiseF = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseR = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(its_denoise_year_1)
 ```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+denoise_summary_table(seq_table)
+rm(seq_table)
+```
+
 > [Back to top of this section](#dada2-asv-inference-1)
 
 :::
@@ -6577,46 +5965,21 @@ Key parameters: OMEGA_A = 1e-40, OMEGA_C = 1e-40, BAND_SIZE = 16
 This output tells us how many true sequence variants the DADA2 algorithm inferred from the  unique sequences, in this case the sample 2.
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/its_denoise_year_4.txt",
+its_denoise_year_4 <- read.table("files/dada2/tables/its_denoise_year_4.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_its("denoise_its_y4")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "its_denoise_year_4",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_its("its_denoise_year_4")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    denoiseF = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseR = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(its_denoise_year_4)
 ```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+denoise_summary_table(seq_table)
+rm(seq_table)
+```
+
 > [Back to top of this section](#dada2-asv-inference-1)
 
 :::
@@ -6712,46 +6075,19 @@ head(mergers_year_0[[2]])
 ```
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/its_merge_year_0.txt",
+its_merge_year_0 <- read.table("files/dada2/tables/its_merge_year_0.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_its("merge_its_y0")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "its_merged_year_1",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_its("its_merge_year_0")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    denoiseF = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseR = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    merged = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(its_merge_year_0)
+```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+merge_summary_table(seq_table)
+rm(seq_table)
 ```
 
 ```{r}
@@ -6904,50 +6240,21 @@ mergers_year_1 <- mergePairs(dadaFs, derepFs, dadaRs, derepRs, verbose=TRUE, min
 head(mergers_year_1[[2]])
 ```
 
-
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/its_merge_year_1.txt",
+its_merge_year_1 <- read.table("files/dada2/tables/its_merge_year_1.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_its("merge_its_y1")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "its_merged_year_1",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_its("its_merge_year_1")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    denoiseF = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseR = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    merged = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(its_merge_year_1)
 ```
 
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+merge_summary_table(seq_table)
+rm(seq_table)
+```
 
 ```{r}
 seqtab_year_1 <- makeSequenceTable(mergers_year_1)
@@ -7104,46 +6411,19 @@ head(mergers_year_4[[2]])
 ```
 
 ```{r, echo=FALSE, eval=TRUE}
-seq_table <- read.table("files/dada2/tables/its_merge_year_4.txt",
+its_merge_year_4 <- read.table("files/dada2/tables/its_merge_year_4.txt",
                        header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_its("merge_its_y4")`</small>
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "its_merged_year_4",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<small>`r caption_tab_its("its_merge_year_4")`</small>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    denoiseF = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseR = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    merged = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(its_merge_year_4)
+```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+merge_summary_table(seq_table)
+rm(seq_table)
 ```
 
 ```{r}
@@ -7307,7 +6587,7 @@ system("cp files/dada2/figures/its_read_length_before_nopool_all.png include/dad
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
 knitr::include_graphics("include/dada2/its_read_length_before_nopool_all.png")
 ```
-<small>`r caption_fig_its("read_length_before_its")`</small>
+<small>`r caption_fig_its("its_read_length_before")`</small>
 
 # 4C. Collapse No Mismatch
 
@@ -7676,53 +6956,23 @@ write.table(track_changes, "files/agua/dada2/tables/its_read_changes.txt",
 ```
 
 
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table <- read.table("files/dada2/tables/its_read_changes.txt",
+```{r, echo=FALSE, eval=TRUE}
+its_read_changes <- read.table("files/dada2/tables/its_read_changes.txt",
                         header = TRUE, sep = "\t")
 ```
-<small>`r caption_tab_its("track_its")`</small>
+
+<small>`r caption_tab_its("its_read_changes")`</small>
+
+```{r eval=TRUE, echo=FALSE}
+download_this_fun(its_read_changes)
+```
 
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table %>%
-  download_this(
-    output_name = "its_read_changes",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 150, footer = "Total reads", filterable = TRUE), 
-    year = colDef(filterable = TRUE),
-    raw = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    cut = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    filter = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseF = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    denoiseR = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    merged = colDef(footer = function(values) sprintf("%.0f", sum(values))),
-    nochim = colDef(footer = function(values) sprintf("%.0f", sum(values)))
-    ), 
-  searchable = FALSE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+merge_summary_table(seq_table)
+rm(seq_table)
 ```
+
+
 ## R Session Information & Code
 
 This workflow was run on the [Smithsonian High Performance Cluster (SI/HPC)](https://doi.org/10.25572/SIHPC), Smithsonian Institution. Below are the specific packages and versions used in this workflow using both `sessionInfo()` and `devtools::session_info()`. Click the arrow to see the details.

@@ -35,11 +35,29 @@ knitr::opts_current$get(c(
   "autodep"
 ))
 ```
+
+```{r, echo=FALSE, eval=TRUE}
+xaringanExtra::use_panelset()
+```
+
+```{r, message=FALSE, results = 'hide', eval=TRUE}
+remove(list = ls())
+```
+
+```{r, message=FALSE, results = 'hide', eval=TRUE}
+### COmmon formatting scripts
+### NOTE: captioner.R must be read BEFORE captions_XYZ.R
+source("assets/captioner/captioner.R")
+source("assets/captioner/captions/captions_data_prep_ssu.R")
+source("assets/reactable/download_this_fun.R")
+source("assets/reactable/styles.R")
+source("assets/reactable/table_functions/data_prep.R")
+```
+
 </details>
 
 ```{r, include=FALSE, eval=TRUE}
 ## ONLY FOR PAGE BUILD
-remove(list = ls())
 load("page_build/data_prep_ssu_wf.rdata")
 
 ## READ IN all phyloseq objects
@@ -52,19 +70,6 @@ ps_work_o <- readRDS("files/data-prep/rdata/ssu_ps_work_o.rds")
 ps_work <- readRDS("files/data-prep/rdata/ssu_ps_work.rds")
 ps_no_chloro <- readRDS("files/data-prep/rdata/ssu_ps_no_chloro.rds")
 objects()
-```
-
-```{r, echo = FALSE, eval = TRUE, results = 'hide'}
-# Create the caption(s) with captioner
-caption_tab <- captioner(prefix = "(16S rRNA) Table", suffix = " |", style = "b")
-caption_fig <- captioner(prefix = "(16S rRNA) Figure", suffix = " |", style = "b")
-# Create a function for referring to the tables in text
-ref <- function(x) str_extract(x, "[^|]*") %>% 
-  trimws(which = "right", whitespace = "[ ]")
-```
-
-```{r, echo = FALSE, eval = TRUE}
-source("assets/captions/captions_data_prep_ssu.R")
 ```
 
 These workflows share many common variable names so you must split the workflow into a script for each data set OR run the command `remove(list = ls())` before beginning the next workflow.
@@ -136,46 +141,20 @@ write.table(tmp_tab2, "files/data-prep/tables/ssu_summary_table.txt", quote = FA
 rm(list = ls(pattern = "tmp_"))
 ```
 
-<small>`r caption_tab("seq_summary_ssu")`</small>
+
+```{r, echo=FALSE, eval=TRUE}
+joined_tab <- read.table("files/data-prep/tables/ssu_summary_table.txt", header = TRUE)
+ssu_summary_table <- read.table("files/data-prep/tables/ssu_summary_table.txt", header = TRUE)
+```
+
+<small>`r caption_tab_ssu("ssu_summary_table")`</small>
+
+```{r eval=TRUE, echo=FALSE, layout="l-page"}
+download_this_fun(ssu_summary_table)
+```
 
 ```{r, echo=FALSE, layout="l-page", eval=TRUE}
-seq_table <- read.table("files/data-prep/tables/ssu_summary_table.txt", header = TRUE)
-joined_tab <- seq_table 
-seq_table %>%
-  download_this(
-    output_name = "ssu_sample_summary",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = TRUE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 200, footer = "Totals"),
-  raw_reads = colDef(name = "input reads",  footer = function(values) sprintf("%.0f", sum(values)), filterable = FALSE),
-  nochim = colDef(name = "final reads", footer = function(values) sprintf("%.0f", sum(values)), filterable = FALSE),
-  year = colDef(name = "Year"),
-  perc_remain = colDef(name = "per. reads remain", filterable = FALSE),
-  total_asvs = colDef(name = "no. ASVs", filterable = FALSE)),
-  searchable = TRUE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+sample_summary_table(seq_table)
 rm(seq_table)
 ```
 
@@ -214,9 +193,6 @@ Here is a breakdown of the samples based on the new name:
 - **`r length(unique(age))`** forest ages.   
 - **`r length(unique(treat))`** different nutrient treatments.  
 
-
-<br/>
-
 We can also take a look at the number of samples per metadata category. 
 
 ```{r, echo=FALSE}
@@ -240,43 +216,22 @@ md_summary <- md_summary %>% dplyr::rename("variable" = 2) %>%
                              dplyr::rename(., "count" = 3)
 ```
 
-<small>`r caption_tab("metadata_summary_ssu")`</small>
-```{r, echo=FALSE, layout="l-body", eval=TRUE}
-seq_table <- md_summary 
-seq_table %>%
-  download_this(
-    output_name = "ssu_metadata_summary",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+<br/>
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = TRUE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    category = colDef(name = "category", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 100),
-  count = colDef(name = "no. samples")),
-  searchable = TRUE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+```{r, echo=FALSE, eval=TRUE}
+ssu_metadata_summary <- md_summary 
+```
+
+<small>`r caption_tab_ssu("ssu_metadata_summary")`</small>
+
+```{r eval=TRUE, echo=FALSE, layout="l-body"}
+download_this_fun(ssu_metadata_summary)
+```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+metadata_summary_table(seq_table)
 rm(seq_table)
 ```
-<br/>
 
 4. And finally we define a sample data frame that holds the different groups we extracted from the sample names.
 
@@ -655,45 +610,19 @@ colnames(ssu_sample_summary_final) <- c("Sample_ID", "LOC", "SITE",
 
 ```
 
-<small>`r caption_tab("seq_summary_final_ssu")`</small>
+```{r, echo=FALSE, eval=TRUE}
+ssu_sample_summary_final <- na.omit(ssu_sample_summary_final)  
+```
+
+<small>`r caption_tab_ssu("ssu_sample_summary_final")`</small>
+
+```{r eval=TRUE, echo=FALSE, layout="l-body"}
+download_this_fun(ssu_sample_summary_final)
+```
 
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table <- na.omit(ssu_sample_summary_final) 
-seq_table %>%
-  download_this(
-    output_name = "ssu_sample_summary_final",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 0),
-    align = "center", filterable = TRUE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 200, footer = "Totals"),
-  total_reads = colDef(filterable = FALSE,  footer = function(values) sprintf("%.0f", sum(values))),
-  total_ASVs = colDef(filterable = FALSE),
-  reads_lost = colDef(filterable = FALSE,  footer = function(values) sprintf("%.0f", sum(values))),
-  ASVs_lost = colDef(filterable = FALSE)
-    ), 
-  searchable = TRUE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+seq_summary_final(seq_table)
+rm(seq_table)
 ```
 
 ## Review
@@ -760,9 +689,20 @@ remove(list = ls())
 
 # ITS
 
+```{r, message=FALSE, results = 'hide', eval=TRUE, echo=FALSE}
+### COmmon formatting scripts
+### NOTE: captioner.R must be read BEFORE captions_XYZ.R
+remove(list = ls())	
+source("assets/captioner/captioner.R")
+source("assets/captioner/captions/captions_data_prep_its.R")
+source("assets/reactable/download_this_fun.R")
+source("assets/reactable/styles.R")
+source("assets/reactable/table_functions/data_prep.R")
+```
+
+
 ```{r, include=FALSE, eval=TRUE}
 ## ONLY FOR PAGE BUILD	
-remove(list = ls())	
 load("page_build/data_prep_its_wf.rdata")	
 
 ## READ IN all phyloseq objects	
@@ -780,18 +720,6 @@ ps_no_nc_check_t <- readRDS("files/data-prep/rdata/its_ps_no_nc_check_t.rds")
 ps_filt <- readRDS("files/data-prep/rdata/its_ps_filt.rds")
 ```
 
-```{r, echo = FALSE, eval = TRUE, results = 'hide'}
-# Create the caption(s) with captioner
-caption_tab <- captioner(prefix = "(ITS) Table", suffix = " |", style = "b")
-caption_fig <- captioner(prefix = "(ITS) Figure", suffix = " |", style = "b")
-# Create a function for referring to the tables in text
-ref <- function(x) str_extract(x, "[^|]*") %>% 
-  trimws(which = "right", whitespace = "[ ]")
-```
-
-```{r, echo = FALSE, eval = TRUE}
-source("assets/captions/captions_data_prep_its.R")
-```
 
 ## Prerequisites
 
@@ -859,46 +787,19 @@ write.table(tmp_tab2, "files/data-prep/tables/its_summary_table.txt", quote = FA
 rm(list = ls(pattern = "tmp_"))
 ```
 
-<small>`r caption_tab("seq_summary_its")`</small>
+```{r, echo=FALSE, eval=TRUE}
+joined_tab <- read.table("files/data-prep/tables/its_summary_table.txt", header = TRUE)
+its_summary_table <- read.table("files/data-prep/tables/its_summary_table.txt", header = TRUE)
+```
+
+<small>`r caption_tab_its("its_summary_table")`</small>
+
+```{r eval=TRUE, echo=FALSE, layout="l-page"}
+download_this_fun(its_summary_table)
+```
 
 ```{r, echo=FALSE, layout="l-page", eval=TRUE}
-seq_table <- read.table("files/data-prep/tables/its_summary_table.txt", header = TRUE)
-joined_tab <- seq_table 
-seq_table %>%
-  download_this(
-    output_name = "its_sample_summary",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = TRUE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 200, footer = "Totals"),
-  raw_reads = colDef(name = "input reads",  footer = function(values) sprintf("%.0f", sum(values)), filterable = FALSE),
-  nochim = colDef(name = "final reads", footer = function(values) sprintf("%.0f", sum(values)), filterable = FALSE),
-  year = colDef(name = "Year"),
-  perc_remain = colDef(name = "per. reads remain", filterable = FALSE),
-  total_asvs = colDef(name = "no. ASVs", filterable = FALSE)),
-  searchable = TRUE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+sample_summary_table(seq_table)
 rm(seq_table)
 ```
 
@@ -937,8 +838,6 @@ Here is a breakdown of the samples based on the new name:
 - **`r length(unique(age))-1`** forest ages.   	
 - **`r length(unique(treat))-1`** different nutrient treatments.  	
  
-<br/>
-
 We can also take a look at the number of samples per metadata category. 
 
 ```{r, echo=FALSE}
@@ -972,40 +871,18 @@ md_summary <- md_summary %>% dplyr::rename("variable" = 2) %>%
 ```
 
 
-<small>`r caption_tab("metadata_summary_its")`</small>
-```{r, echo=FALSE, layout="l-body", eval=TRUE}
-seq_table <- md_summary 
-seq_table %>%
-  download_this(
-    output_name = "its_metadata_summary",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+```{r, echo=FALSE, eval=TRUE}
+its_metadata_summary <- md_summary 
+```
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 1),
-    align = "center", filterable = TRUE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    category = colDef(name = "category", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 100),
-  count = colDef(name = "no. samples", filterable = FALSE)),
-  searchable = TRUE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+<small>`r caption_tab_its("its_metadata_summary")`</small>
+
+```{r eval=TRUE, echo=FALSE, layout="l-body"}
+download_this_fun(its_metadata_summary)
+```
+
+```{r, echo=FALSE, layout="l-body", eval=TRUE}
+metadata_summary_table(seq_table)
 rm(seq_table)
 ```
 
@@ -1205,48 +1082,21 @@ ps_no_nc_check_t$ASV_ID <- NULL
 ps_no_nc_check_t <- ps_no_nc_check_t %>% tibble::rownames_to_column("ASV_ID")
 ```
 
-<small>`r caption_tab("neg_control_check_its")`</small>
-```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table <- ps_no_nc_check_t 
-seq_table %>%
-  download_this(
-    output_name = "its_negative_control_check",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
+```{r, echo=FALSE, eval=TRUE}
+its_negative_control_check <- ps_no_nc_check_t
+```
 
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 0),
-    align = "center", filterable = FALSE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    ASV_ID = colDef(name = "ASV ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 100),
-  `reads NC` = colDef(name = "reads in NC"),
-  `reads non NC` = colDef(name = "reads in non NC"),
-   perc_in_neg = colDef(name = "% in NC"),
-   `Num samp` = colDef(name = "no. samples"),
-   `reads Y0 NC` = colDef(name = "Y0 NC reads"),
-   `reads Y4 NC` = colDef(name = "Y4 NC reads")
-  ),
-  searchable = FALSE, defaultPageSize = 11, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = FALSE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = FALSE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+<small>`r caption_tab_its("its_negative_control_check")`</small>
+
+```{r eval=TRUE, echo=FALSE, layout="l-body-outset"}
+download_this_fun(its_negative_control_check)
+```
+
+```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
+neg_control_check(seq_table)
 rm(seq_table)
 ```
+
 
 Clearly,  ASV717, ASV874, ASV1549, ASV6007, ASV7299, ASV7946, and ASV32304 are only (or almost only) found in the NC. We can definitely get rid of those. Since ASV4 and ASV97 are represented by only 5 reads total, those can stay. So that leaves ASV423 and ASV429, both of which are found in ~30 samples and both represented by more reads in the NC than the rest of the samples. Neither ASVs was not found in the Year 0 NC, just Year 4. Since there were so many more reads in the NC, and these are not very dominant ASVs anyway, we can ditch these too.
 
@@ -1450,45 +1300,19 @@ colnames(its_sample_summary_final) <- c("Sample_ID", "LOC", "SITE",
                           "reads_lost", "ASVs_lost")
 ```
 
-<small>`r caption_tab("seq_summary_final_its")`</small>
+```{r, echo=FALSE, eval=TRUE}
+its_sample_summary_final <- na.omit(its_sample_summary_final)  
+```
+
+<small>`r caption_tab_its("its_sample_summary_final")`</small>
+
+```{r eval=TRUE, echo=FALSE, layout="l-body-outset"}
+download_this_fun(its_sample_summary_final)
+```
 
 ```{r, echo=FALSE, layout="l-body-outset", eval=TRUE}
-seq_table <- na.omit(its_sample_summary_final) 
-seq_table %>%
-  download_this(
-    output_name = "its_sample_summary_final",
-    output_extension = ".csv",
-    button_label = "Download data as csv file",
-    button_type = "default",
-    csv2 = FALSE,
-    has_icon = TRUE,
-    icon = "fa fa-save")
-
-reactable(seq_table,
-  defaultColDef = colDef(
-    header = function(value) gsub("_", " ", value, fixed = TRUE),
-    cell = function(value) format(value, nsmall = 0),
-    align = "center", filterable = TRUE, sortable = TRUE, resizable = TRUE,
-    footerStyle = list(fontWeight = "bold")
-    ), 
-  columns = list(
-    Sample_ID = colDef(name = "Sample ID", 
-                       sticky = "left", 
-                       style = list(borderRight = "1px solid #eee"),
-                       headerStyle = list(borderRight = "1px solid #eee"), 
-                       align = "left",
-                       minWidth = 200, footer = "Totals"),
-  total_reads = colDef(filterable = FALSE,  footer = function(values) sprintf("%.0f", sum(values))),
-  total_ASVs = colDef(filterable = FALSE),
-  reads_lost = colDef(filterable = FALSE,  footer = function(values) sprintf("%.0f", sum(values))),
-  ASVs_lost = colDef(filterable = FALSE)
-    ), 
-  searchable = TRUE, defaultPageSize = 5, 
-  pageSizeOptions = c(5, 10, nrow(seq_table)), 
-  showPageSizeOptions = TRUE, highlight = TRUE, 
-  bordered = TRUE, striped = TRUE, compact = FALSE, 
-  wrap = FALSE, showSortable = TRUE, fullWidth = TRUE,
-  theme = reactableTheme(style = list(fontSize = "0.8em")))
+seq_summary_final(seq_table)
+rm(seq_table)
 ```
 
 ## Review
@@ -1598,3 +1422,4 @@ You can find the source code for this page by [clicking this link](https://githu
 ## Data Availability {.appendix}
 
 Raw fastq files available on figshare at XXXXXXXX. Trimmed fastq files (primers removed) available through the ENA under project accession number [XXXXXXXX](). Output files from this workflow available on figshare at [XXXXXXXX.]().
+

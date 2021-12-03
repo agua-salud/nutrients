@@ -45,10 +45,6 @@ knitr::opts_current$get(c(
 
 ```{r, echo=FALSE, eval=TRUE}
 xaringanExtra::use_panelset()
-xaringanExtra::style_panelset_tabs(
-  active_foreground = "#2271B2",
-  hover_foreground = "#AB22B2"
-  )
 ```
 
 ```{r, message=FALSE, results = 'hide', eval=TRUE}
@@ -80,35 +76,58 @@ This workflow contains diversity assessments for the 2018 high temperature data 
 ## Initial Load for  ANALYSIS #1
 remove(list = ls())
 set.seed(119)
-ssu_ps_work <- readRDS("files/filtering/final_ps/ssu_ps_work.rds")
-ssu_ps_work_Y0 <- readRDS("files/filtering/final_ps/ssu_ps_work_Y0.rds")
-ssu_ps_work_Y1 <- readRDS("files/filtering/final_ps/ssu_ps_work_Y1.rds")
-ssu_ps_work_Y4 <- readRDS("files/filtering/final_ps/ssu_ps_work_Y4.rds")
-
-ssu_ps_filt <- readRDS("files/filtering/final_ps/ssu_ps_filt.rds")
-ssu_ps_filt_Y0 <- readRDS("files/filtering/final_ps/ssu_ps_filt_Y0.rds")
-ssu_ps_filt_Y1 <- readRDS("files/filtering/final_ps/ssu_ps_filt_Y1.rds")
-ssu_ps_filt_Y4 <- readRDS("files/filtering/final_ps/ssu_ps_filt_Y4.rds")
-
-ssu_ps_perfect <- readRDS("files/filtering/final_ps/ssu_ps_perfect.rds")
-ssu_ps_perfect_Y0 <- readRDS("files/filtering/final_ps/ssu_ps_perfect_Y0.rds")
-ssu_ps_perfect_Y1 <- readRDS("files/filtering/final_ps/ssu_ps_perfect_Y1.rds")
-ssu_ps_perfect_Y4 <- readRDS("files/filtering/final_ps/ssu_ps_perfect_Y4.rds")
-
-ssu_ps_pime <- readRDS("files/filtering/final_ps/ssu_ps_pime.rds")
-ssu_ps_pime_Y0 <- readRDS("files/filtering/final_ps/ssu_ps_pime_Y0.rds")
-ssu_ps_pime_Y1 <- readRDS("files/filtering/final_ps/ssu_ps_pime_Y1.rds")
-ssu_ps_pime_Y4 <- readRDS("files/filtering/final_ps/ssu_ps_pime_Y4.rds")
+ssu_ps_work <- readRDS("files/filtering/working_ps/ssu_ps_work.rds")
+ssu_ps_filt <- readRDS("files/filtering/working_ps/ssu_ps_filt.rds")
+ssu_ps_perfect <- readRDS("files/filtering/working_ps/ssu_ps_perfect.rds")
+ssu_ps_pime <- readRDS("files/filtering/working_ps/ssu_ps_pime.rds")
 ```
 
 To account for presence of rare sequence variants caused by sequencing errors or other technical artifacts, we use Hill numbers [@alberdi2019guide]. Hill numbers allow the weight put on rare versus abundant sequence variants to be scaled while providing intuitive comparisons of diversity levels using “effective number of ASVs” as a measuring unit. This approach allows for balancing the over representation of rare ASVs that might be inflated due to sequencing errors.
 
 We will then use Shapiro-Wilk tests to test for normalcy and then, depending on the results, either use  parametric ANOVA or non-parametric Kruskal-Wallis to compare alpha diversity among treatments.
 
-Let's take a look at subset each data set by Year and take a look at some summary data.
-
 ```{r, echo=FALSE}
+objects()
+ssu_ps_work@phy_tree <- NULL
+ssu_ps_filt@phy_tree <- NULL
+ssu_ps_pime@phy_tree <- NULL
+ssu_ps_perfect@phy_tree <- NULL
+```
+
+Before we begin the analysis, let's subset each data set by Year and take a look at some summary data.
+
+```{r, code_folding=TRUE}
 ssu_alpha_ds <- c("ssu_ps_work", "ssu_ps_filt", "ssu_ps_perfect", "ssu_ps_pime")
+for (i in ssu_alpha_ds) {
+  tmp_get <- get(i)
+  tmp_samples <- row.names(data.frame(otu_table(tmp_get)))
+  tmp_y0_samps <- stringr::str_subset(tmp_samples, "_Y0_")
+  tmp_y1_samps <- stringr::str_subset(tmp_samples, "_Y1_")
+  tmp_y4_samps <- stringr::str_subset(tmp_samples, "_Y4_")
+
+  tmp_y0 <- prune_samples(tmp_y0_samps, tmp_get) 
+  tmp_y1 <- prune_samples(tmp_y1_samps, tmp_get)
+  tmp_y4 <- prune_samples(tmp_y4_samps, tmp_get)
+  
+  tmp_y0 <- prune_taxa(taxa_sums(tmp_y0) > 0, tmp_y0)
+  tmp_y1 <- prune_taxa(taxa_sums(tmp_y1) > 0, tmp_y1)
+  tmp_y4 <- prune_taxa(taxa_sums(tmp_y4) > 0, tmp_y4)
+  
+  tmp_ps_name_y0 <- purrr::map_chr(i, ~ paste0(., "_Y0"))
+  assign(tmp_ps_name_y0, tmp_y0)
+  
+  tmp_ps_name_y1 <- purrr::map_chr(i, ~ paste0(., "_Y1"))
+  assign(tmp_ps_name_y1, tmp_y1)
+  
+  tmp_ps_name_y4 <- purrr::map_chr(i, ~ paste0(., "_Y4"))
+  assign(tmp_ps_name_y4, tmp_y4)
+  
+  tmp_path <- file.path("files/alpha/rdata/")
+  saveRDS(tmp_y0, paste(tmp_path, tmp_ps_name_y0, ".rds", sep = ""))
+  saveRDS(tmp_y1, paste(tmp_path, tmp_ps_name_y1, ".rds", sep = ""))
+  saveRDS(tmp_y4, paste(tmp_path, tmp_ps_name_y4, ".rds", sep = ""))
+  rm(list = ls(pattern = "tmp_"))
+}
 ```
 
 ```{r, echo=FALSE}
@@ -276,7 +295,7 @@ for (i in ssu_alpha_ds) {
 }
 ```
 
-Now we run the analysis for all three metrics on each data sets.
+Next, we run the analysis for all three metrics on each data sets.
 
 ```{r, results='hide', code_folding=TRUE}
 qvalue <- c(0,1,2)
@@ -888,54 +907,8 @@ rm(seq_table)
 
 Here we can inspect the results of each posthoc analysis for the unfiltered and filtered data sets.
 
-```{r, echo=FALSE}
-
-ph_summ <-  function(ps_object, qvalue) {
-  tmp_adt <- paste0(ps_object, "_q", qvalue, "_adt", sep =  "")
-  tmp_get <- get(tmp_adt)
-  tmp_marker <- stringr::str_extract(tmp_adt, "^[a-z]{3}") 
-  tmp_ds <- stringr::str_extract(tmp_adt, "ps_[a-z]*_Y") %>%
-                stringr::str_remove(., "ps_") %>%
-                stringr::str_remove(., "_Y")
-  tmp_year <- stringr::str_extract(tmp_adt, "Y[0-9]") 
-  tmp_hill_n <- stringr::str_extract(tmp_adt, "_q[0-9]") %>%
-                stringr::str_remove(., "_q")
-  
-  if (tmp_ds == "work"){
-    #tmp_id <- "f"
-    tmp_lab1 <- "FULL"
-  } else if (tmp_ds == "filt") {
-    #tmp_id <- "l"
-    tmp_lab1 <- "Arbitrary"
-  } else if (tmp_ds == "perfect") {
-    #tmp_id <- "r"    
-    tmp_lab1 <- "PERFect"
-  } else if (tmp_ds == "pime") {
-    #tmp_id <- "p"    
-    tmp_lab1 <- "PIME"
-  }
-
-  if (tmp_hill_n == "0"){
-    tmp_lab2 <- "Observed"
-  } else if (tmp_hill_n == "1") {
-    tmp_lab2 <- "Shannon exponential"    
-  } else if (tmp_hill_n == "2") {
-    tmp_lab2 <- "Inverse Simpson"    
-  } 
-  
-  #tmp_name <- paste(tmp_marker, "_", tmp_year, "_", tmp_id, tmp_hill_n, "_lab", sep = "")
-  tmp_name <- paste(ps_object, "_q", tmp_hill_n, "_lab", sep = "")
-  tmp_lab <- paste(tmp_year, " ",  tmp_lab1, " ", "(", tmp_lab2, ")",sep = "")
-  assign(tmp_name, tmp_lab, envir = parent.frame() )
-  return(list(tmp_lab, tmp_get$posthoc.method, data.frame(tmp_get$posthoc)))
-  rm(list = ls(pattern = "tmp_"))
-}
-
-```
-
 ::: l-body
 ::: {.panelset}
-
 ::: {.panel}
 
 #### Year 0
@@ -944,15 +917,25 @@ ph_summ <-  function(ps_object, qvalue) {
 <summary><strong>Click here</strong> for detailed results from the <strong>Full</strong> data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_work_Y0", "0"))
+ssu_Y0_f0_lab <- "Y0 FULL (Observed)"
+ssu_Y0_f0_lab
+ssu_ps_work_Y0_q0_adt$posthoc.method
+data.frame(ssu_ps_work_Y0_q0_adt$posthoc)
+objects()
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_work_Y0", "1"))
+ssu_Y0_f1_lab <- "Y0 FULL (Shannon exponential)"
+ssu_Y0_f1_lab
+ssu_ps_work_Y0_q1_adt$posthoc.method
+data.frame(ssu_ps_work_Y0_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_work_Y0", "2"))
+ssu_Y0_f2_lab <- "Y0 FULL (Inverse Simpson)"
+ssu_Y0_f2_lab
+ssu_ps_work_Y0_q2_adt$posthoc.method
+data.frame(ssu_ps_work_Y0_q2_adt$posthoc)
 ```
 </details>
 
@@ -960,15 +943,24 @@ print(ph_summ("ssu_ps_work_Y0", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>Arbitrary</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_filt_Y0", "0"))
+ssu_Y0_l0_lab <- "Y0 FILT (Observed)"
+ssu_Y0_l0_lab
+ssu_ps_filt_Y0_q0_adt$posthoc.method
+data.frame(ssu_ps_filt_Y0_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_filt_Y0", "1"))
+ssu_Y0_l1_lab <- "Y0 FILT (Shannon exponential)"
+ssu_Y0_l1_lab
+ssu_ps_filt_Y0_q1_adt$posthoc.method
+data.frame(ssu_ps_filt_Y0_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_filt_Y0", "2"))
+ssu_Y0_l2_lab <- "Y0 FILT (Inverse Simpson)"
+ssu_Y0_l2_lab
+ssu_ps_filt_Y0_q2_adt$posthoc.method
+data.frame(ssu_ps_filt_Y0_q2_adt$posthoc)
 ```
 </details>
 
@@ -976,15 +968,24 @@ print(ph_summ("ssu_ps_filt_Y0", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>PERFect</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_perfect_Y0", "0"))
+ssu_Y0_r0_lab <- "Y0 PERFect (Observed)"
+ssu_Y0_r0_lab
+ssu_ps_perfect_Y0_q0_adt$posthoc.method
+data.frame(ssu_ps_perfect_Y0_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_perfect_Y0", "1"))
+ssu_Y0_r1_lab <- "Y0 PERFect (Shannon exponential)"
+ssu_Y0_r1_lab
+ssu_ps_perfect_Y0_q1_adt$posthoc.method
+data.frame(ssu_ps_perfect_Y0_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_perfect_Y0", "2"))
+ssu_Y0_r2_lab <- "Y0 PERFect (Inverse Simpson)"
+ssu_Y0_r2_lab
+ssu_ps_perfect_Y0_q2_adt$posthoc.method
+data.frame(ssu_ps_perfect_Y0_q2_adt$posthoc)
 ```
 </details>
 
@@ -992,15 +993,24 @@ print(ph_summ("ssu_ps_perfect_Y0", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>PIME</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_pime_Y0", "0"))
+ssu_Y0_p0_lab <- "Y0 PIME (Observed)"
+ssu_Y0_p0_lab
+ssu_ps_pime_Y0_q0_adt$posthoc.method
+data.frame(ssu_ps_pime_Y0_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_pime_Y0", "1"))
+ssu_Y0_p1_lab <- "Y0 PIME (Shannon exponential)"
+ssu_Y0_p1_lab
+ssu_ps_pime_Y0_q1_adt$posthoc.method
+data.frame(ssu_ps_pime_Y0_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_pime_Y0", "2"))
+ssu_Y0_p2_lab <- "Y0 PIME (Inverse Simpson)"
+ssu_Y0_p2_lab
+ssu_ps_pime_Y0_q2_adt$posthoc.method
+data.frame(ssu_ps_pime_Y0_q2_adt$posthoc)
 ```
 </details>
 :::
@@ -1013,15 +1023,25 @@ print(ph_summ("ssu_ps_pime_Y0", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>Full</strong> data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_work_Y1", "0"))
+ssu_Y1_f0_lab <- "Y1 FULL (Observed)"
+ssu_Y1_f0_lab
+ssu_ps_work_Y1_q0_adt$posthoc.method
+data.frame(ssu_ps_work_Y1_q0_adt$posthoc)
+objects()
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_work_Y1", "1"))
+ssu_Y1_f1_lab <- "Y1 FULL (Shannon exponential)"
+ssu_Y1_f1_lab
+ssu_ps_work_Y1_q1_adt$posthoc.method
+data.frame(ssu_ps_work_Y1_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_work_Y1", "2"))
+ssu_Y1_f2_lab <- "Y1 FULL (Inverse Simpson)"
+ssu_Y1_f2_lab
+ssu_ps_work_Y1_q2_adt$posthoc.method
+data.frame(ssu_ps_work_Y1_q2_adt$posthoc)
 ```
 </details>
 
@@ -1029,15 +1049,24 @@ print(ph_summ("ssu_ps_work_Y1", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>Arbitrary</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_filt_Y1", "0"))
+ssu_Y1_l0_lab <- "Y1 FILT (Observed)"
+ssu_Y1_l0_lab
+ssu_ps_filt_Y1_q0_adt$posthoc.method
+data.frame(ssu_ps_filt_Y1_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_filt_Y1", "1"))
+ssu_Y1_l1_lab <- "Y1 FILT (Shannon exponential)"
+ssu_Y1_l1_lab
+ssu_ps_filt_Y1_q1_adt$posthoc.method
+data.frame(ssu_ps_filt_Y1_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_filt_Y1", "2"))
+ssu_Y1_l2_lab <- "Y1 FILT (Inverse Simpson)"
+ssu_Y1_l2_lab
+ssu_ps_filt_Y1_q2_adt$posthoc.method
+data.frame(ssu_ps_filt_Y1_q2_adt$posthoc)
 ```
 </details>
 
@@ -1045,15 +1074,24 @@ print(ph_summ("ssu_ps_filt_Y1", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>PERFect</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_perfect_Y1", "0"))
+ssu_Y1_r0_lab <- "Y1 PERFect (Observed)"
+ssu_Y1_r0_lab
+ssu_ps_perfect_Y1_q0_adt$posthoc.method
+data.frame(ssu_ps_perfect_Y1_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_perfect_Y1", "1"))
+ssu_Y1_r1_lab <- "Y1 PERFect (Shannon exponential)"
+ssu_Y1_r1_lab
+ssu_ps_perfect_Y1_q1_adt$posthoc.method
+data.frame(ssu_ps_perfect_Y1_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_perfect_Y1", "2"))
+ssu_Y1_r2_lab <- "Y1 PERFect (Inverse Simpson)"
+ssu_Y1_r2_lab
+ssu_ps_perfect_Y1_q2_adt$posthoc.method
+data.frame(ssu_ps_perfect_Y1_q2_adt$posthoc)
 ```
 </details>
 
@@ -1061,15 +1099,24 @@ print(ph_summ("ssu_ps_perfect_Y1", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>PIME</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_pime_Y1", "0"))
+ssu_Y1_p0_lab <- "Y1 PIME (Observed)"
+ssu_Y1_p0_lab
+ssu_ps_pime_Y1_q0_adt$posthoc.method
+data.frame(ssu_ps_pime_Y1_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_pime_Y1", "1"))
+ssu_Y1_p1_lab <- "Y1 PIME (Shannon exponential)"
+ssu_Y1_p1_lab
+ssu_ps_pime_Y1_q1_adt$posthoc.method
+data.frame(ssu_ps_pime_Y1_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_pime_Y1", "2"))
+ssu_Y1_p2_lab <- "Y1 PIME (Inverse Simpson)"
+ssu_Y1_p2_lab
+ssu_ps_pime_Y1_q2_adt$posthoc.method
+data.frame(ssu_ps_pime_Y1_q2_adt$posthoc)
 ```
 </details>
 :::
@@ -1082,15 +1129,25 @@ print(ph_summ("ssu_ps_pime_Y1", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>Full</strong> data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_work_Y4", "0"))
+ssu_Y4_f0_lab <- "Y4 FULL (Observed)"
+ssu_Y4_f0_lab
+ssu_ps_work_Y4_q0_adt$posthoc.method
+data.frame(ssu_ps_work_Y4_q0_adt$posthoc)
+objects()
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_work_Y4", "1"))
+ssu_Y4_f1_lab <- "Y4 FULL (Shannon exponential)"
+ssu_Y4_f1_lab
+ssu_ps_work_Y4_q1_adt$posthoc.method
+data.frame(ssu_ps_work_Y4_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_work_Y4", "2"))
+ssu_Y4_f2_lab <- "Y4 FULL (Inverse Simpson)"
+ssu_Y4_f2_lab
+ssu_ps_work_Y4_q2_adt$posthoc.method
+data.frame(ssu_ps_work_Y4_q2_adt$posthoc)
 ```
 </details>
 
@@ -1098,15 +1155,24 @@ print(ph_summ("ssu_ps_work_Y4", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>Arbitrary</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_filt_Y4", "0"))
+ssu_Y4_l0_lab <- "Y4 FILT (Observed)"
+ssu_Y4_l0_lab
+ssu_ps_filt_Y4_q0_adt$posthoc.method
+data.frame(ssu_ps_filt_Y4_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_filt_Y4", "1"))
+ssu_Y4_l1_lab <- "Y4 FILT (Shannon exponential)"
+ssu_Y4_l1_lab
+ssu_ps_filt_Y4_q1_adt$posthoc.method
+data.frame(ssu_ps_filt_Y4_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_filt_Y4", "2"))
+ssu_Y4_l2_lab <- "Y4 FILT (Inverse Simpson)"
+ssu_Y4_l2_lab
+ssu_ps_filt_Y4_q2_adt$posthoc.method
+data.frame(ssu_ps_filt_Y4_q2_adt$posthoc)
 ```
 </details>
 
@@ -1114,15 +1180,24 @@ print(ph_summ("ssu_ps_filt_Y4", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>PERFect</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_perfect_Y4", "0"))
+ssu_Y4_r0_lab <- "Y4 PERFect (Observed)"
+ssu_Y4_r0_lab
+ssu_ps_perfect_Y4_q0_adt$posthoc.method
+data.frame(ssu_ps_perfect_Y4_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_perfect_Y4", "1"))
+ssu_Y4_r1_lab <- "Y4 PERFect (Shannon exponential)"
+ssu_Y4_r1_lab
+ssu_ps_perfect_Y4_q1_adt$posthoc.method
+data.frame(ssu_ps_perfect_Y4_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_perfect_Y4", "2"))
+ssu_Y4_r2_lab <- "Y4 PERFect (Inverse Simpson)"
+ssu_Y4_r2_lab
+ssu_ps_perfect_Y4_q2_adt$posthoc.method
+data.frame(ssu_ps_perfect_Y4_q2_adt$posthoc)
 ```
 </details>
 
@@ -1130,19 +1205,27 @@ print(ph_summ("ssu_ps_perfect_Y4", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>PIME</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_pime_Y4", "0"))
+ssu_Y4_p0_lab <- "Y4 PIME (Observed)"
+ssu_Y4_p0_lab
+ssu_ps_pime_Y4_q0_adt$posthoc.method
+data.frame(ssu_ps_pime_Y4_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_pime_Y4", "1"))
+ssu_Y4_p1_lab <- "Y4 PIME (Shannon exponential)"
+ssu_Y4_p1_lab
+ssu_ps_pime_Y4_q1_adt$posthoc.method
+data.frame(ssu_ps_pime_Y4_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("ssu_ps_pime_Y4", "2"))
+ssu_Y4_p2_lab <- "Y4 PIME (Inverse Simpson)"
+ssu_Y4_p2_lab
+ssu_ps_pime_Y4_q2_adt$posthoc.method
+data.frame(ssu_ps_pime_Y4_q2_adt$posthoc)
 ```
 </details>
 :::
-
 :::
 :::
 
@@ -1165,8 +1248,9 @@ Where `x` is the results from the `div_test` function, `"type"` is chart type (b
 agua_col <- c("#B26322", "#29B222", "#2271B2", "#AB22B2")
 
 source("hack_code/div_test_plot_jjs.R")
+tmp_order <- c('virginica', 'versicolor', 'setosa') 
 rm(list = ls(pattern="_adt_plot"))
-for (i in objects(pattern="_adt$")) {
+for (i in objects(pattern="_adt")) {
      tmp_name <- purrr::map_chr(i, ~ paste0(., "_plot"))
      tmp_get <- get(i)
      tmp_ds_year <- stringr::str_extract(i, "Y[0-9]") 
@@ -1198,94 +1282,7 @@ div_plot_theme <- list(theme(
   axis.text.y = element_text(size = 8),
   )
 )
-
- 
-for (i in objects(pattern =  "_adt_plot$")){
-  tmp_get <- get(i)
-  tmp_name <- i
-  tmp_year <- stringr::str_extract(tmp_name, "Y[0-9]") 
-  tmp_ctl <- paste(tmp_year, "_CTL", sep = "")
-  tmp_n <- paste(tmp_year, "_N", sep = "")
-  tmp_p <- paste(tmp_year, "_P", sep = "")
-  tmp_np <- paste(tmp_year, "_NP", sep = "")
-  tmp_new_labs <- c(tmp_ctl = "CTL", tmp_n  = "N", 
-                    tmp_p = "P", tmp_np = "NP", 
-                    use.names = FALSE)
-  tmp_get <- tmp_get + div_plot_theme + scale_x_discrete(labels = tmp_new_labs)
-  assign(tmp_name, tmp_get)
-  rm(list = ls(pattern = "tmp_"))
-}
-objects(pattern =  "_adt_plot$")
-```
-
-```{r}
-ps_object <- "ssu_ps_work"
-
-
-tmp_adt$ssu_ps_work_Y0_q0_adt_plot
-deparse(substitute(tmp_adt$ssu_ps_work_Y0_q0_adt_plot))
-
-  rm(list = ls(pattern = "tmp_"))
-
-ph_summ <-  function(ps_object) {
-  tmp_adt <- objects(pattern = paste(ps_object, "_Y[0-9]", "_q[0-9]", "_adt_plot$", sep =  ""))
-  tmp_plot <- lapply(tmp_adt, get)
-  names(tmp_plot) <- tmp_adt
-  tmp_labs <- objects(pattern = paste(ps_object, "_Y[0-9]", "_q[0-9]", "_adt_plot$", sep =  ""))
-  
-  
-  for (gplot in names(tmp_adt)) {
-    tmp_year <- stringr::str_extract(gplot, "Y[0-9]") 
-    tmp_hill_n <- stringr::str_extract(gplot, "_q[0-9]") %>%
-                  stringr::str_remove(., "_q")
-
-    
-    
-  }
-
-  
-
-  if (tmp_ds == "work"){
-    tmp_id <- "f"
-    tmp_lab1 <- "FULL"
-  } else if (tmp_ds == "filt") {
-    tmp_id <- "l"
-    tmp_lab1 <- "Arbitrary"
-  } else if (tmp_ds == "perfect") {
-    tmp_id <- "r"    
-    tmp_lab1 <- "PERFect"
-  } else if (tmp_ds == "pime") {
-    tmp_id <- "p"    
-    tmp_lab1 <- "PIME"
-  }
-
-  if (tmp_hill_n == "0"){
-    tmp_lab2 <- "Observed"
-  } else if (tmp_hill_n == "1") {
-    tmp_lab2 <- "Shannon exponential"    
-  } else if (tmp_hill_n == "2") {
-    tmp_lab2 <- "Inverse Simpson"    
-  } 
-  
-  tmp_name <- paste(tmp_marker, "_", tmp_year, "_", tmp_id, tmp_hill_n, "_lab", sep = "")
-  tmp_lab <- paste(tmp_year, " ",  tmp_lab1, " ", "(", tmp_lab2, ")",sep = "")
-  assign(tmp_name, tmp_lab, envir = parent.frame() )
-  return(list(tmp_lab, tmp_get$posthoc.method, data.frame(tmp_get$posthoc)))
-  rm(list = ls(pattern = "tmp_"))
-}
-
-ssu_alph_div_plots_work <- ggarrange(
-           ssu_ps_work_Y0_q0_adt_plot, 
-           ssu_ps_work_Y0_q1_adt_plot, 
-           ssu_ps_work_Y0_q2_adt_plot, 
-           ssu_ps_work_Y1_q0_adt_plot, 
-           ssu_ps_work_Y1_q1_adt_plot, 
-           ssu_ps_work_Y1_q2_adt_plot, 
-           ssu_ps_work_Y4_q0_adt_plot, 
-           ssu_ps_work_Y4_q1_adt_plot, 
-           ssu_ps_work_Y4_q2_adt_plot, 
-           ncol = 3, nrow = 3
-           )
+new_labs <- c("Y4_CTL" = "CTL", "Y4_N" = "N", "Y4_P" = "P", "Y4_NP" = "NP")
 ```
 
 ```{r, echo=FALSE}
@@ -1326,18 +1323,20 @@ ssu_ps_work_Y1_q2_adt_plot <- ssu_ps_work_Y1_q2_adt_plot +
                                     axis.text.x = element_blank())
 
 ssu_ps_work_Y4_q0_adt_plot <- ssu_ps_work_Y4_q0_adt_plot +
-                              ggtitle(ssu_Y4_f0_lab) + 
-                              div_plot_theme 
+                              ggtitle(ssu_Y4_f0_lab)+ 
+                              div_plot_theme + 
+                              scale_x_discrete(labels = new_labs)
 ssu_ps_work_Y4_q1_adt_plot <- ssu_ps_work_Y4_q1_adt_plot +
                               ggtitle(ssu_Y4_f1_lab) + 
                               div_plot_theme +
-                              theme(axis.title.y = element_blank()) 
+                              theme(axis.title.y = element_blank()) + 
+                              scale_x_discrete(labels = new_labs)
 
 ssu_ps_work_Y4_q2_adt_plot <- ssu_ps_work_Y4_q2_adt_plot +
                               ggtitle(ssu_Y4_f2_lab) + 
                               div_plot_theme + 
-                              theme(axis.title.y = element_blank()) 
-
+                              theme(axis.title.y = element_blank()) + 
+                              scale_x_discrete(labels = new_labs)
 ```
 
 ```{r, echo=FALSE}
@@ -1589,6 +1588,7 @@ system("cp files/alpha/figures/ssu_alph_div_plots_perfect.png include/alpha/ssu_
 system("cp files/alpha/figures/ssu_alph_div_plots_pime.png include/alpha/ssu_alph_div_plots_pime.png")
 ```
 
+
 > Posthoc adjusted p-values given for each significant pairwise comparison.
 
 ::: l-page
@@ -1831,20 +1831,16 @@ download_this_fun(ssu_alpha_hill_pime_posthoc)
 ```{r, echo=FALSE, layout="l-page", eval=TRUE}
 poshoc_table(seq_table)
 rm(seq_table)
-objects()
 ```
 :::
 :::
 :::
-
-```{r, echo=FALSE}
-save.image("page_build/alpha_wf_ssu.rdata")
-```
 
 # ITS
 
 ```{r, include=FALSE, eval=TRUE}
 ## Load to build page only #2
+#gdata::keep(caption_tab_ssu, caption_fig_ssu, caption_tab_its, caption_fig_its, ref, download_this_fun, sure = TRUE)
 remove(list = ls())
 load("page_build/alpha_wf_its.rdata")
 ```
@@ -1864,25 +1860,10 @@ source("assets/reactable/table_functions/alpha.R")
 ## Initial Load for  ANALYSIS #1
 remove(list = ls())
 set.seed(119)
-its_ps_work <- readRDS("files/filtering/final_ps/its_ps_work.rds")
-its_ps_work_Y0 <- readRDS("files/filtering/final_ps/its_ps_work_Y0.rds")
-its_ps_work_Y1 <- readRDS("files/filtering/final_ps/its_ps_work_Y1.rds")
-its_ps_work_Y4 <- readRDS("files/filtering/final_ps/its_ps_work_Y4.rds")
-
-its_ps_filt <- readRDS("files/filtering/final_ps/its_ps_filt.rds")
-its_ps_filt_Y0 <- readRDS("files/filtering/final_ps/its_ps_filt_Y0.rds")
-its_ps_filt_Y1 <- readRDS("files/filtering/final_ps/its_ps_filt_Y1.rds")
-its_ps_filt_Y4 <- readRDS("files/filtering/final_ps/its_ps_filt_Y4.rds")
-
-its_ps_perfect <- readRDS("files/filtering/final_ps/its_ps_perfect.rds")
-its_ps_perfect_Y0 <- readRDS("files/filtering/final_ps/its_ps_perfect_Y0.rds")
-its_ps_perfect_Y1 <- readRDS("files/filtering/final_ps/its_ps_perfect_Y1.rds")
-its_ps_perfect_Y4 <- readRDS("files/filtering/final_ps/its_ps_perfect_Y4.rds")
-
-its_ps_pime <- readRDS("files/filtering/final_ps/its_ps_pime.rds")
-its_ps_pime_Y0 <- readRDS("files/filtering/final_ps/its_ps_pime_Y0.rds")
-its_ps_pime_Y1 <- readRDS("files/filtering/final_ps/its_ps_pime_Y1.rds")
-its_ps_pime_Y4 <- readRDS("files/filtering/final_ps/its_ps_pime_Y4.rds")
+its_ps_work <- readRDS("files/filtering/working_ps/its_ps_work.rds")
+its_ps_filt <- readRDS("files/filtering/working_ps/its_ps_filt.rds")
+its_ps_perfect <- readRDS("files/filtering/working_ps/its_ps_perfect.rds")
+its_ps_pime <- readRDS("files/filtering/working_ps/its_ps_pime.rds")
 ```
 
 To account for presence of rare sequence variants caused by sequencing errors or other technical artifacts, we use Hill numbers [@alberdi2019guide]. Hill numbers allow the weight put on rare versus abundant sequence variants to be scaled while providing intuitive comparisons of diversity levels using “effective number of ASVs” as a measuring unit. This approach allows for balancing the over representation of rare ASVs that might be inflated due to sequencing errors.
@@ -1890,7 +1871,46 @@ To account for presence of rare sequence variants caused by sequencing errors or
 We will then use Shapiro-Wilk tests to test for normalcy and then, depending on the results, either use  parametric ANOVA or non-parametric Kruskal-Wallis to compare alpha diversity among treatments.
 
 ```{r, echo=FALSE}
+its_ps_work@phy_tree <- NULL
+its_ps_filt@phy_tree <- NULL
+its_ps_pime@phy_tree <- NULL
+its_ps_perfect@phy_tree <- NULL
+```
+
+Before we begin the analysis, let's subset each data set by Year and take a look at some summary data.
+
+```{r, code_folding=TRUE}
 its_alpha_ds <- c("its_ps_work", "its_ps_filt", "its_ps_perfect", "its_ps_pime")
+for (i in its_alpha_ds) {
+  tmp_get <- get(i)
+  tmp_samples <- row.names(data.frame(otu_table(tmp_get)))
+  tmp_y0_samps <- stringr::str_subset(tmp_samples, "_Y0_")
+  tmp_y1_samps <- stringr::str_subset(tmp_samples, "_Y1_")
+  tmp_y4_samps <- stringr::str_subset(tmp_samples, "_Y4_")
+
+  tmp_y0 <- prune_samples(tmp_y0_samps, tmp_get) 
+  tmp_y1 <- prune_samples(tmp_y1_samps, tmp_get)
+  tmp_y4 <- prune_samples(tmp_y4_samps, tmp_get)
+  
+  tmp_y0 <- prune_taxa(taxa_sums(tmp_y0) > 0, tmp_y0)
+  tmp_y1 <- prune_taxa(taxa_sums(tmp_y1) > 0, tmp_y1)
+  tmp_y4 <- prune_taxa(taxa_sums(tmp_y4) > 0, tmp_y4)
+  
+  tmp_ps_name_y0 <- purrr::map_chr(i, ~ paste0(., "_Y0"))
+  assign(tmp_ps_name_y0, tmp_y0)
+  
+  tmp_ps_name_y1 <- purrr::map_chr(i, ~ paste0(., "_Y1"))
+  assign(tmp_ps_name_y1, tmp_y1)
+  
+  tmp_ps_name_y4 <- purrr::map_chr(i, ~ paste0(., "_Y4"))
+  assign(tmp_ps_name_y4, tmp_y4)
+  
+  tmp_path <- file.path("files/alpha/rdata/")
+  saveRDS(tmp_y0, paste(tmp_path, tmp_ps_name_y0, ".rds", sep = ""))
+  saveRDS(tmp_y1, paste(tmp_path, tmp_ps_name_y1, ".rds", sep = ""))
+  saveRDS(tmp_y4, paste(tmp_path, tmp_ps_name_y4, ".rds", sep = ""))
+  rm(list = ls(pattern = "tmp_"))
+}
 ```
 
 ```{r, echo=FALSE}
@@ -2034,6 +2054,7 @@ hill_div(count = x, qvalue = i, tree = ultrametric_tree)
 ``` 
 
 where `x` is the sample by ASV table, `i` is the q-value corresponding to the metric of interest and `tree` is an ultrametric formatted phylogenetic tree if you choose to look at lineage, rather than ASV, diversity.
+
 
 Next, transform all the data to relative abundance values, and compute new trees.
 
@@ -2664,7 +2685,6 @@ Here we can inspect the results of each posthoc analysis for the unfiltered and 
 
 ::: l-body
 ::: {.panelset}
-
 ::: {.panel}
 
 #### Year 0
@@ -2673,15 +2693,25 @@ Here we can inspect the results of each posthoc analysis for the unfiltered and 
 <summary><strong>Click here</strong> for detailed results from the <strong>Full</strong> data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_work_Y0", "0"))
+its_Y0_f0_lab <- "Y0 FULL (Observed)"
+its_Y0_f0_lab
+its_ps_work_Y0_q0_adt$posthoc.method
+data.frame(its_ps_work_Y0_q0_adt$posthoc)
+objects()
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_work_Y0", "1"))
+its_Y0_f1_lab <- "Y0 FULL (Shannon exponential)"
+its_Y0_f1_lab
+its_ps_work_Y0_q1_adt$posthoc.method
+data.frame(its_ps_work_Y0_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_work_Y0", "2"))
+its_Y0_f2_lab <- "Y0 FULL (Inverse Simpson)"
+its_Y0_f2_lab
+its_ps_work_Y0_q2_adt$posthoc.method
+data.frame(its_ps_work_Y0_q2_adt$posthoc)
 ```
 </details>
 
@@ -2689,15 +2719,24 @@ print(ph_summ("its_ps_work_Y0", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>Arbitrary</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_filt_Y0", "0"))
+its_Y0_l0_lab <- "Y0 FILT (Observed)"
+its_Y0_l0_lab
+its_ps_filt_Y0_q0_adt$posthoc.method
+data.frame(its_ps_filt_Y0_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_filt_Y0", "1"))
+its_Y0_l1_lab <- "Y0 FILT (Shannon exponential)"
+its_Y0_l1_lab
+its_ps_filt_Y0_q1_adt$posthoc.method
+data.frame(its_ps_filt_Y0_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_filt_Y0", "2"))
+its_Y0_l2_lab <- "Y0 FILT (Inverse Simpson)"
+its_Y0_l2_lab
+its_ps_filt_Y0_q2_adt$posthoc.method
+data.frame(its_ps_filt_Y0_q2_adt$posthoc)
 ```
 </details>
 
@@ -2705,15 +2744,24 @@ print(ph_summ("its_ps_filt_Y0", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>PERFect</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_perfect_Y0", "0"))
+its_Y0_r0_lab <- "Y0 PERFect (Observed)"
+its_Y0_r0_lab
+its_ps_perfect_Y0_q0_adt$posthoc.method
+data.frame(its_ps_perfect_Y0_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_perfect_Y0", "1"))
+its_Y0_r1_lab <- "Y0 PERFect (Shannon exponential)"
+its_Y0_r1_lab
+its_ps_perfect_Y0_q1_adt$posthoc.method
+data.frame(its_ps_perfect_Y0_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_perfect_Y0", "2"))
+its_Y0_r2_lab <- "Y0 PERFect (Inverse Simpson)"
+its_Y0_r2_lab
+its_ps_perfect_Y0_q2_adt$posthoc.method
+data.frame(its_ps_perfect_Y0_q2_adt$posthoc)
 ```
 </details>
 
@@ -2721,15 +2769,24 @@ print(ph_summ("its_ps_perfect_Y0", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>PIME</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_pime_Y0", "0"))
+its_Y0_p0_lab <- "Y0 PIME (Observed)"
+its_Y0_p0_lab
+its_ps_pime_Y0_q0_adt$posthoc.method
+data.frame(its_ps_pime_Y0_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_pime_Y0", "1"))
+its_Y0_p1_lab <- "Y0 PIME (Shannon exponential)"
+its_Y0_p1_lab
+its_ps_pime_Y0_q1_adt$posthoc.method
+data.frame(its_ps_pime_Y0_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_pime_Y0", "2"))
+its_Y0_p2_lab <- "Y0 PIME (Inverse Simpson)"
+its_Y0_p2_lab
+its_ps_pime_Y0_q2_adt$posthoc.method
+data.frame(its_ps_pime_Y0_q2_adt$posthoc)
 ```
 </details>
 :::
@@ -2742,15 +2799,25 @@ print(ph_summ("its_ps_pime_Y0", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>Full</strong> data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_work_Y1", "0"))
+its_Y1_f0_lab <- "Y1 FULL (Observed)"
+its_Y1_f0_lab
+its_ps_work_Y1_q0_adt$posthoc.method
+data.frame(its_ps_work_Y1_q0_adt$posthoc)
+objects()
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_work_Y1", "1"))
+its_Y1_f1_lab <- "Y1 FULL (Shannon exponential)"
+its_Y1_f1_lab
+its_ps_work_Y1_q1_adt$posthoc.method
+data.frame(its_ps_work_Y1_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_work_Y1", "2"))
+its_Y1_f2_lab <- "Y1 FULL (Inverse Simpson)"
+its_Y1_f2_lab
+its_ps_work_Y1_q2_adt$posthoc.method
+data.frame(its_ps_work_Y1_q2_adt$posthoc)
 ```
 </details>
 
@@ -2758,15 +2825,24 @@ print(ph_summ("its_ps_work_Y1", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>Arbitrary</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_filt_Y1", "0"))
+its_Y1_l0_lab <- "Y1 FILT (Observed)"
+its_Y1_l0_lab
+its_ps_filt_Y1_q0_adt$posthoc.method
+data.frame(its_ps_filt_Y1_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_filt_Y1", "1"))
+its_Y1_l1_lab <- "Y1 FILT (Shannon exponential)"
+its_Y1_l1_lab
+its_ps_filt_Y1_q1_adt$posthoc.method
+data.frame(its_ps_filt_Y1_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_filt_Y1", "2"))
+its_Y1_l2_lab <- "Y1 FILT (Inverse Simpson)"
+its_Y1_l2_lab
+its_ps_filt_Y1_q2_adt$posthoc.method
+data.frame(its_ps_filt_Y1_q2_adt$posthoc)
 ```
 </details>
 
@@ -2774,15 +2850,24 @@ print(ph_summ("its_ps_filt_Y1", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>PERFect</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_perfect_Y1", "0"))
+its_Y1_r0_lab <- "Y1 PERFect (Observed)"
+its_Y1_r0_lab
+its_ps_perfect_Y1_q0_adt$posthoc.method
+data.frame(its_ps_perfect_Y1_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_perfect_Y1", "1"))
+its_Y1_r1_lab <- "Y1 PERFect (Shannon exponential)"
+its_Y1_r1_lab
+its_ps_perfect_Y1_q1_adt$posthoc.method
+data.frame(its_ps_perfect_Y1_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_perfect_Y1", "2"))
+its_Y1_r2_lab <- "Y1 PERFect (Inverse Simpson)"
+its_Y1_r2_lab
+its_ps_perfect_Y1_q2_adt$posthoc.method
+data.frame(its_ps_perfect_Y1_q2_adt$posthoc)
 ```
 </details>
 
@@ -2790,15 +2875,24 @@ print(ph_summ("its_ps_perfect_Y1", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>PIME</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_pime_Y1", "0"))
+its_Y1_p0_lab <- "Y1 PIME (Observed)"
+its_Y1_p0_lab
+its_ps_pime_Y1_q0_adt$posthoc.method
+data.frame(its_ps_pime_Y1_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_pime_Y1", "1"))
+its_Y1_p1_lab <- "Y1 PIME (Shannon exponential)"
+its_Y1_p1_lab
+its_ps_pime_Y1_q1_adt$posthoc.method
+data.frame(its_ps_pime_Y1_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_pime_Y1", "2"))
+its_Y1_p2_lab <- "Y1 PIME (Inverse Simpson)"
+its_Y1_p2_lab
+its_ps_pime_Y1_q2_adt$posthoc.method
+data.frame(its_ps_pime_Y1_q2_adt$posthoc)
 ```
 </details>
 :::
@@ -2811,15 +2905,25 @@ print(ph_summ("its_ps_pime_Y1", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>Full</strong> data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_work_Y4", "0"))
+its_Y4_f0_lab <- "Y4 FULL (Observed)"
+its_Y4_f0_lab
+its_ps_work_Y4_q0_adt$posthoc.method
+data.frame(its_ps_work_Y4_q0_adt$posthoc)
+objects()
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_work_Y4", "1"))
+its_Y4_f1_lab <- "Y4 FULL (Shannon exponential)"
+its_Y4_f1_lab
+its_ps_work_Y4_q1_adt$posthoc.method
+data.frame(its_ps_work_Y4_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_work_Y4", "2"))
+its_Y4_f2_lab <- "Y4 FULL (Inverse Simpson)"
+its_Y4_f2_lab
+its_ps_work_Y4_q2_adt$posthoc.method
+data.frame(its_ps_work_Y4_q2_adt$posthoc)
 ```
 </details>
 
@@ -2827,15 +2931,24 @@ print(ph_summ("its_ps_work_Y4", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>Arbitrary</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_filt_Y4", "0"))
+its_Y4_l0_lab <- "Y4 FILT (Observed)"
+its_Y4_l0_lab
+its_ps_filt_Y4_q0_adt$posthoc.method
+data.frame(its_ps_filt_Y4_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_filt_Y4", "1"))
+its_Y4_l1_lab <- "Y4 FILT (Shannon exponential)"
+its_Y4_l1_lab
+its_ps_filt_Y4_q1_adt$posthoc.method
+data.frame(its_ps_filt_Y4_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_filt_Y4", "2"))
+its_Y4_l2_lab <- "Y4 FILT (Inverse Simpson)"
+its_Y4_l2_lab
+its_ps_filt_Y4_q2_adt$posthoc.method
+data.frame(its_ps_filt_Y4_q2_adt$posthoc)
 ```
 </details>
 
@@ -2843,15 +2956,24 @@ print(ph_summ("its_ps_filt_Y4", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>PERFect</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_perfect_Y4", "0"))
+its_Y4_r0_lab <- "Y4 PERFect (Observed)"
+its_Y4_r0_lab
+its_ps_perfect_Y4_q0_adt$posthoc.method
+data.frame(its_ps_perfect_Y4_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_perfect_Y4", "1"))
+its_Y4_r1_lab <- "Y4 PERFect (Shannon exponential)"
+its_Y4_r1_lab
+its_ps_perfect_Y4_q1_adt$posthoc.method
+data.frame(its_ps_perfect_Y4_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_perfect_Y4", "2"))
+its_Y4_r2_lab <- "Y4 PERFect (Inverse Simpson)"
+its_Y4_r2_lab
+its_ps_perfect_Y4_q2_adt$posthoc.method
+data.frame(its_ps_perfect_Y4_q2_adt$posthoc)
 ```
 </details>
 
@@ -2859,21 +2981,30 @@ print(ph_summ("its_ps_perfect_Y4", "2"))
 <summary><strong>Click here</strong> for detailed results from the <strong>PIME</strong> filtered data set.</summary>
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_pime_Y4", "0"))
+its_Y4_p0_lab <- "Y4 PIME (Observed)"
+its_Y4_p0_lab
+its_ps_pime_Y4_q0_adt$posthoc.method
+data.frame(its_ps_pime_Y4_q0_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_pime_Y4", "1"))
+its_Y4_p1_lab <- "Y4 PIME (Shannon exponential)"
+its_Y4_p1_lab
+its_ps_pime_Y4_q1_adt$posthoc.method
+data.frame(its_ps_pime_Y4_q1_adt$posthoc)
 ```
 
 ```{r, echo=FALSE, eval=TRUE, results='hold', comment=''}
-print(ph_summ("its_ps_pime_Y4", "2"))
+its_Y4_p2_lab <- "Y4 PIME (Inverse Simpson)"
+its_Y4_p2_lab
+its_ps_pime_Y4_q2_adt$posthoc.method
+data.frame(its_ps_pime_Y4_q2_adt$posthoc)
 ```
 </details>
 :::
+:::
+:::
 
-:::
-:::
 
 ## Alpha Diversity Plots
 
@@ -3480,6 +3611,8 @@ rm(seq_table)
 :::
 :::
 
+
+
 ```{r, echo=FALSE, eval=FALSE}
 ## Load to build page only #2
 rm(its_ps_work, its_ps_filt, its_ps_perfect, its_ps_pime)
@@ -3487,9 +3620,9 @@ objects()
 save.image("page_build/alpha_wf_its.rdata")
 ```
 
-```{r, echo=FALSE, eval=TRUE}
+```{r, echo=FALSE, eval=FALSE}
 remove(list = ls())
-#pacman::p_unload(all)
+pacman::p_unload(all)
 ```
 
 

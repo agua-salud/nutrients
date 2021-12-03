@@ -61,7 +61,7 @@ output:
     distill::distill_article:
       highlight_downlit: false
       highlight: haddock
-      css: assets/styles.css
+      css: assets/css/styles.css
       toc: true
       toc_depth: 2
       toc_float: true

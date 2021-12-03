@@ -25,7 +25,7 @@ div_test_plot_jjs <- function (divtest, chart, colour, posthoc, threshold)
             combinations <- matrix(gsub(" $", "", gsub("^ ",
                 "", unlist(strsplit(as.character(rownames(divtest$posthoc)),
                   "-", fixed = TRUE)))), ncol = 2, byrow = TRUE)
-            pvalue <- round(divtest$posthoc[, 2], 3)
+            pvalue <- round(divtest$posthoc[, 4], 3)
             pairwisetable <- as.data.frame(cbind(combinations,
                 pvalue))
             colnames(pairwisetable) <- c("group1", "group2",
@@ -62,8 +62,8 @@ div_test_plot_jjs <- function (divtest, chart, colour, posthoc, threshold)
         pairwisetable$ypos <- ypos
     }
     if (chart == "box") {
-        plot <- ggboxplot(divtestdata, x = "Group", y = "Value", outlier.size = 3,
-            color = "Group", fill = "Group", x.text.angle = 0) +
+        plot <- ggboxplot(divtestdata, x = "Group", y = "Value", outlier.size = 2,
+            color = "#191919", fill = "Group", x.text.angle = 90, add = "jitter") +
             ylab("Effective no. of Taxon Units") + xlab("Treatment") +
             #scale_colour_manual(values = scales::alpha(colour, 1)) +
           #  scale_colour_manual(values=c("#191919", "#191919", "#191919")) +
@@ -71,7 +71,7 @@ div_test_plot_jjs <- function (divtest, chart, colour, posthoc, threshold)
             scale_linetype_manual()
         if (posthoc == TRUE) {
             plot <- suppressWarnings(plot + stat_pvalue_manual(pairwisetable,
-                label = "p", y.position = "ypos"))
+                label = "p", y.position = "ypos", hide.ns = TRUE))
         }
         return(plot)
     }

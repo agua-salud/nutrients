@@ -1,0 +1,210 @@
+---
+title: "6. Beta Diversity & Dispersion Estimates"
+description: |
+  Reproducible workflow for assessing community dissimilarity across temperature treatments.
+author:
+#  - name: Jarrod J Scott
+#    url: https://example.com/norajones
+#    affiliation: Spacely Sprockets
+#    affiliation_nrl: https://example.com/spacelysprokets
+bibliography: assets/cite.bib
+output:
+    distill::distill_article:
+      css: assets/css/styles.css
+      toc: true
+      toc_depth: 2
+---
+
+<details markdown="1">
+<summary><strong>Click here:</strong> within & between group variation plots. for setup information.</summary>
+
+```{r setup, message=FALSE, results = 'hide'}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+set.seed(119)
+library(phyloseq); packageVersion("phyloseq")
+library(Biostrings); packageVersion("Biostrings")
+
+pacman::p_load(tidyverse, microeco, file2meco, magrittr,
+               microbiome, phytools, phangorn, reactable, Matrix, 
+               pairwiseAdonis, codefolder, naniar, downloadthis,
+               labdsv, patchwork, agricolae, captioner, 
+               install = FALSE, update = FALSE)
+
+#pacman::p_depends(agricolae, local = TRUE)  
+#pacman::p_depends_reverse(agricolae, local = TRUE)  
+
+options(scipen=999)
+knitr::opts_current$get(c(
+  "cache",
+  "cache.path",
+  "cache.rebuild",
+  "dependson",
+  "autodep"
+))
+```
+
+```{r, echo=FALSE, eval=TRUE}
+xaringanExtra::use_panelset()
+xaringanExtra::style_panelset_tabs(
+  active_foreground = "#2271B2",
+  hover_foreground = "#AB22B2"
+  )
+```
+
+```{r, message=FALSE, results = 'hide', eval=TRUE}
+### COmmon formatting scripts
+### NOTE: captioner.R must be read BEFORE captions_XYZ.R
+source("assets/captioner/captioner.R")
+source("assets/captioner/captions/captions_beta.R")
+source("assets/reactable/download_this_fun.R")
+source("assets/reactable/styles.R")
+source("assets/reactable/table_functions/beta.R")
+```
+
+</details> 
+
+::: l-page
+
+<details markdown="1">
+<summary><strong>FULL data set:</strong> within & between group variation plots.</summary>
+
+::: {.panelset}
+::: {.panel}
+
+#### Year 0  
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_work_Y0_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_work_Y0_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_work_Y1_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_work_Y1_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_work_Y4_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_work_Y4_me_variation_plots")`</small>
+:::
+:::
+</details>
+
+<details markdown="1">
+<summary><strong>Arbitrary filtered:</strong> within & between group variation plots.</summary>
+
+::: {.panelset}
+::: {.panel}
+
+#### Year 0  
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_filt_Y0_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_filt_Y0_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_filt_Y1_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_filt_Y1_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_filt_Y4_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_filt_Y4_me_variation_plots")`</small>
+:::
+:::
+</details>
+
+<details markdown="1">
+<summary><strong>PERFect filtered:</strong> within & between group variation plots.</summary>
+
+::: {.panelset}
+::: {.panel}
+
+#### Year 0  
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_perfect_Y0_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_perfect_Y0_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_perfect_Y1_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_perfect_Y1_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_perfect_Y4_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_perfect_Y4_me_variation_plots")`</small>
+:::
+:::
+</details>
+:::
+
+::: l-page
+
+<details markdown="1">
+<summary><strong>PIME filtered:</strong> within & between group variation plots.</summary>
+
+::: {.panelset}
+::: {.panel}
+
+#### Year 0  
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_pime_Y0_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_pime_Y0_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+
+#### Year 1
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_pime_Y1_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_pime_Y1_me_variation_plots")`</small>
+:::
+
+::: {.panel}
+#### Year 4
+
+```{r, echo=FALSE, eval=TRUE, warning=FALSE, layout='l-page'}
+knitr::include_graphics("include/beta/ssu_ps_pime_Y4_me_variation_plots.png")
+```
+<small>`r caption_fig_ssu("ssu_ps_pime_Y4_me_variation_plots")`</small>
+:::
+:::
+</details>
+:::
