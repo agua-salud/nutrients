@@ -39,15 +39,26 @@ caption_tab_its("its_alpha_hill_pime_posthoc", "Summary of posthoc comparisons f
 #<small>`r caption_tab_ssu("qual_scores_after_ssu")`</small>
 
 ## Figure captions
-caption_fig_ssu("ssu_alpha_div_plots_full", "Alpha diversity plots. Left = Observed richness; middle = Shannon exponential; right = Simpson multiplicative inverse. Top = Year 0; middle = Year 1; bottom = Year 4.")
-caption_fig_ssu("ssu_alpha_div_plots_filt", "Alpha diversity plots. Left = Observed richness; middle = Shannon exponential; right = Simpson multiplicative inverse. Top = Year 0; middle = Year 1; bottom = Year 4.")
-caption_fig_ssu("ssu_alpha_div_plots_perfect", "Alpha diversity plots. Left = Observed richness; middle = Shannon exponential; right = Simpson multiplicative inverse. Top = Year 0; middle = Year 1; bottom = Year 4.")
-caption_fig_ssu("ssu_alpha_div_plots_pime", "Alpha diversity plots. Left = Observed richness; middle = Shannon exponential; right = Simpson multiplicative inverse. Top = Year 0; middle = Year 1; bottom = Year 4.")
+caption_fig_ssu("ssu_alpha_div_plots_full", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+caption_fig_ssu("ssu_alpha_div_plots_filt", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+caption_fig_ssu("ssu_alpha_div_plots_perfect", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+caption_fig_ssu("ssu_alpha_div_plots_pime", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
 
-caption_fig_its("its_alpha_div_plots_full", "Alpha diversity plots. Left = Observed richness; middle = Shannon exponential; right = Simpson multiplicative inverse. Top = Year 0; middle = Year 1; bottom = Year 4.")
-caption_fig_its("its_alpha_div_plots_filt", "Alpha diversity plots. Left = Observed richness; middle = Shannon exponential; right = Simpson multiplicative inverse. Top = Year 0; middle = Year 1; bottom = Year 4.")
-caption_fig_its("its_alpha_div_plots_perfect", "Alpha diversity plots. Left = Observed richness; middle = Shannon exponential; right = Simpson multiplicative inverse. Top = Year 0; middle = Year 1; bottom = Year 4.")
-caption_fig_its("its_alpha_div_plots_pime", "Alpha diversity plots. Left = Observed richness; middle = Shannon exponential; right = Simpson multiplicative inverse. Top = Year 0; middle = Year 1; bottom = Year 4.")
+caption_fig_ssu("ssu_alpha_jitter_plots_full", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+caption_fig_ssu("ssu_alpha_jitter_plots_filt", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+caption_fig_ssu("ssu_alpha_jitter_plots_perfect", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+caption_fig_ssu("ssu_alpha_jitter_plots_pime", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+
+caption_fig_its("its_alpha_div_plots_full", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+caption_fig_its("its_alpha_div_plots_filt", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+caption_fig_its("its_alpha_div_plots_perfect", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+caption_fig_its("its_alpha_div_plots_pime", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+
+caption_fig_its("its_alpha_jitter_plots_full", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+caption_fig_its("its_alpha_jitter_plots_filt", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+caption_fig_its("its_alpha_jitter_plots_perfect", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+caption_fig_its("its_alpha_jitter_plots_pime", "Alpha diversity plots. Left to right: Year 0, Year1, Year 4. Top to bottom: Observed richness, Shannon exponential, Simpson multiplicative inverse.")
+
 
 #<small>`r caption_fig_ssu("ssu_alpha_div_plots")`</small>
 

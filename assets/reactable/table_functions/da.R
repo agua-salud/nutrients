@@ -190,7 +190,7 @@ lefse_summ_table <- function(seq_table) {
   theme = reactableTheme(style = list(fontSize = "0.8em")))
 }
 ################################################################################
-lefse_table <-  function(seq_table) {
+lefse_asv_table <-  function(seq_table) {
   reactable(seq_table,
   defaultColDef = colDef(headerStyle = list(fontSize = "0.9em"),
     header = function(value) gsub("_", " ", value, fixed = TRUE),
@@ -336,6 +336,12 @@ reactable(seq_table,
     footerStyle = list(fontWeight = "bold")
     ), 
   columns = list(
+    taxa = colDef(name = "taxa", minWidth = 100),
+    rank = colDef(name = "rank  ", 
+                       sticky = "left", 
+                       style = list(borderRight = "5px solid #eee"),
+                       headerStyle = list(borderRight = "5px solid #eee", fontSize = "0.8em"), 
+                       align = "left"), 
     marker = colDef(name = "Marker", 
                        sticky = "left", 
                        style = list(borderRight = "5px solid #eee"),
@@ -351,6 +357,9 @@ reactable(seq_table,
     ASV_ID = colDef(name = "ASV ID", filterable = TRUE)
     ),
   columnGroups = list(
+      colGroup(name = "Marker ID", sticky = "left",
+             columns = c("taxa", "rank"), 
+             headerStyle = list(fontSize = "1em", borderRight = "5px solid #eee")),
       colGroup(name = "LEfSe results", sticky = "left",
              columns = c("group", "ef_lda", "pval"), 
              headerStyle = list(fontSize = "1em", borderRight = "5px solid #eee")),
