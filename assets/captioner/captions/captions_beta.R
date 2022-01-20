@@ -11,6 +11,19 @@ caption_tab_its("its_tab_sig_test_full", "Summary of significant tests by Year f
 caption_tab_its("its_tab_sig_test_filt", "Summary of significant tests by Year for Arbitrary filtered data set. P-values in red indicate significant differences (p-value < 0.05).")
 caption_tab_its("its_tab_sig_test_perfect", "Summary of significant tests by Year for PERFect filtered data set. P-values in red indicate significant differences (p-value < 0.05).")
 caption_tab_its("its_tab_sig_test_pime", "Summary of significant tests by Year for PIME filtered data set. P-values in red indicate significant differences (p-value < 0.05).")
+
+
+caption_tab_ssu("ssu_tab_sig_test_age_full", "Summary of significant tests for forest age within each Year and Treatment for FULL, unfiltered data set. P-values in red indicate significant differences (p-value < 0.05).")
+caption_tab_ssu("ssu_tab_sig_test_age_filt", "Summary of significant tests for forest age within each Year and Treatment for for Arbitrary filtered data set. P-values in red indicate significant differences (p-value < 0.05).")
+caption_tab_ssu("ssu_tab_sig_test_age_perfect", "Summary of significant tests for forest age within each Year and Treatment for PERFect filtered data set. P-values in red indicate significant differences (p-value < 0.05).")
+caption_tab_ssu("ssu_tab_sig_test_age_pime", "Summary of significant tests for forest age within each Year and Treatment for PIME filtered data set. P-values in red indicate significant differences (p-value < 0.05).")
+
+caption_tab_its("its_tab_sig_test_age_full", "Summary of significant tests for forest age within each Year and Treatment for FULL, unfiltered data set. P-values in red indicate significant differences (p-value < 0.05).")
+caption_tab_its("its_tab_sig_test_age_filt", "Summary of significant tests for forest age within each Year and Treatment for for Arbitrary filtered data set. P-values in red indicate significant differences (p-value < 0.05).")
+caption_tab_its("its_tab_sig_test_age_perfect", "Summary of significant tests for forest age within each Year and Treatment for PERFect filtered data set. P-values in red indicate significant differences (p-value < 0.05).")
+caption_tab_its("its_tab_sig_test_age_pime", "Summary of significant tests for forest age within each Year and Treatment for PIME filtered data set. P-values in red indicate significant differences (p-value < 0.05).")
+
+
 #<small>`r caption_tab_ssu("qual_scores_after_ssu")`</small>
 
 ## Figure captions

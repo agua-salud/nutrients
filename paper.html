@@ -1,0 +1,3430 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1"/>
+  <meta name="generator" content="distill" />
+
+  <style type="text/css">
+  /* Hide doc at startup (prevent jankiness while JS renders/transforms) */
+  body {
+    visibility: hidden;
+  }
+  </style>
+
+ <!--radix_placeholder_import_source-->
+ <!--/radix_placeholder_import_source-->
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; } /* Alert */
+code span.an { color: #008000; } /* Annotation */
+code span.at { } /* Attribute */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #0000ff; } /* ControlFlow */
+code span.ch { color: #008080; } /* Char */
+code span.cn { } /* Constant */
+code span.co { color: #008000; } /* Comment */
+code span.cv { color: #008000; } /* CommentVar */
+code span.do { color: #008000; } /* Documentation */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.im { } /* Import */
+code span.in { color: #008000; } /* Information */
+code span.kw { color: #0000ff; } /* Keyword */
+code span.op { } /* Operator */
+code span.ot { color: #ff4000; } /* Other */
+code span.pp { color: #ff4000; } /* Preprocessor */
+code span.sc { color: #008080; } /* SpecialChar */
+code span.ss { color: #008080; } /* SpecialString */
+code span.st { color: #008080; } /* String */
+code span.va { } /* Variable */
+code span.vs { color: #008080; } /* VerbatimString */
+code span.wa { color: #008000; font-weight: bold; } /* Warning */
+</style>
+
+<style>
+  div.csl-bib-body { }
+  div.csl-entry {
+    clear: both;
+    }
+  .hanging div.csl-entry {
+    margin-left:2em;
+    text-indent:-2em;
+  }
+  div.csl-left-margin {
+    min-width:2em;
+    float:left;
+  }
+  div.csl-right-inline {
+    margin-left:2em;
+    padding-left:1em;
+  }
+  div.csl-indent {
+    margin-left: 2em;
+  }
+</style>
+
+  <!--radix_placeholder_meta_tags-->
+  <title>agua_salud: Paper Sandbox</title>
+
+  <meta property="description" itemprop="description" content="A place to collect material for publication."/>
+
+  <link rel="license" href="https://creativecommons.org/licenses/by/4.0/"/>
+
+
+  <!--  https://developers.facebook.com/docs/sharing/webmasters#markup -->
+  <meta property="og:title" content="agua_salud: Paper Sandbox"/>
+  <meta property="og:type" content="article"/>
+  <meta property="og:description" content="A place to collect material for publication."/>
+  <meta property="og:locale" content="en_US"/>
+  <meta property="og:site_name" content="agua_salud"/>
+
+  <!--  https://dev.twitter.com/cards/types/summary -->
+  <meta property="twitter:card" content="summary"/>
+  <meta property="twitter:title" content="agua_salud: Paper Sandbox"/>
+  <meta property="twitter:description" content="A place to collect material for publication."/>
+
+  <!--/radix_placeholder_meta_tags-->
+  
+  <meta name="citation_reference" content="citation_title=Vegan: Community ecology package;citation_publication_date=2012;citation_volume=2;citation_author=Jari Oksanen;citation_author=F. Guillaume Blanchet;citation_author=Roeland Kindt;citation_author=Pierre Legendre;citation_author=Peter R. Minchin;citation_author=R. B. O’Hara;citation_author=Gavin L. Simpson;citation_author=Peter Sólymos;citation_author=M. Henry H. Stevens;citation_author=Helene Wagner"/>
+  <!--radix_placeholder_rmarkdown_metadata-->
+
+  <script type="text/json" id="radix-rmarkdown-metadata">
+  {"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["title","description","bibliography","output"]}},"value":[{"type":"character","attributes":{},"value":["Paper Sandbox"]},{"type":"character","attributes":{},"value":["A place to collect material for publication.\n"]},{"type":"character","attributes":{},"value":["assets/cite.bib"]},{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["distill::distill_article"]}},"value":[{"type":"list","attributes":{"names":{"type":"character","attributes":{},"value":["css","toc","toc_depth"]}},"value":[{"type":"character","attributes":{},"value":["assets/css/styles.css"]},{"type":"logical","attributes":{},"value":[true]},{"type":"integer","attributes":{},"value":[2]}]}]}]}
+  </script>
+  <!--/radix_placeholder_rmarkdown_metadata-->
+  <!--radix_placeholder_navigation_in_header-->
+  <meta name="distill:offset" content=""/>
+
+  <script type="application/javascript">
+
+    window.headroom_prevent_pin = false;
+
+    window.document.addEventListener("DOMContentLoaded", function (event) {
+
+      // initialize headroom for banner
+      var header = $('header').get(0);
+      var headerHeight = header.offsetHeight;
+      var headroom = new Headroom(header, {
+        tolerance: 5,
+        onPin : function() {
+          if (window.headroom_prevent_pin) {
+            window.headroom_prevent_pin = false;
+            headroom.unpin();
+          }
+        }
+      });
+      headroom.init();
+      if(window.location.hash)
+        headroom.unpin();
+      $(header).addClass('headroom--transition');
+
+      // offset scroll location for banner on hash change
+      // (see: https://github.com/WickyNilliams/headroom.js/issues/38)
+      window.addEventListener("hashchange", function(event) {
+        window.scrollTo(0, window.pageYOffset - (headerHeight + 25));
+      });
+
+      // responsive menu
+      $('.distill-site-header').each(function(i, val) {
+        var topnav = $(this);
+        var toggle = topnav.find('.nav-toggle');
+        toggle.on('click', function() {
+          topnav.toggleClass('responsive');
+        });
+      });
+
+      // nav dropdowns
+      $('.nav-dropbtn').click(function(e) {
+        $(this).next('.nav-dropdown-content').toggleClass('nav-dropdown-active');
+        $(this).parent().siblings('.nav-dropdown')
+           .children('.nav-dropdown-content').removeClass('nav-dropdown-active');
+      });
+      $("body").click(function(e){
+        $('.nav-dropdown-content').removeClass('nav-dropdown-active');
+      });
+      $(".nav-dropdown").click(function(e){
+        e.stopPropagation();
+      });
+    });
+  </script>
+
+  <style type="text/css">
+
+  /* Theme (user-documented overrideables for nav appearance) */
+
+  .distill-site-nav {
+    color: rgba(255, 255, 255, 0.8);
+    background-color: #0F2E3D;
+    font-size: 15px;
+    font-weight: 300;
+  }
+
+  .distill-site-nav a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .distill-site-nav a:hover {
+    color: white;
+  }
+
+  @media print {
+    .distill-site-nav {
+      display: none;
+    }
+  }
+
+  .distill-site-header {
+
+  }
+
+  .distill-site-footer {
+
+  }
+
+
+  /* Site Header */
+
+  .distill-site-header {
+    width: 100%;
+    box-sizing: border-box;
+    z-index: 3;
+  }
+
+  .distill-site-header .nav-left {
+    display: inline-block;
+    margin-left: 8px;
+  }
+
+  @media screen and (max-width: 768px) {
+    .distill-site-header .nav-left {
+      margin-left: 0;
+    }
+  }
+
+
+  .distill-site-header .nav-right {
+    float: right;
+    margin-right: 8px;
+  }
+
+  .distill-site-header a,
+  .distill-site-header .title {
+    display: inline-block;
+    text-align: center;
+    padding: 14px 10px 14px 10px;
+  }
+
+  .distill-site-header .title {
+    font-size: 18px;
+    min-width: 150px;
+  }
+
+  .distill-site-header .logo {
+    padding: 0;
+  }
+
+  .distill-site-header .logo img {
+    display: none;
+    max-height: 20px;
+    width: auto;
+    margin-bottom: -4px;
+  }
+
+  .distill-site-header .nav-image img {
+    max-height: 18px;
+    width: auto;
+    display: inline-block;
+    margin-bottom: -3px;
+  }
+
+
+
+  @media screen and (min-width: 1000px) {
+    .distill-site-header .logo img {
+      display: inline-block;
+    }
+    .distill-site-header .nav-left {
+      margin-left: 20px;
+    }
+    .distill-site-header .nav-right {
+      margin-right: 20px;
+    }
+    .distill-site-header .title {
+      padding-left: 12px;
+    }
+  }
+
+
+  .distill-site-header .nav-toggle {
+    display: none;
+  }
+
+  .nav-dropdown {
+    display: inline-block;
+    position: relative;
+  }
+
+  .nav-dropdown .nav-dropbtn {
+    border: none;
+    outline: none;
+    color: rgba(255, 255, 255, 0.8);
+    padding: 16px 10px;
+    background-color: transparent;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    margin: 0;
+    margin-top: 1px;
+    z-index: 2;
+  }
+
+  .nav-dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: white;
+    min-width: 200px;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 4px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1);
+    z-index: 1;
+    margin-top: 2px;
+    white-space: nowrap;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .nav-dropdown-content hr {
+    margin-top: 4px;
+    margin-bottom: 4px;
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .nav-dropdown-active {
+    display: block;
+  }
+
+  .nav-dropdown-content a, .nav-dropdown-content .nav-dropdown-header {
+    color: black;
+    padding: 6px 24px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+  }
+
+  .nav-dropdown-content .nav-dropdown-header {
+    display: block;
+    padding: 5px 24px;
+    padding-bottom: 0;
+    text-transform: uppercase;
+    font-size: 14px;
+    color: #999999;
+    white-space: nowrap;
+  }
+
+  .nav-dropdown:hover .nav-dropbtn {
+    color: white;
+  }
+
+  .nav-dropdown-content a:hover {
+    background-color: #ddd;
+    color: black;
+  }
+
+  .nav-right .nav-dropdown-content {
+    margin-left: -45%;
+    right: 0;
+  }
+
+  @media screen and (max-width: 768px) {
+    .distill-site-header a, .distill-site-header .nav-dropdown  {display: none;}
+    .distill-site-header a.nav-toggle {
+      float: right;
+      display: block;
+    }
+    .distill-site-header .title {
+      margin-left: 0;
+    }
+    .distill-site-header .nav-right {
+      margin-right: 0;
+    }
+    .distill-site-header {
+      overflow: hidden;
+    }
+    .nav-right .nav-dropdown-content {
+      margin-left: 0;
+    }
+  }
+
+
+  @media screen and (max-width: 768px) {
+    .distill-site-header.responsive {position: relative; min-height: 500px; }
+    .distill-site-header.responsive a.nav-toggle {
+      position: absolute;
+      right: 0;
+      top: 0;
+    }
+    .distill-site-header.responsive a,
+    .distill-site-header.responsive .nav-dropdown {
+      display: block;
+      text-align: left;
+    }
+    .distill-site-header.responsive .nav-left,
+    .distill-site-header.responsive .nav-right {
+      width: 100%;
+    }
+    .distill-site-header.responsive .nav-dropdown {float: none;}
+    .distill-site-header.responsive .nav-dropdown-content {position: relative;}
+    .distill-site-header.responsive .nav-dropdown .nav-dropbtn {
+      display: block;
+      width: 100%;
+      text-align: left;
+    }
+  }
+
+  /* Site Footer */
+
+  .distill-site-footer {
+    width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+    z-index: 3;
+    margin-top: 30px;
+    padding-top: 30px;
+    padding-bottom: 30px;
+    text-align: center;
+  }
+
+  /* Headroom */
+
+  d-title {
+    padding-top: 6rem;
+  }
+
+  @media print {
+    d-title {
+      padding-top: 4rem;
+    }
+  }
+
+  .headroom {
+    z-index: 1000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+  }
+
+  .headroom--transition {
+    transition: all .4s ease-in-out;
+  }
+
+  .headroom--unpinned {
+    top: -100px;
+  }
+
+  .headroom--pinned {
+    top: 0;
+  }
+
+  /* adjust viewport for navbar height */
+  /* helps vertically center bootstrap (non-distill) content */
+  .min-vh-100 {
+    min-height: calc(100vh - 100px) !important;
+  }
+
+  </style>
+
+  <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+  <link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet"/>
+  <link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet"/>
+  <script src="site_libs/headroom-0.9.4/headroom.min.js"></script>
+  <!--/radix_placeholder_navigation_in_header-->
+  <!--radix_placeholder_distill-->
+
+  <style type="text/css">
+
+  body {
+    background-color: white;
+  }
+
+  .pandoc-table {
+    width: 100%;
+  }
+
+  .pandoc-table>caption {
+    margin-bottom: 10px;
+  }
+
+  .pandoc-table th:not([align]) {
+    text-align: left;
+  }
+
+  .pagedtable-footer {
+    font-size: 15px;
+  }
+
+  d-byline .byline {
+    grid-template-columns: 2fr 2fr;
+  }
+
+  d-byline .byline h3 {
+    margin-block-start: 1.5em;
+  }
+
+  d-byline .byline .authors-affiliations h3 {
+    margin-block-start: 0.5em;
+  }
+
+  .authors-affiliations .orcid-id {
+    width: 16px;
+    height:16px;
+    margin-left: 4px;
+    margin-right: 4px;
+    vertical-align: middle;
+    padding-bottom: 2px;
+  }
+
+  d-title .dt-tags {
+    margin-top: 1em;
+    grid-column: text;
+  }
+
+  .dt-tags .dt-tag {
+    text-decoration: none;
+    display: inline-block;
+    color: rgba(0,0,0,0.6);
+    padding: 0em 0.4em;
+    margin-right: 0.5em;
+    margin-bottom: 0.4em;
+    font-size: 70%;
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 3px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  d-article table.gt_table td,
+  d-article table.gt_table th {
+    border-bottom: none;
+  }
+
+  .html-widget {
+    margin-bottom: 2.0em;
+  }
+
+  .l-screen-inset {
+    padding-right: 16px;
+  }
+
+  .l-screen .caption {
+    margin-left: 10px;
+  }
+
+  .shaded {
+    background: rgb(247, 247, 247);
+    padding-top: 20px;
+    padding-bottom: 20px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .shaded .html-widget {
+    margin-bottom: 0;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .shaded .shaded-content {
+    background: white;
+  }
+
+  .text-output {
+    margin-top: 0;
+    line-height: 1.5em;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  d-article {
+    padding-top: 2.5rem;
+    padding-bottom: 30px;
+  }
+
+  d-appendix {
+    padding-top: 30px;
+  }
+
+  d-article>p>img {
+    width: 100%;
+  }
+
+  d-article h2 {
+    margin: 1rem 0 1.5rem 0;
+  }
+
+  d-article h3 {
+    margin-top: 1.5rem;
+  }
+
+  d-article iframe {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    margin-bottom: 2.0em;
+    width: 100%;
+  }
+
+  /* Tweak code blocks */
+
+  d-article div.sourceCode code,
+  d-article pre code {
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+  }
+
+  d-article pre,
+  d-article div.sourceCode,
+  d-article div.sourceCode pre {
+    overflow: auto;
+  }
+
+  d-article div.sourceCode {
+    background-color: white;
+  }
+
+  d-article div.sourceCode pre {
+    padding-left: 10px;
+    font-size: 12px;
+    border-left: 2px solid rgba(0,0,0,0.1);
+  }
+
+  d-article pre {
+    font-size: 12px;
+    color: black;
+    background: none;
+    margin-top: 0;
+    text-align: left;
+    white-space: pre;
+    word-spacing: normal;
+    word-break: normal;
+    word-wrap: normal;
+    line-height: 1.5;
+
+    -moz-tab-size: 4;
+    -o-tab-size: 4;
+    tab-size: 4;
+
+    -webkit-hyphens: none;
+    -moz-hyphens: none;
+    -ms-hyphens: none;
+    hyphens: none;
+  }
+
+  d-article pre a {
+    border-bottom: none;
+  }
+
+  d-article pre a:hover {
+    border-bottom: none;
+    text-decoration: underline;
+  }
+
+  d-article details {
+    grid-column: text;
+    margin-bottom: 0.8em;
+  }
+
+  @media(min-width: 768px) {
+
+  d-article pre,
+  d-article div.sourceCode,
+  d-article div.sourceCode pre {
+    overflow: visible !important;
+  }
+
+  d-article div.sourceCode pre {
+    padding-left: 18px;
+    font-size: 14px;
+  }
+
+  d-article pre {
+    font-size: 14px;
+  }
+
+  }
+
+  figure img.external {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.1);
+    padding: 18px;
+    box-sizing: border-box;
+  }
+
+  /* CSS for d-contents */
+
+  .d-contents {
+    grid-column: text;
+    color: rgba(0,0,0,0.8);
+    font-size: 0.9em;
+    padding-bottom: 1em;
+    margin-bottom: 1em;
+    padding-bottom: 0.5em;
+    margin-bottom: 1em;
+    padding-left: 0.25em;
+    justify-self: start;
+  }
+
+  @media(min-width: 1000px) {
+    .d-contents.d-contents-float {
+      height: 0;
+      grid-column-start: 1;
+      grid-column-end: 4;
+      justify-self: center;
+      padding-right: 3em;
+      padding-left: 2em;
+    }
+  }
+
+  .d-contents nav h3 {
+    font-size: 18px;
+    margin-top: 0;
+    margin-bottom: 1em;
+  }
+
+  .d-contents li {
+    list-style-type: none
+  }
+
+  .d-contents nav > ul {
+    padding-left: 0;
+  }
+
+  .d-contents ul {
+    padding-left: 1em
+  }
+
+  .d-contents nav ul li {
+    margin-top: 0.6em;
+    margin-bottom: 0.2em;
+  }
+
+  .d-contents nav a {
+    font-size: 13px;
+    border-bottom: none;
+    text-decoration: none
+    color: rgba(0, 0, 0, 0.8);
+  }
+
+  .d-contents nav a:hover {
+    text-decoration: underline solid rgba(0, 0, 0, 0.6)
+  }
+
+  .d-contents nav > ul > li > a {
+    font-weight: 600;
+  }
+
+  .d-contents nav > ul > li > ul {
+    font-weight: inherit;
+  }
+
+  .d-contents nav > ul > li > ul > li {
+    margin-top: 0.2em;
+  }
+
+
+  .d-contents nav ul {
+    margin-top: 0;
+    margin-bottom: 0.25em;
+  }
+
+  .d-article-with-toc h2:nth-child(2) {
+    margin-top: 0;
+  }
+
+
+  /* Figure */
+
+  .figure {
+    position: relative;
+    margin-bottom: 2.5em;
+    margin-top: 1.5em;
+  }
+
+  .figure img {
+    width: 100%;
+  }
+
+  .figure .caption {
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 12px;
+    line-height: 1.5em;
+  }
+
+  .figure img.external {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.1);
+    padding: 18px;
+    box-sizing: border-box;
+  }
+
+  .figure .caption a {
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  .figure .caption b,
+  .figure .caption strong, {
+    font-weight: 600;
+    color: rgba(0, 0, 0, 1.0);
+  }
+
+  /* Citations */
+
+  d-article .citation {
+    color: inherit;
+    cursor: inherit;
+  }
+
+  div.hanging-indent{
+    margin-left: 1em; text-indent: -1em;
+  }
+
+  /* Citation hover box */
+
+  .tippy-box[data-theme~=light-border] {
+    background-color: rgba(250, 250, 250, 0.95);
+  }
+
+  .tippy-content > p {
+    margin-bottom: 0;
+    padding: 2px;
+  }
+
+
+  /* Tweak 1000px media break to show more text */
+
+  @media(min-width: 1000px) {
+    .base-grid,
+    distill-header,
+    d-title,
+    d-abstract,
+    d-article,
+    d-appendix,
+    distill-appendix,
+    d-byline,
+    d-footnote-list,
+    d-citation-list,
+    distill-footer {
+      grid-template-columns: [screen-start] 1fr [page-start kicker-start] 80px [middle-start] 50px [text-start kicker-end] 65px 65px 65px 65px 65px 65px 65px 65px [text-end gutter-start] 65px [middle-end] 65px [page-end gutter-end] 1fr [screen-end];
+      grid-column-gap: 16px;
+    }
+
+    .grid {
+      grid-column-gap: 16px;
+    }
+
+    d-article {
+      font-size: 1.06rem;
+      line-height: 1.7em;
+    }
+    figure .caption, .figure .caption, figure figcaption {
+      font-size: 13px;
+    }
+  }
+
+  @media(min-width: 1180px) {
+    .base-grid,
+    distill-header,
+    d-title,
+    d-abstract,
+    d-article,
+    d-appendix,
+    distill-appendix,
+    d-byline,
+    d-footnote-list,
+    d-citation-list,
+    distill-footer {
+      grid-template-columns: [screen-start] 1fr [page-start kicker-start] 60px [middle-start] 60px [text-start kicker-end] 60px 60px 60px 60px 60px 60px 60px 60px [text-end gutter-start] 60px [middle-end] 60px [page-end gutter-end] 1fr [screen-end];
+      grid-column-gap: 32px;
+    }
+
+    .grid {
+      grid-column-gap: 32px;
+    }
+  }
+
+
+  /* Get the citation styles for the appendix (not auto-injected on render since
+     we do our own rendering of the citation appendix) */
+
+  d-appendix .citation-appendix,
+  .d-appendix .citation-appendix {
+    font-size: 11px;
+    line-height: 15px;
+    border-left: 1px solid rgba(0, 0, 0, 0.1);
+    padding-left: 18px;
+    border: 1px solid rgba(0,0,0,0.1);
+    background: rgba(0, 0, 0, 0.02);
+    padding: 10px 18px;
+    border-radius: 3px;
+    color: rgba(150, 150, 150, 1);
+    overflow: hidden;
+    margin-top: -12px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  /* Include appendix styles here so they can be overridden */
+
+  d-appendix {
+    contain: layout style;
+    font-size: 0.8em;
+    line-height: 1.7em;
+    margin-top: 60px;
+    margin-bottom: 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    color: rgba(0,0,0,0.5);
+    padding-top: 60px;
+    padding-bottom: 48px;
+  }
+
+  d-appendix h3 {
+    grid-column: page-start / text-start;
+    font-size: 15px;
+    font-weight: 500;
+    margin-top: 1em;
+    margin-bottom: 0;
+    color: rgba(0,0,0,0.65);
+  }
+
+  d-appendix h3 + * {
+    margin-top: 1em;
+  }
+
+  d-appendix ol {
+    padding: 0 0 0 15px;
+  }
+
+  @media (min-width: 768px) {
+    d-appendix ol {
+      padding: 0 0 0 30px;
+      margin-left: -30px;
+    }
+  }
+
+  d-appendix li {
+    margin-bottom: 1em;
+  }
+
+  d-appendix a {
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  d-appendix > * {
+    grid-column: text;
+  }
+
+  d-appendix > d-footnote-list,
+  d-appendix > d-citation-list,
+  d-appendix > distill-appendix {
+    grid-column: screen;
+  }
+
+  /* Include footnote styles here so they can be overridden */
+
+  d-footnote-list {
+    contain: layout style;
+  }
+
+  d-footnote-list > * {
+    grid-column: text;
+  }
+
+  d-footnote-list a.footnote-backlink {
+    color: rgba(0,0,0,0.3);
+    padding-left: 0.5em;
+  }
+
+
+
+  /* Anchor.js */
+
+  .anchorjs-link {
+    /*transition: all .25s linear; */
+    text-decoration: none;
+    border-bottom: none;
+  }
+  *:hover > .anchorjs-link {
+    margin-left: -1.125em !important;
+    text-decoration: none;
+    border-bottom: none;
+  }
+
+  /* Social footer */
+
+  .social_footer {
+    margin-top: 30px;
+    margin-bottom: 0;
+    color: rgba(0,0,0,0.67);
+  }
+
+  .disqus-comments {
+    margin-right: 30px;
+  }
+
+  .disqus-comment-count {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+  }
+
+  #disqus_thread {
+    margin-top: 30px;
+  }
+
+  .article-sharing a {
+    border-bottom: none;
+    margin-right: 8px;
+  }
+
+  .article-sharing a:hover {
+    border-bottom: none;
+  }
+
+  .sidebar-section.subscribe {
+    font-size: 12px;
+    line-height: 1.6em;
+  }
+
+  .subscribe p {
+    margin-bottom: 0.5em;
+  }
+
+
+  .article-footer .subscribe {
+    font-size: 15px;
+    margin-top: 45px;
+  }
+
+
+  .sidebar-section.custom {
+    font-size: 12px;
+    line-height: 1.6em;
+  }
+
+  .custom p {
+    margin-bottom: 0.5em;
+  }
+
+  /* Styles for listing layout (hide title) */
+  .layout-listing d-title, .layout-listing .d-title {
+    display: none;
+  }
+
+  /* Styles for posts lists (not auto-injected) */
+
+
+  .posts-with-sidebar {
+    padding-left: 45px;
+    padding-right: 45px;
+  }
+
+  .posts-list .description h2,
+  .posts-list .description p {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .posts-list .description h2 {
+    font-weight: 700;
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .posts-list h2.post-tag {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    padding-bottom: 12px;
+  }
+  .posts-list {
+    margin-top: 60px;
+    margin-bottom: 24px;
+  }
+
+  .posts-list .post-preview {
+    text-decoration: none;
+    overflow: hidden;
+    display: block;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 24px 0;
+  }
+
+  .post-preview-last {
+    border-bottom: none !important;
+  }
+
+  .posts-list .posts-list-caption {
+    grid-column: screen;
+    font-weight: 400;
+  }
+
+  .posts-list .post-preview h2 {
+    margin: 0 0 6px 0;
+    line-height: 1.2em;
+    font-style: normal;
+    font-size: 24px;
+  }
+
+  .posts-list .post-preview p {
+    margin: 0 0 12px 0;
+    line-height: 1.4em;
+    font-size: 16px;
+  }
+
+  .posts-list .post-preview .thumbnail {
+    box-sizing: border-box;
+    margin-bottom: 24px;
+    position: relative;
+    max-width: 500px;
+  }
+  .posts-list .post-preview img {
+    width: 100%;
+    display: block;
+  }
+
+  .posts-list .metadata {
+    font-size: 12px;
+    line-height: 1.4em;
+    margin-bottom: 18px;
+  }
+
+  .posts-list .metadata > * {
+    display: inline-block;
+  }
+
+  .posts-list .metadata .publishedDate {
+    margin-right: 2em;
+  }
+
+  .posts-list .metadata .dt-authors {
+    display: block;
+    margin-top: 0.3em;
+    margin-right: 2em;
+  }
+
+  .posts-list .dt-tags {
+    display: block;
+    line-height: 1em;
+  }
+
+  .posts-list .dt-tags .dt-tag {
+    display: inline-block;
+    color: rgba(0,0,0,0.6);
+    padding: 0.3em 0.4em;
+    margin-right: 0.2em;
+    margin-bottom: 0.4em;
+    font-size: 60%;
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 3px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .posts-list img {
+    opacity: 1;
+  }
+
+  .posts-list img[data-src] {
+    opacity: 0;
+  }
+
+  .posts-more {
+    clear: both;
+  }
+
+
+  .posts-sidebar {
+    font-size: 16px;
+  }
+
+  .posts-sidebar h3 {
+    font-size: 16px;
+    margin-top: 0;
+    margin-bottom: 0.5em;
+    font-weight: 400;
+    text-transform: uppercase;
+  }
+
+  .sidebar-section {
+    margin-bottom: 30px;
+  }
+
+  .categories ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .categories li {
+    color: rgba(0, 0, 0, 0.8);
+    margin-bottom: 0;
+  }
+
+  .categories li>a {
+    border-bottom: none;
+  }
+
+  .categories li>a:hover {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+  }
+
+  .categories .active {
+    font-weight: 600;
+  }
+
+  .categories .category-count {
+    color: rgba(0, 0, 0, 0.4);
+  }
+
+
+  @media(min-width: 768px) {
+    .posts-list .post-preview h2 {
+      font-size: 26px;
+    }
+    .posts-list .post-preview .thumbnail {
+      float: right;
+      width: 30%;
+      margin-bottom: 0;
+    }
+    .posts-list .post-preview .description {
+      float: left;
+      width: 45%;
+    }
+    .posts-list .post-preview .metadata {
+      float: left;
+      width: 20%;
+      margin-top: 8px;
+    }
+    .posts-list .post-preview p {
+      margin: 0 0 12px 0;
+      line-height: 1.5em;
+      font-size: 16px;
+    }
+    .posts-with-sidebar .posts-list {
+      float: left;
+      width: 75%;
+    }
+    .posts-with-sidebar .posts-sidebar {
+      float: right;
+      width: 20%;
+      margin-top: 60px;
+      padding-top: 24px;
+      padding-bottom: 24px;
+    }
+  }
+
+
+  /* Improve display for browsers without grid (IE/Edge <= 15) */
+
+  .downlevel {
+    line-height: 1.6em;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+  }
+
+  .downlevel .d-title {
+    padding-top: 6rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .downlevel .d-title h1 {
+    font-size: 50px;
+    font-weight: 700;
+    line-height: 1.1em;
+    margin: 0 0 0.5rem;
+  }
+
+  .downlevel .d-title p {
+    font-weight: 300;
+    font-size: 1.2rem;
+    line-height: 1.55em;
+    margin-top: 0;
+  }
+
+  .downlevel .d-byline {
+    padding-top: 0.8em;
+    padding-bottom: 0.8em;
+    font-size: 0.8rem;
+    line-height: 1.8em;
+  }
+
+  .downlevel .section-separator {
+    border: none;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .downlevel .d-article {
+    font-size: 1.06rem;
+    line-height: 1.7em;
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+  }
+
+
+  .downlevel .d-appendix {
+    padding-left: 0;
+    padding-right: 0;
+    max-width: none;
+    font-size: 0.8em;
+    line-height: 1.7em;
+    margin-bottom: 0;
+    color: rgba(0,0,0,0.5);
+    padding-top: 40px;
+    padding-bottom: 48px;
+  }
+
+  .downlevel .footnotes ol {
+    padding-left: 13px;
+  }
+
+  .downlevel .base-grid,
+  .downlevel .distill-header,
+  .downlevel .d-title,
+  .downlevel .d-abstract,
+  .downlevel .d-article,
+  .downlevel .d-appendix,
+  .downlevel .distill-appendix,
+  .downlevel .d-byline,
+  .downlevel .d-footnote-list,
+  .downlevel .d-citation-list,
+  .downlevel .distill-footer,
+  .downlevel .appendix-bottom,
+  .downlevel .posts-container {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+
+  @media(min-width: 768px) {
+    .downlevel .base-grid,
+    .downlevel .distill-header,
+    .downlevel .d-title,
+    .downlevel .d-abstract,
+    .downlevel .d-article,
+    .downlevel .d-appendix,
+    .downlevel .distill-appendix,
+    .downlevel .d-byline,
+    .downlevel .d-footnote-list,
+    .downlevel .d-citation-list,
+    .downlevel .distill-footer,
+    .downlevel .appendix-bottom,
+    .downlevel .posts-container {
+    padding-left: 150px;
+    padding-right: 150px;
+    max-width: 900px;
+  }
+  }
+
+  .downlevel pre code {
+    display: block;
+    border-left: 2px solid rgba(0, 0, 0, .1);
+    padding: 0 0 0 20px;
+    font-size: 14px;
+  }
+
+  .downlevel code, .downlevel pre {
+    color: black;
+    background: none;
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    text-align: left;
+    white-space: pre;
+    word-spacing: normal;
+    word-break: normal;
+    word-wrap: normal;
+    line-height: 1.5;
+
+    -moz-tab-size: 4;
+    -o-tab-size: 4;
+    tab-size: 4;
+
+    -webkit-hyphens: none;
+    -moz-hyphens: none;
+    -ms-hyphens: none;
+    hyphens: none;
+  }
+
+  .downlevel .posts-list .post-preview {
+    color: inherit;
+  }
+
+
+
+  </style>
+
+  <script type="application/javascript">
+
+  function is_downlevel_browser() {
+    if (bowser.isUnsupportedBrowser({ msie: "12", msedge: "16"},
+                                   window.navigator.userAgent)) {
+      return true;
+    } else {
+      return window.load_distill_framework === undefined;
+    }
+  }
+
+  // show body when load is complete
+  function on_load_complete() {
+
+    // add anchors
+    if (window.anchors) {
+      window.anchors.options.placement = 'left';
+      window.anchors.add('d-article > h2, d-article > h3, d-article > h4, d-article > h5');
+    }
+
+
+    // set body to visible
+    document.body.style.visibility = 'visible';
+
+    // force redraw for leaflet widgets
+    if (window.HTMLWidgets) {
+      var maps = window.HTMLWidgets.findAll(".leaflet");
+      $.each(maps, function(i, el) {
+        var map = this.getMap();
+        map.invalidateSize();
+        map.eachLayer(function(layer) {
+          if (layer instanceof L.TileLayer)
+            layer.redraw();
+        });
+      });
+    }
+
+    // trigger 'shown' so htmlwidgets resize
+    $('d-article').trigger('shown');
+  }
+
+  function init_distill() {
+
+    init_common();
+
+    // create front matter
+    var front_matter = $('<d-front-matter></d-front-matter>');
+    $('#distill-front-matter').wrap(front_matter);
+
+    // create d-title
+    $('.d-title').changeElementType('d-title');
+
+    // create d-byline
+    var byline = $('<d-byline></d-byline>');
+    $('.d-byline').replaceWith(byline);
+
+    // create d-article
+    var article = $('<d-article></d-article>');
+    $('.d-article').wrap(article).children().unwrap();
+
+    // move posts container into article
+    $('.posts-container').appendTo($('d-article'));
+
+    // create d-appendix
+    $('.d-appendix').changeElementType('d-appendix');
+
+    // flag indicating that we have appendix items
+    var appendix = $('.appendix-bottom').children('h3').length > 0;
+
+    // replace footnotes with <d-footnote>
+    $('.footnote-ref').each(function(i, val) {
+      appendix = true;
+      var href = $(this).attr('href');
+      var id = href.replace('#', '');
+      var fn = $('#' + id);
+      var fn_p = $('#' + id + '>p');
+      fn_p.find('.footnote-back').remove();
+      var text = fn_p.html();
+      var dtfn = $('<d-footnote></d-footnote>');
+      dtfn.html(text);
+      $(this).replaceWith(dtfn);
+    });
+    // remove footnotes
+    $('.footnotes').remove();
+
+    // move refs into #references-listing
+    $('#references-listing').replaceWith($('#refs'));
+
+    $('h1.appendix, h2.appendix').each(function(i, val) {
+      $(this).changeElementType('h3');
+    });
+    $('h3.appendix').each(function(i, val) {
+      var id = $(this).attr('id');
+      $('.d-contents a[href="#' + id + '"]').parent().remove();
+      appendix = true;
+      $(this).nextUntil($('h1, h2, h3')).addBack().appendTo($('d-appendix'));
+    });
+
+    // show d-appendix if we have appendix content
+    $("d-appendix").css('display', appendix ? 'grid' : 'none');
+
+    // localize layout chunks to just output
+    $('.layout-chunk').each(function(i, val) {
+
+      // capture layout
+      var layout = $(this).attr('data-layout');
+
+      // apply layout to markdown level block elements
+      var elements = $(this).children().not('details, div.sourceCode, pre, script');
+      elements.each(function(i, el) {
+        var layout_div = $('<div class="' + layout + '"></div>');
+        if (layout_div.hasClass('shaded')) {
+          var shaded_content = $('<div class="shaded-content"></div>');
+          $(this).wrap(shaded_content);
+          $(this).parent().wrap(layout_div);
+        } else {
+          $(this).wrap(layout_div);
+        }
+      });
+
+
+      // unwrap the layout-chunk div
+      $(this).children().unwrap();
+    });
+
+    // remove code block used to force  highlighting css
+    $('.distill-force-highlighting-css').parent().remove();
+
+    // remove empty line numbers inserted by pandoc when using a
+    // custom syntax highlighting theme
+    $('code.sourceCode a:empty').remove();
+
+    // load distill framework
+    load_distill_framework();
+
+    // wait for window.distillRunlevel == 4 to do post processing
+    function distill_post_process() {
+
+      if (!window.distillRunlevel || window.distillRunlevel < 4)
+        return;
+
+      // hide author/affiliations entirely if we have no authors
+      var front_matter = JSON.parse($("#distill-front-matter").html());
+      var have_authors = front_matter.authors && front_matter.authors.length > 0;
+      if (!have_authors)
+        $('d-byline').addClass('hidden');
+
+      // article with toc class
+      $('.d-contents').parent().addClass('d-article-with-toc');
+
+      // strip links that point to #
+      $('.authors-affiliations').find('a[href="#"]').removeAttr('href');
+
+      // add orcid ids
+      $('.authors-affiliations').find('.author').each(function(i, el) {
+        var orcid_id = front_matter.authors[i].orcidID;
+        if (orcid_id) {
+          var a = $('<a></a>');
+          a.attr('href', 'https://orcid.org/' + orcid_id);
+          var img = $('<img></img>');
+          img.addClass('orcid-id');
+          img.attr('alt', 'ORCID ID');
+          img.attr('src','data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg==');
+          a.append(img);
+          $(this).append(a);
+        }
+      });
+
+      // hide elements of author/affiliations grid that have no value
+      function hide_byline_column(caption) {
+        $('d-byline').find('h3:contains("' + caption + '")').parent().css('visibility', 'hidden');
+      }
+
+      // affiliations
+      var have_affiliations = false;
+      for (var i = 0; i<front_matter.authors.length; ++i) {
+        var author = front_matter.authors[i];
+        if (author.affiliation !== "&nbsp;") {
+          have_affiliations = true;
+          break;
+        }
+      }
+      if (!have_affiliations)
+        $('d-byline').find('h3:contains("Affiliations")').css('visibility', 'hidden');
+
+      // published date
+      if (!front_matter.publishedDate)
+        hide_byline_column("Published");
+
+      // document object identifier
+      var doi = $('d-byline').find('h3:contains("DOI")');
+      var doi_p = doi.next().empty();
+      if (!front_matter.doi) {
+        // if we have a citation and valid citationText then link to that
+        if ($('#citation').length > 0 && front_matter.citationText) {
+          doi.html('Citation');
+          $('<a href="#citation"></a>')
+            .text(front_matter.citationText)
+            .appendTo(doi_p);
+        } else {
+          hide_byline_column("DOI");
+        }
+      } else {
+        $('<a></a>')
+           .attr('href', "https://doi.org/" + front_matter.doi)
+           .html(front_matter.doi)
+           .appendTo(doi_p);
+      }
+
+       // change plural form of authors/affiliations
+      if (front_matter.authors.length === 1) {
+        var grid = $('.authors-affiliations');
+        grid.children('h3:contains("Authors")').text('Author');
+        grid.children('h3:contains("Affiliations")').text('Affiliation');
+      }
+
+      // remove d-appendix and d-footnote-list local styles
+      $('d-appendix > style:first-child').remove();
+      $('d-footnote-list > style:first-child').remove();
+
+      // move appendix-bottom entries to the bottom
+      $('.appendix-bottom').appendTo('d-appendix').children().unwrap();
+      $('.appendix-bottom').remove();
+
+      // hoverable references
+      $('span.citation[data-cites]').each(function() {
+        var refs = $(this).attr('data-cites').split(" ");
+        var refHtml = refs.map(function(ref) {
+          return "<p>" + $('#ref-' + ref).html() + "</p>";
+        }).join("\n");
+        window.tippy(this, {
+          allowHTML: true,
+          content: refHtml,
+          maxWidth: 500,
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'light-border',
+          placement: 'bottom-start'
+        });
+      });
+
+      // clear polling timer
+      clearInterval(tid);
+
+      // show body now that everything is ready
+      on_load_complete();
+    }
+
+    var tid = setInterval(distill_post_process, 50);
+    distill_post_process();
+
+  }
+
+  function init_downlevel() {
+
+    init_common();
+
+     // insert hr after d-title
+    $('.d-title').after($('<hr class="section-separator"/>'));
+
+    // check if we have authors
+    var front_matter = JSON.parse($("#distill-front-matter").html());
+    var have_authors = front_matter.authors && front_matter.authors.length > 0;
+
+    // manage byline/border
+    if (!have_authors)
+      $('.d-byline').remove();
+    $('.d-byline').after($('<hr class="section-separator"/>'));
+    $('.d-byline a').remove();
+
+    // remove toc
+    $('.d-contents').remove();
+
+    // move appendix elements
+    $('h1.appendix, h2.appendix').each(function(i, val) {
+      $(this).changeElementType('h3');
+    });
+    $('h3.appendix').each(function(i, val) {
+      $(this).nextUntil($('h1, h2, h3')).addBack().appendTo($('.d-appendix'));
+    });
+
+
+    // inject headers into references and footnotes
+    var refs_header = $('<h3></h3>');
+    refs_header.text('References');
+    $('#refs').prepend(refs_header);
+
+    var footnotes_header = $('<h3></h3');
+    footnotes_header.text('Footnotes');
+    $('.footnotes').children('hr').first().replaceWith(footnotes_header);
+
+    // move appendix-bottom entries to the bottom
+    $('.appendix-bottom').appendTo('.d-appendix').children().unwrap();
+    $('.appendix-bottom').remove();
+
+    // remove appendix if it's empty
+    if ($('.d-appendix').children().length === 0)
+      $('.d-appendix').remove();
+
+    // prepend separator above appendix
+    $('.d-appendix').before($('<hr class="section-separator" style="clear: both"/>'));
+
+    // trim code
+    $('pre>code').each(function(i, val) {
+      $(this).html($.trim($(this).html()));
+    });
+
+    // move posts-container right before article
+    $('.posts-container').insertBefore($('.d-article'));
+
+    $('body').addClass('downlevel');
+
+    on_load_complete();
+  }
+
+
+  function init_common() {
+
+    // jquery plugin to change element types
+    (function($) {
+      $.fn.changeElementType = function(newType) {
+        var attrs = {};
+
+        $.each(this[0].attributes, function(idx, attr) {
+          attrs[attr.nodeName] = attr.nodeValue;
+        });
+
+        this.replaceWith(function() {
+          return $("<" + newType + "/>", attrs).append($(this).contents());
+        });
+      };
+    })(jQuery);
+
+    // prevent underline for linked images
+    $('a > img').parent().css({'border-bottom' : 'none'});
+
+    // mark non-body figures created by knitr chunks as 100% width
+    $('.layout-chunk').each(function(i, val) {
+      var figures = $(this).find('img, .html-widget');
+      if ($(this).attr('data-layout') !== "l-body") {
+        figures.css('width', '100%');
+      } else {
+        figures.css('max-width', '100%');
+        figures.filter("[width]").each(function(i, val) {
+          var fig = $(this);
+          fig.css('width', fig.attr('width') + 'px');
+        });
+
+      }
+    });
+
+    // auto-append index.html to post-preview links in file: protocol
+    // and in rstudio ide preview
+    $('.post-preview').each(function(i, val) {
+      if (window.location.protocol === "file:")
+        $(this).attr('href', $(this).attr('href') + "index.html");
+    });
+
+    // get rid of index.html references in header
+    if (window.location.protocol !== "file:") {
+      $('.distill-site-header a[href]').each(function(i,val) {
+        $(this).attr('href', $(this).attr('href').replace("index.html", "./"));
+      });
+    }
+
+    // add class to pandoc style tables
+    $('tr.header').parent('thead').parent('table').addClass('pandoc-table');
+    $('.kable-table').children('table').addClass('pandoc-table');
+
+    // add figcaption style to table captions
+    $('caption').parent('table').addClass("figcaption");
+
+    // initialize posts list
+    if (window.init_posts_list)
+      window.init_posts_list();
+
+    // implmement disqus comment link
+    $('.disqus-comment-count').click(function() {
+      window.headroom_prevent_pin = true;
+      $('#disqus_thread').toggleClass('hidden');
+      if (!$('#disqus_thread').hasClass('hidden')) {
+        var offset = $(this).offset();
+        $(window).resize();
+        $('html, body').animate({
+          scrollTop: offset.top - 35
+        });
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    if (is_downlevel_browser())
+      init_downlevel();
+    else
+      window.addEventListener('WebComponentsReady', init_distill);
+  });
+
+  </script>
+
+  <!--/radix_placeholder_distill-->
+  <script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
+  <link href="site_libs/panelset-0.2.6/panelset.css" rel="stylesheet" />
+  <script src="site_libs/panelset-0.2.6/panelset.js"></script>
+  <script src="site_libs/popper-2.6.0/popper.min.js"></script>
+  <link href="site_libs/tippy-6.2.7/tippy.css" rel="stylesheet" />
+  <link href="site_libs/tippy-6.2.7/tippy-light-border.css" rel="stylesheet" />
+  <script src="site_libs/tippy-6.2.7/tippy.umd.min.js"></script>
+  <script src="site_libs/anchor-4.2.2/anchor.min.js"></script>
+  <script src="site_libs/bowser-1.9.3/bowser.min.js"></script>
+  <script src="site_libs/webcomponents-2.0.0/webcomponents.js"></script>
+  <script src="site_libs/distill-2.2.21/template.v2.js"></script>
+  <!--radix_placeholder_site_in_header-->
+  <style type="text/css">
+  /* Whole document: */
+  @import url('https://fonts.googleapis.com/css?family=PT+Sans|PT+Serif|Lato:300|Inconsolata|Source+Sans+Pro|Work+Sans:200,300,400,500|Karla:400,400i,700,700i');
+  /********************************/
+  /* controls general properties of site*/
+  /********************************/
+
+  body {
+    color: #414141;
+  /*  line-height: 1.7;
+    font-size: 17px; */
+    background-color: #FEFEFE;
+  }
+
+  d-title h1{
+  font-size: 2.1em;
+  font-family: 'Work Sans';
+  font-weight: 300;
+  }
+
+  d-article h1 {
+    font-size: 1.8em;
+    font-family: 'Work Sans', 'Source Sans Pro', 'PT Sans';
+    font-weight: 300;
+  }
+
+  d-article h2 {
+    font-size: 1.65em;
+    font-family: 'Work Sans', 'Source Sans Pro', 'PT Sans';
+    font-weight: 500;
+  }
+
+  d-article h3 {
+    margin-top: 1em;
+    font-family: 'Work Sans', 'Source Sans Pro', 'PT Sans';
+  }
+
+  d-byline .authors-affiliations {
+    grid-column-end: span 3;
+    grid-column-gap: 8px;
+  }
+
+  img.orcid-id {
+    margin: 0;
+  }
+
+  a.name:-webkit-any-link {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+  }
+
+  a.affiliation:-webkit-any-link {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+  }
+
+  blockquote p {
+  	font-size: 1.1em;
+  	font-family: 'Work Sans';
+    font-style: normal;
+    color: #323232;
+    margin: 0.5em 0 0.5em;
+  }
+
+  d-article blockquote {
+    border-left: 4px solid;
+    border-left-color: #323232;
+  }
+
+  d-article li {
+    margin: 0px 0px 4px;
+    font-size: 18px;
+    font-family: 'Open Sans', 'Source Sans Pro', 'PT Sans';
+  }
+
+  /********************************/
+  /* controls CODE*/
+  /********************************/
+
+  /** pre.sourceCode controls code block without lang **/
+
+  /** Controls r code  **/
+
+  pre.sourceCode.r {
+    margin-top: 0px;
+     color: #333333;
+     background-color: #E8E8E8;
+     border-radius: 3px;
+     font-size: 0.80em;
+     font-family: 'Monaco', 'PT Mono', monospace;
+     overflow-x: scroll !important;
+     border-left: 6px solid #AB22B2;
+     border-top: 1px solid #B7B7B7;
+     border-right: 1px solid #B7B7B7;
+     border-bottom: 1px solid #B7B7B7;
+     padding: 18px 0px 18px 20px;
+   }
+
+   pre.sourceCode.bash {
+     margin-top: 0px;
+      color: #333333;
+      background-color: #E8E8E8;
+      border-radius: 3px;
+      font-size: 0.80em;
+      font-family: 'Monaco', 'PT Mono', monospace;
+      overflow-x: scroll !important;
+      border-left: 6px solid #4A4DB5;
+      border-top: 1px solid #B7B7B7;
+      border-right: 1px solid #B7B7B7;
+      border-bottom: 1px solid #B7B7B7;
+      padding: 18px 0px 18px 20px;
+    }
+  /** Controls code output **/
+
+  d-article pre {
+     margin-top: 0px;
+      color: #333333;
+      background-color: #FAFAFA;
+      font-size: 0.8em;
+      border: 1px solid #ccc;
+      overflow-x: scroll !important;
+      padding:  10px 10px 10px 18px;
+      border-radius: 5px;
+    }
+
+  /** Controls inline code  **/
+
+  p code {
+    background-color: #E8E8E8;
+    border-radius: 3px;
+    font-size: 0.8em;
+    font-family: 'Monaco', 'PT Mono', monospace;
+    overflow-x: scroll !important;
+    margin-bottom: 20px;
+    color: #BF2727;
+  }
+
+  li code {
+    background-color: #E8E8E8;
+    border-radius: 3px;
+    font-size: 0.8em;
+    font-family: 'Monaco', 'PT Mono', monospace;
+    overflow-x: scroll !important;
+    margin-bottom: 20px;
+    color: #BF2727;
+  }
+
+  d-article aside code {
+    background-color: #E8E8E8;
+    border-radius: 3px;
+    font-family: 'Monaco', 'PT Mono', monospace;
+    color: #BF2727;
+  }
+
+  /********************************/
+  /* controls NAV BAR and HEADERS*/
+  /********************************/
+
+  .nav-dropdown-content .nav-dropdown-header {
+    text-transform: none;
+    color: #686868;
+  }
+  .nav-dropdown-content a {
+    font-family: 'Work Sans'
+  }
+  .nav-dropdown .nav-dropbtn {
+  /*  color: #FEFEFE; */
+    font-weight: 400;
+  }
+
+  .distill-site-header .logo img {
+    margin-top: 10px;
+    max-height: 30px;
+    margin-bottom: 10px;
+  }
+
+  .distill-site-nav {
+      background-color: #323232;
+      font-size: 16px;
+      font-weight: 300;
+  }
+
+  img {
+    margin: 5px;
+  }
+
+  /** LIGHTBOX MARKUP **/
+  .thumbnail {
+    max-width: 100%;
+    position: relative;
+  }
+
+  /** DETAILS fold down**/
+
+  details {
+    background-color: #f6f6f6;
+    cursor: pointer;
+    color: #2d2d2d;
+    margin-bottom:1vh;
+    padding: 1em;
+    border: none;
+    text-align: left;
+    outline: none;
+  }
+
+  .active, details:hover {
+    transition: max-height 0.2s ease-out;
+    outline: none;
+
+    /* background-color: #acc2c2; */
+  }
+
+  details {
+    display: flex;
+    justify-content: space-between;
+    align-content: center;
+    border-radius: 4px;
+    outline: none;
+  }
+
+  details.active {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    outline: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+    outline: none;
+  }
+
+  summary:focus {
+    outline: none;
+  }
+
+  summary::after {
+    float: right;
+    font-family: "Font Awesome 5 Free";
+    content: "\f0fe";
+  }
+
+  details[open] summary::after {
+    float: right;
+    font-family: "Font Awesome 5 Free";
+    content: "\f146";
+  }
+
+  /********************************/
+  /* controls downloadthis  */
+  /********************************/
+
+  button.btn.btn-default {
+    font-size: 0.8em;
+    font-family: "PT Sans";
+    border-color: #29B222;
+    border-width: medium;
+    margin-bottom: 15px;
+  }
+
+  /********************************/
+  /* controls reactable  */
+  /********************************/
+
+  div.rt-text-content {
+    font-size: 1.2em;
+  }
+
+  /********************************/
+  /* controls horizontal rule, ie ***  */
+  /********************************/
+
+  d-article hr {
+    margin: 30px 0px;
+  }
+
+  </style>
+  <!--/radix_placeholder_site_in_header-->
+
+  <link rel="stylesheet" href="assets/css/styles.css" type="text/css"/>
+
+</head>
+
+<body>
+
+<!--radix_placeholder_front_matter-->
+
+<script id="distill-front-matter" type="text/json">
+{"title":"Paper Sandbox","description":"A place to collect material for publication.","authors":[]}
+</script>
+
+<!--/radix_placeholder_front_matter-->
+<!--radix_placeholder_navigation_before_body-->
+<header class="header header--fixed" role="banner">
+<nav class="distill-site-nav distill-site-header">
+<div class="nav-left">
+<a href="index.html" class="title"></a>
+<a href="index.html">
+<i class="fa fa-home" aria-hidden="true"></i>
+</a>
+</div>
+<div class="nav-right">
+<div class="nav-dropdown">
+<button class="nav-dropbtn">
+A. Processing
+ 
+<span class="down-arrow">&#x25BE;</span>
+</button>
+<div class="nav-dropdown-content">
+<span class="nav-dropdown-header">Workflows</span>
+<hr/>
+<a href="dada2.html">1. DADA2</a>
+<a href="data-prep.html">2. Data Set Prep</a>
+<a href="filtering.html">3. Filtering</a>
+</div>
+</div>
+<div class="nav-dropdown">
+<button class="nav-dropbtn">
+B. Diversity
+ 
+<span class="down-arrow">&#x25BE;</span>
+</button>
+<div class="nav-dropdown-content">
+<span class="nav-dropdown-header">Workflows</span>
+<hr/>
+<a href="taxa.html">4. Taxonomic</a>
+<a href="alpha.html">5. Alpha Diversity</a>
+<a href="beta.html">6. Beta Diversity</a>
+<a href="da.html">7. DA ASVs &amp; Taxa</a>
+<a href="metadata.html">8. Metadata</a>
+</div>
+</div>
+<a href="data-availability.html">Data Products</a>
+<a href="som.html">SOM</a>
+<a href="https://github.com/agua-salud/nutrients/">
+<i class="fa fa-github fa-lg" aria-hidden="true"></i>
+</a>
+<a href="about.html">
+<i class="fa fa-question" aria-hidden="true"></i>
+</a>
+<a href="javascript:void(0);" class="nav-toggle">&#9776;</a>
+</div>
+</nav>
+</header>
+<!--/radix_placeholder_navigation_before_body-->
+<!--radix_placeholder_site_before_body-->
+<!--/radix_placeholder_site_before_body-->
+
+<div class="d-title">
+<h1>Paper Sandbox</h1>
+<!--radix_placeholder_categories-->
+<!--/radix_placeholder_categories-->
+<p><p>A place to collect material for publication.</p></p>
+</div>
+
+
+<div class="d-article">
+<div class="d-contents d-contents-float">
+<nav class="l-text toc figcaption" id="TOC">
+<h3>Contents</h3>
+<ul>
+<li><a href="#beta-diversity">Beta Diversity</a></li>
+<li><a href="#alpha-diversity">Alpha Diversity</a></li>
+<li><a href="#differentially-abundant-taxa-16s-rrna">Differentially abundant taxa (16S rRNA)</a></li>
+<li><a href="#differentially-abundant-taxa-its">Differentially abundant taxa (ITS)</a></li>
+<li><a href="#source-code">Source Code</a></li>
+<li><a href="#data-availability">Data Availability</a></li>
+</ul>
+</nav>
+</div>
+<details>
+<summary>
+<strong>Click here</strong> for setup information.
+</summary>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_chunk<span class="sc">$</span><span class="fu">set</span>(<span class="at">echo =</span> <span class="cn">TRUE</span>, <span class="at">eval =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">119</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(phyloseq); <span class="fu">packageVersion</span>(<span class="st">&quot;phyloseq&quot;</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Biostrings); <span class="fu">packageVersion</span>(<span class="st">&quot;Biostrings&quot;</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tidyverse, microeco, file2meco, magrittr,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>               microbiome, phytools, phangorn, reactable, Matrix, </span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>               pairwiseAdonis, codefolder, naniar, downloadthis,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>               labdsv, patchwork, agricolae, captioner, </span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>               <span class="at">install =</span> <span class="cn">FALSE</span>, <span class="at">update =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co">#pacman::p_depends(agricolae, local = TRUE)  </span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co">#pacman::p_depends_reverse(agricolae, local = TRUE)  </span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">scipen=</span><span class="dv">999</span>)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_current<span class="sc">$</span><span class="fu">get</span>(<span class="fu">c</span>(</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;cache&quot;</span>,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;cache.path&quot;</span>,</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;cache.rebuild&quot;</span>,</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;dependson&quot;</span>,</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;autodep&quot;</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>))</span></code></pre></div>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<p><style>.panelset{--panel-tab-active-foreground: #2271B2;--panel-tab-hover-foreground: #AB22B2;}</style></p>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="do">### COmmon formatting scripts</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="do">### </span><span class="al">NOTE</span><span class="do">: captioner.R must be read BEFORE captions_XYZ.R</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;assets/captioner/captioner.R&quot;</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;assets/captioner/captions/captions_paper.R&quot;</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;assets/reactable/download_this_fun.R&quot;</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;assets/reactable/styles.R&quot;</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;assets/reactable/table_functions/beta.R&quot;</span>)</span></code></pre></div>
+</div>
+</details>
+<h2 id="beta-diversity">Beta Diversity</h2>
+<div class="layout-chunk" data-layout="l-body-outset">
+<p><img src="include/paper/beta_div_all.png" width="3712" /></p>
+</div>
+<p><small><strong>(16S rRNA/ITS) Table 1 | PCoA ordination plots of PIME filtered data for all samples. </strong></small></p>
+<h2 id="alpha-diversity">Alpha Diversity</h2>
+<div class="layout-chunk" data-layout="l-page">
+<p><img src="include/paper/alpha_div_all.png" width="3826" /></p>
+</div>
+<p><small><strong>(16S rRNA/ITS) Table 2 | Shannon diversity estimates PERFect filtered data. </strong></small></p>
+<h2 id="differentially-abundant-taxa-16s-rrna">Differentially abundant taxa (16S rRNA)</h2>
+<div class="layout-chunk" data-layout="l-body-outset">
+<p><img src="include/paper/ssu_da_y4.png" width="4052" /></p>
+</div>
+<p><small><strong>(16S rRNA) Figure 1 | Differentially abundant taxa from the 16S rRNA data set. Significant differences denoted by asterisks (* p &lt; 0.05, ** p &lt; 0.01, *** p &lt; 0.001, **** p &lt; 0.0001).</strong></small></p>
+<h2 id="differentially-abundant-taxa-its">Differentially abundant taxa (ITS)</h2>
+<div class="layout-chunk" data-layout="l-body-outset">
+<p><img src="include/paper/its_da_y4.png" width="4044" /></p>
+</div>
+<p><small><strong>(ITS) Figure 1 | Differentially abundant taxa from the ITS data set. Significant differences denoted by asterisks (* p &lt; 0.05, ** p &lt; 0.01, *** p &lt; 0.001, **** p &lt; 0.0001).</strong></small></p>
+<details>
+<summary>
+Scratch code.
+</summary>
+<h3 id="beta-diversity-1">Beta diversity</h3>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<p>In order to test for significance between sample groups, we must perform the following steps:</p>
+<ol type="1">
+<li>Transform sample counts to relative abundance.</li>
+<li>Create distance matrices based on some metrics, for example <code>wunifrac</code>, <code>unifrac</code>, and <code>jsd</code>. For this we use the function <code>phyloseq::distance</code>.</li>
+<li>Next, calculate beta dispersion using the <code>betadisper</code> function from the <code>vegan</code> package <span class="citation" data-cites="oksanen2013community">(<a href="#ref-oksanen2013community" role="doc-biblioref">Oksanen et al. 2012</a>)</span>.</li>
+<li>Then, use the function <code>permutest</code> to run a Permutation test for homogeneity of multivariate dispersions.</li>
+<li>If the beta dispersion tests are not significant we will run a PERMANOVA using <code>adonis</code> (since PERMANOVA assumes equal dispersion), otherwise we will use Analysis of Similarity (ANOSIM), both available in the <code>vegan</code> package <span class="citation" data-cites="oksanen2013community">(<a href="#ref-oksanen2013community" role="doc-biblioref">Oksanen et al. 2012</a>)</span>.</li>
+</ol>
+<p>Steps 2–4 are combined in a <code>for</code> loop that tests all three distance metrics.</p>
+<p>First, transform sample counts to relative abundance and generate some new trees.</p>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>ssu_samp_ps <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">objects</span>(<span class="at">pattern =</span> <span class="st">&quot;ssu_ps_&quot;</span>))</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> ssu_samp_ps) {</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>     tmp_name <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_prop&quot;</span>))</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>     tmp_get <span class="ot">&lt;-</span> <span class="fu">get</span>(i)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>     tmp_ps <span class="ot">&lt;-</span> <span class="fu">transform_sample_counts</span>(tmp_get, <span class="cf">function</span>(otu) </span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>                                          <span class="fl">1e5</span> <span class="sc">*</span> otu<span class="sc">/</span><span class="fu">sum</span>(otu))</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>     tmp_ps<span class="sc">@</span>phy_tree <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>     tmp_ps <span class="ot">&lt;-</span> <span class="fu">prune_samples</span>(<span class="fu">sample_sums</span>(tmp_ps) <span class="sc">&gt;</span> <span class="dv">0</span>, tmp_ps)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>     tmp_tree <span class="ot">&lt;-</span> <span class="fu">rtree</span>(<span class="fu">ntaxa</span>(tmp_ps), <span class="at">rooted =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>                       <span class="at">tip.label =</span> <span class="fu">taxa_names</span>(tmp_ps))</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>     tmp_ps <span class="ot">&lt;-</span> <span class="fu">merge_phyloseq</span>(tmp_ps, sample_data, tmp_tree)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>     <span class="fu">print</span>(tmp_name)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>     <span class="fu">assign</span>(tmp_name, tmp_ps)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>     <span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">pattern =</span> <span class="st">&quot;tmp_&quot;</span>))</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="fu">objects</span>()</span></code></pre></div>
+</details>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>choose_group <span class="ot">&lt;-</span> <span class="st">&quot;YR_TREAT&quot;</span></span></code></pre></div>
+</div>
+<h4 id="beta-dispersion">Beta Dispersion</h4>
+<p>Here we create distance matrices for each metric, calculate the beta dispersion, and run a permutation test for homogeneity of multivariate dispersions.</p>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>ssu_dist <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;jsd&quot;</span>, <span class="st">&quot;unifrac&quot;</span>, <span class="st">&quot;wunifrac&quot;</span>, <span class="st">&quot;jaccard&quot;</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> ssu_samp_ps) {</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (d <span class="cf">in</span> ssu_dist){</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>       tmp_get <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(i, <span class="st">&quot;_prop&quot;</span>)))</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>       tmp_samp <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">sample_data</span>(tmp_get))</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>       <span class="cf">if</span>(d <span class="sc">==</span> <span class="st">&quot;jaccard&quot;</span>){</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>         tmp_df <span class="ot">&lt;-</span> phyloseq<span class="sc">::</span><span class="fu">distance</span>(tmp_get, <span class="at">method =</span> d, <span class="at">binary =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>       } <span class="cf">else</span> {</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>         tmp_df <span class="ot">&lt;-</span> phyloseq<span class="sc">::</span><span class="fu">distance</span>(tmp_get, <span class="at">method =</span> d)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>         }</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>       <span class="co">#tmp_df &lt;- phyloseq::distance(tmp_get, method = d)</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>       tmp_df_name <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(d, <span class="sc">~</span> <span class="fu">paste0</span>(i, <span class="st">&quot;_beta_dist_&quot;</span>, .))</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>       <span class="fu">assign</span>(tmp_df_name, tmp_df)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>       tmp_df2 <span class="ot">&lt;-</span> <span class="fu">betadisper</span>(tmp_df, tmp_samp[[choose_group]], <span class="at">bias.adjust =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>       tmp_df_name2 <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(d, <span class="sc">~</span> <span class="fu">paste0</span>(i, <span class="st">&quot;_beta_dispersion_&quot;</span>, .))</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>       <span class="fu">assign</span>(tmp_df_name2, tmp_df2)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>       tmp_df3 <span class="ot">&lt;-</span> <span class="fu">permutest</span>(tmp_df2, <span class="at">pairwise =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>                            <span class="at">permutations =</span> <span class="dv">1000</span>, <span class="at">binary =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>       tmp_df_name3 <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(d, <span class="sc">~</span> <span class="fu">paste0</span>(i, <span class="st">&quot;_permutest_&quot;</span>, .))</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>       <span class="fu">assign</span>(tmp_df_name3, tmp_df3)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>       <span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">pattern =</span> <span class="st">&quot;tmp_&quot;</span>))</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+</details>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="l-body">
+<div class="panelset">
+<section id="full" class="panel">
+<h4>FULL</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="arbitrary-filtered" class="panel">
+<h4>Arbitrary filtered</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="perfect-filtered" class="panel">
+<h4>PERFect filtered</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="pime-filtered" class="panel">
+<h4>PIME filtered</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+</div>
+</div>
+<p>Remember, if the beta dispersion p-value is greater than <code>0.05</code> we use PERMANOVA, otherwise we use ANOSIM.</p>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>ssu_perm_pvalues <span class="ot">&lt;-</span> <span class="fu">data.frame</span>()</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> ssu_samp_ps) {</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (d <span class="cf">in</span> ssu_dist){</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>          tmp_get <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_permutest_&quot;</span>, d)))</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>          tmp_pv <span class="ot">&lt;-</span> tmp_get<span class="sc">$</span>tab<span class="sc">$</span><span class="st">`</span><span class="at">Pr(&gt;F)</span><span class="st">`</span>[<span class="dv">1</span>]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>          tmp_test <span class="ot">&lt;-</span> <span class="cf">if</span>(tmp_pv <span class="sc">&lt;</span> <span class="fl">0.05</span>){</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>            tmp_test <span class="ot">&lt;-</span> <span class="st">&quot;ANOSIM&quot;</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>          } <span class="cf">else</span> {</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>            tmp_test <span class="ot">&lt;-</span> <span class="st">&quot;ADONIS&quot;</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>          tmp_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(i, d, tmp_pv, tmp_test)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>          ssu_perm_pvalues <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(ssu_perm_pvalues, tmp_df)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>          <span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">pattern =</span> <span class="st">&quot;tmp_&quot;</span>))</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>ssu_perm_pvalues <span class="ot">&lt;-</span> ssu_perm_pvalues <span class="sc">%&gt;%</span> </span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="fu">c</span>(<span class="st">&quot;data_set&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;dist&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;pval&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot;test&quot;</span> <span class="ot">=</span> <span class="dv">4</span>))</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>ssu_perm_pvalues <span class="ot">&lt;-</span> ssu_perm_pvalues <span class="sc">%&gt;%</span> tibble<span class="sc">::</span><span class="fu">remove_rownames</span>()</span></code></pre></div>
+</details>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<p><small><strong>(16S rRNA) Table 1 | Summary of Beta Dispersion Tests for unfiltered &amp; filtered data sets against various distance metrics. The <code>test</code> column shows the method chosen (based on the test results) to assess differences in beta diversity. If p-values are significant (red, p-value &lt; 0.05) we used ANOSIM, otherwise we used PERMANOVA (blue, p-value &gt; 0.05).</strong></small></p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<h4 id="significance-tests">Significance Tests</h4>
+<p>Depending on the test, we need different data structures. For <code>adonis</code> we need the sample metadata and for <code>anosim</code> we start with a phyloseq object.</p>
+<p>We begin by creating separate sample metadata data frames for each phyloseq object (for any <code>adonis</code> analyses).</p>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> ssu_samp_ps) {</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>     tmp_get <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_prop&quot;</span>)))</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>     tmp_samp <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">sample_data</span>(tmp_get))</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>     tmp_name <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_sampledf&quot;</span>))</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>     <span class="fu">assign</span>(tmp_name, tmp_samp)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>     <span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">pattern =</span> <span class="st">&quot;tmp_&quot;</span>))</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="fu">objects</span>(<span class="at">pattern=</span><span class="st">&quot;_sampledf&quot;</span>)</span></code></pre></div>
+</details>
+</div>
+<p>Next we can use a <code>for</code> loop with an <code>if/else</code> to perform significance tests. This loop does the following for every combination of phyloseq object and distance metric:</p>
+<ol type="1">
+<li>Get the results of each permutation test.</li>
+<li>Get the p-value from the test.</li>
+<li>If the p-value is &lt; 0.05, <code>anosim</code> is run, otherwise we use <code>adonis</code>.</li>
+</ol>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> ssu_samp_ps) {</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (d <span class="cf">in</span> ssu_dist){</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>          tmp_get <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_permutest_&quot;</span>, d)))</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>          tmp_pv <span class="ot">&lt;-</span> tmp_get<span class="sc">$</span>tab<span class="sc">$</span><span class="st">`</span><span class="at">Pr(&gt;F)</span><span class="st">`</span>[<span class="dv">1</span>]</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>          </span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>          <span class="cf">if</span>(tmp_pv <span class="sc">&lt;</span> <span class="fl">0.05</span>){</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>            tmp_anosim_data <span class="ot">&lt;-</span> <span class="fu">get</span>(i)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>            tmp_groups <span class="ot">&lt;-</span> <span class="fu">get_variable</span>(tmp_anosim_data, choose_group)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>            tmp_prop <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_prop&quot;</span>)))</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>            tmp_anosim_d <span class="ot">&lt;-</span> <span class="fu">anosim</span>(phyloseq<span class="sc">::</span><span class="fu">distance</span>(tmp_prop, d), <span class="at">grouping =</span> tmp_groups)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>            tmp_anosim_name <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_sig_anosim_&quot;</span>, d))</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>            <span class="fu">assign</span>(tmp_anosim_name, tmp_anosim_d)</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>          } <span class="cf">else</span> {</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>            tmp_adonis_data <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_beta_dist_&quot;</span>, d)))</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>            tmp_adonis_sampledf <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_sampledf&quot;</span>)))</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>            tmp_adonis <span class="ot">&lt;-</span> <span class="fu">adonis</span>(tmp_adonis_data <span class="sc">~</span> YR_TREAT,</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">data =</span> tmp_adonis_sampledf, <span class="at">permutations =</span> <span class="dv">1000</span>)</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>            tmp_adonis2 <span class="ot">&lt;-</span> <span class="fu">adonis2</span>(tmp_adonis_data <span class="sc">~</span> YR_TREAT,</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">data =</span> tmp_adonis_sampledf, <span class="at">permutations =</span> <span class="dv">1000</span>)</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>            tmp_adonis_name <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_sig_adonis_&quot;</span>, d))</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>            tmp_adonis2_name <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_sig_adonis2_&quot;</span>, d))</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>            <span class="fu">assign</span>(tmp_adonis_name, tmp_adonis)</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>            <span class="fu">assign</span>(tmp_adonis2_name, tmp_adonis2)</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>          <span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">pattern =</span> <span class="st">&quot;tmp_&quot;</span>))</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+</details>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<p>::: l-body ::: {.panelset} ::: {.panel}</p>
+<h4 id="full-data-set">FULL data set</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<p>:::</p>
+<section id="arbitrary-filtered-1" class="panel">
+<h4>Arbitrary filtered</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<div class="panel">
+<section id="perfect-filtered-1" class="panel">
+<h4>PERFect filtered</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="pime-filtered-1" class="panel">
+<h4>PIME filtered</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+</div>
+<p>:::</p>
+<h4 id="summaries">Summaries</h4>
+<p>Here is a quick summary of significance tests for the data sets against three distance matrices.</p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<p><small><strong>(16S rRNA) Table 2 | Summary of significant tests by Year for FULL, unfiltered data set. P-values in red indicate significant differences (p-value &lt; 0.05).</strong></small></p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<h4 id="ordinations">Ordinations</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<p>Now we can visualize the results of several distance matrices to access dissimilarity among sample. Here we ordinate using Principal Coordinate Analysis (PCoA) but we could also test other methods like NMDS, CCA, etc.</p>
+<h4 id="plot-code">Plot Code</h4>
+<p>Here I made a custom “function” to run the analysis, plot the graphs, save graph objects, and save plots (as <code>.png</code> and <code>.pdf</code> files). I am sure an actual programmer would be shocked, but it works. This is used for both the 16S rRNA and ITS data sets.</p>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>agua_col <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;#B26322&quot;</span>, <span class="st">&quot;#29B222&quot;</span>, <span class="st">&quot;#2271B2&quot;</span>, <span class="st">&quot;#AB22B2&quot;</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co">#agua_col2 &lt;- c(&quot;#2271B2&quot;, &quot;#3DB7E9&quot;, &quot;#F748A5&quot;, &quot;#359B73&quot;, &quot;#D55E00&quot;, &quot;#E69F00&quot;)</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>agua_col2 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;#191919&quot;</span>, <span class="st">&quot;#191919&quot;</span>, <span class="st">&quot;#191919&quot;</span>, <span class="st">&quot;#191919&quot;</span>, <span class="st">&quot;#191919&quot;</span>, <span class="st">&quot;#191919&quot;</span>, <span class="st">&quot;#191919&quot;</span>, <span class="st">&quot;#191919&quot;</span>, <span class="st">&quot;#191919&quot;</span>, <span class="st">&quot;#191919&quot;</span>, <span class="st">&quot;#191919&quot;</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co">#source(&quot;hack_code/trans_beta_jjs.R&quot;)</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>treat_order <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;CTL&quot;</span>, <span class="st">&quot;N&quot;</span>, <span class="st">&quot;P&quot;</span>, <span class="st">&quot;NP&quot;</span>) </span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>age_order <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;NEW&quot;</span>, <span class="st">&quot;YNG&quot;</span>, <span class="st">&quot;OLD&quot;</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>year_order <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Y0&quot;</span>, <span class="st">&quot;Y1&quot;</span>, <span class="st">&quot;Y4&quot;</span>)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>microeco_beta_plot <span class="ot">&lt;-</span> <span class="cf">function</span>(choose_input, choose_metric, choose_ord) {  </span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  tmp_dataset <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(choose_input, <span class="sc">~</span><span class="fu">paste0</span>(., <span class="st">&quot;_me&quot;</span>)))</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="do">###### ORDER factors</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  tmp_dataset<span class="sc">$</span>sample_table<span class="sc">$</span>TREAT <span class="sc">%&lt;&gt;%</span> <span class="fu">factor</span>(., <span class="at">levels =</span>  treat_order)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>  tmp_dataset<span class="sc">$</span>sample_table<span class="sc">$</span>AGE <span class="sc">%&lt;&gt;%</span> <span class="fu">factor</span>(., <span class="at">levels =</span> age_order)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="do">###### GENERATE plots</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  tmp_t1 <span class="ot">&lt;-</span> trans_beta<span class="sc">$</span><span class="fu">new</span>(<span class="at">dataset =</span> tmp_dataset, <span class="at">group =</span> <span class="st">&quot;YEAR&quot;</span>, <span class="at">measure =</span> choose_metric)</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  tmp_t1<span class="sc">$</span><span class="fu">cal_ordination</span>(<span class="at">ordination =</span> choose_ord)</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>  tmp_t1_ord_plot <span class="ot">&lt;-</span> tmp_t1<span class="sc">$</span><span class="fu">plot_ordination</span>(<span class="at">plot_color =</span> <span class="st">&quot;YEAR&quot;</span>, </span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">plot_shape =</span> <span class="st">&quot;TREAT&quot;</span>,</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">plot_group_ellipse =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">color_values =</span> agua_col, </span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>                                            <span class="at">shape_values =</span> <span class="fu">c</span>(<span class="dv">19</span>, <span class="dv">17</span>, <span class="dv">15</span>, <span class="dv">18</span>)</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>                                            ) <span class="sc">+</span> </span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">4</span>) <span class="sc">+</span>  </span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">&quot;bottom&quot;</span>)</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>  tmp_t1<span class="sc">$</span><span class="fu">cal_group_distance</span>()</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>  tmp_t1_within_group_plot <span class="ot">&lt;-</span> tmp_t1<span class="sc">$</span><span class="fu">plot_group_distance</span>(<span class="at">plot_group_order =</span> year_order, </span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>                                                         <span class="at">distance_pair_stat =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>                                                         <span class="at">hide_ns =</span> <span class="cn">TRUE</span>, <span class="at">hide_ns_more =</span> <span class="cn">NULL</span>, </span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>                                                         <span class="at">color_values =</span> agua_col)</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>  tmp_t1<span class="sc">$</span>res_group_distance</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>  tmp_t1<span class="sc">$</span><span class="fu">cal_group_distance</span>(<span class="at">within_group =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>  tmp_t1_btwn_group_plot <span class="ot">&lt;-</span> tmp_t1<span class="sc">$</span><span class="fu">plot_group_distance</span>(<span class="at">distance_pair_stat =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">hide_ns =</span> <span class="cn">TRUE</span>, <span class="at">hide_ns_more =</span> <span class="cn">NULL</span>,</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>                                                       <span class="at">color_values =</span> agua_col2)</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (choose_metric <span class="sc">==</span> <span class="st">&quot;jsd&quot;</span>) {</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>    tmp_t1_within_group_plot <span class="ot">&lt;-</span> tmp_t1_within_group_plot <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">&quot;Jensen-Shannon Index&quot;</span>)</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>    tmp_t1_btwn_group_plot <span class="ot">&lt;-</span> tmp_t1_btwn_group_plot <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">&quot;Jensen-Shannon Index&quot;</span>)</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (choose_metric <span class="sc">==</span> <span class="st">&quot;manhattan&quot;</span>) {</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>    tmp_t1_within_group_plot <span class="ot">&lt;-</span> tmp_t1_within_group_plot <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">&quot;Manhattan distance&quot;</span>)</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>    tmp_t1_btwn_group_plot <span class="ot">&lt;-</span> tmp_t1_btwn_group_plot <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">&quot;Manhattan distance&quot;</span>)</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (choose_metric <span class="sc">==</span> <span class="st">&quot;gower&quot;</span>) {</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>    tmp_t1_within_group_plot <span class="ot">&lt;-</span> tmp_t1_within_group_plot <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">&quot;Gower distance&quot;</span>)</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>    tmp_t1_btwn_group_plot <span class="ot">&lt;-</span> tmp_t1_btwn_group_plot <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">&quot;Gower distance&quot;</span>)</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> <span class="cf">if</span> (choose_metric <span class="sc">==</span> <span class="st">&quot;canberra&quot;</span>) {</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>    tmp_t1_within_group_plot <span class="ot">&lt;-</span> tmp_t1_within_group_plot <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">&quot;Canberra distance&quot;</span>)</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>    tmp_t1_btwn_group_plot <span class="ot">&lt;-</span> tmp_t1_btwn_group_plot <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">&quot;Canberra distance&quot;</span>)</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span>  {</span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>    tmp_t1_within_group_plot <span class="ot">&lt;-</span> tmp_t1_within_group_plot</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>    tmp_t1_btwn_group_plot <span class="ot">&lt;-</span> tmp_t1_btwn_group_plot</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>  } </span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a><span class="do">###### SET names</span></span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>  tmp_name_ord <span class="ot">&lt;-</span> <span class="fu">paste</span>(choose_input, <span class="st">&quot;_me_&quot;</span>, choose_metric, <span class="st">&quot;_&quot;</span>, choose_ord, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>)</span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>  tmp_name_wg <span class="ot">&lt;-</span> <span class="fu">paste</span>(choose_input, <span class="st">&quot;_me_wg_&quot;</span>, choose_metric, <span class="st">&quot;_&quot;</span>, choose_ord, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>)</span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>  tmp_name_bg <span class="ot">&lt;-</span> <span class="fu">paste</span>(choose_input, <span class="st">&quot;_me_bg_&quot;</span>, choose_metric, <span class="st">&quot;_&quot;</span>, choose_ord, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>)</span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>  <span class="fu">assign</span>(tmp_name_ord, tmp_t1_ord_plot, <span class="at">envir =</span> <span class="fu">parent.frame</span>(<span class="at">n =</span> <span class="dv">2</span>))</span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a>  <span class="fu">assign</span>(tmp_name_wg, tmp_t1_within_group_plot, <span class="at">envir =</span> <span class="fu">parent.frame</span>(<span class="at">n =</span> <span class="dv">2</span>))</span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>  <span class="fu">assign</span>(tmp_name_bg, tmp_t1_btwn_group_plot, <span class="at">envir =</span> <span class="fu">parent.frame</span>(<span class="at">n =</span> <span class="dv">2</span>))</span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a><span class="do">###### SET paths</span></span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">paste</span>(microeco_path, choose_input, <span class="st">&quot;/ordination/&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>), <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>  tmp_path <span class="ot">&lt;-</span> <span class="fu">paste</span>(microeco_path, choose_input, <span class="st">&quot;/ordination/&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>)</span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>  tmp_path_ord <span class="ot">&lt;-</span> <span class="fu">paste</span>(tmp_path, <span class="st">&quot;ord_plots/&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>)</span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>  tmp_path_wg <span class="ot">&lt;-</span> <span class="fu">paste</span>(tmp_path, <span class="st">&quot;within_group/&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>)</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>  tmp_path_bg <span class="ot">&lt;-</span> <span class="fu">paste</span>(tmp_path, <span class="st">&quot;between_group/&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>)</span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a><span class="do">###### SAVE plots  </span></span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggsave</span>(tmp_t1_ord_plot, <span class="at">path =</span> <span class="fu">paste</span>(tmp_path_ord, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>), </span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>                  <span class="at">filename =</span> <span class="fu">paste0</span>(tmp_name_ord, <span class="st">&quot;.png&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>))</span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggsave</span>(tmp_t1_ord_plot, <span class="at">path =</span> <span class="fu">paste</span>(tmp_path_ord, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>), </span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>                  <span class="at">filename =</span> <span class="fu">paste0</span>(tmp_name_ord, <span class="st">&quot;.pdf&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>))                    </span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggsave</span>(tmp_t1_within_group_plot, <span class="at">path =</span> <span class="fu">paste</span>(tmp_path_wg, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>), </span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>                  <span class="at">filename =</span> <span class="fu">paste0</span>(tmp_name_wg, <span class="st">&quot;.png&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>))</span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggsave</span>(tmp_t1_within_group_plot, <span class="at">path =</span> <span class="fu">paste</span>(tmp_path_wg, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>), </span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>                  <span class="at">filename =</span> <span class="fu">paste0</span>(tmp_name_wg, <span class="st">&quot;.pdf&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>))                  </span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggsave</span>(tmp_t1_btwn_group_plot, <span class="at">path =</span> <span class="fu">paste</span>(tmp_path_bg, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>), </span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>                  <span class="at">filename =</span> <span class="fu">paste0</span>(tmp_name_bg, <span class="st">&quot;.png&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>))</span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggsave</span>(tmp_t1_btwn_group_plot, <span class="at">path =</span> <span class="fu">paste</span>(tmp_path_bg, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>), </span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a>                  <span class="at">filename =</span> <span class="fu">paste0</span>(tmp_name_bg, <span class="st">&quot;.pdf&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>))                  </span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">pattern =</span> <span class="st">&quot;tmp_&quot;</span>))</span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+</details>
+</div>
+<p>And then run it like so:</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">microeco_beta_plot</span>(<span class="at">choose_input =</span> <span class="st">&quot;ssu_ps_pime&quot;</span>, </span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">choose_metric =</span> <span class="st">&quot;bray&quot;</span>, </span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">choose_ord =</span> <span class="st">&quot;PCoA&quot;</span>)</span></code></pre></div>
+</div>
+<p>However, since we have a lot of data sets and distance metrics to test, I wrote a little function that runs the function described above on a bunch of data sets, distance metrics, and ordination methods.</p>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>run_microeco_beta_plot <span class="ot">&lt;-</span> <span class="cf">function</span>(dataset, ord) {</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(<span class="fu">get</span>(<span class="fu">paste</span>(dataset, <span class="st">&quot;_me&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>))<span class="sc">$</span>beta_diversity)) {</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  tmp_metric <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">get</span>(<span class="fu">paste</span>(dataset, <span class="st">&quot;_me&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>))<span class="sc">$</span>beta_diversity[j])</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  tmp_choose_input <span class="ot">&lt;-</span> <span class="fu">paste</span>(dataset, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">microeco_beta_plot</span>(<span class="at">choose_input =</span> tmp_choose_input, <span class="at">choose_metric =</span> tmp_metric, <span class="at">choose_ord =</span> ord)</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">pattern =</span> <span class="st">&quot;tmp_&quot;</span>))</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>} </span></code></pre></div>
+</details>
+</div>
+<p>So if we wanted to plot the 16S rRNA, PERFect filtered data set, from Year 4 using PCoA, we would run the command like so.</p>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;ssu_ps_perfect&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span></code></pre></div>
+</div>
+<p>The two functions could likely be combined but I could not figure out how to make that work :/</p>
+<h4 id="s-rrna-plots">16S rRNA plots</h4>
+<p>To begin, we calculate distance matrices using several methods. By default, the <code>microeco</code> package will calculate Bray-Curtis, Unweighted UniFrac, and Weighted UniFrac. If we want to include others (which we do) we simply add code to calculate distance using the desire metric. The code below illustrates how this is accomplished.</p>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>microeco_path <span class="ot">&lt;-</span> <span class="st">&quot;files/paper/microeco/&quot;</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> ssu_samp_ps) {</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  tmp_dataset <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span><span class="fu">paste0</span>(., <span class="st">&quot;_me&quot;</span>)))</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  tmp_dataset<span class="sc">$</span><span class="fu">cal_betadiv</span>(<span class="at">unifrac =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="do">#### CODE TO ADD JSD DISTANCE ####  </span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  tmp_jsd <span class="ot">&lt;-</span> phyloseq<span class="sc">::</span><span class="fu">distance</span>(<span class="fu">get</span>(i), <span class="at">method =</span> <span class="st">&quot;jsd&quot;</span>) </span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  tmp_jsd <span class="ot">&lt;-</span> <span class="fu">forceSymmetric</span>(<span class="fu">as.matrix</span>(tmp_jsd), <span class="at">uplo =</span> <span class="st">&quot;L&quot;</span>)</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  tmp_jsd <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(tmp_jsd)</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  tmp_dataset<span class="sc">$</span>beta_diversity<span class="sc">$</span>jsd <span class="ot">&lt;-</span> tmp_jsd</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="do">#### CODE TO ADD jaccard DISTANCE ####  </span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>  tmp_jac <span class="ot">&lt;-</span> phyloseq<span class="sc">::</span><span class="fu">distance</span>(<span class="fu">get</span>(i), <span class="at">method =</span> <span class="st">&quot;jaccard&quot;</span>, <span class="at">binary =</span> <span class="cn">TRUE</span>) </span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  tmp_jac <span class="ot">&lt;-</span> <span class="fu">forceSymmetric</span>(<span class="fu">as.matrix</span>(tmp_jac), <span class="at">uplo =</span> <span class="st">&quot;L&quot;</span>)</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>  tmp_jac <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(tmp_jac)</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>  tmp_dataset<span class="sc">$</span>beta_diversity<span class="sc">$</span>jaccard <span class="ot">&lt;-</span> tmp_jac</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="do">#### #### #### #### #### #### #### ####  </span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">paste</span>(microeco_path, i, <span class="st">&quot;/metrics/&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>), <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>  tmp_dataset<span class="sc">$</span><span class="fu">save_betadiv</span>(<span class="at">dirpath =</span> <span class="fu">paste</span>(microeco_path, i, <span class="st">&quot;/metrics/&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>))</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">pattern =</span> <span class="st">&quot;tmp_&quot;</span>))</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="fu">remove</span>(<span class="at">list =</span> <span class="fu">ls</span>())</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="co">#load(&quot;page_build/paper_wf_part_2.rdata&quot;)</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="fu">objects</span>()</span></code></pre></div>
+</details>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>microeco_path <span class="ot">&lt;-</span> <span class="st">&quot;files/paper/microeco/&quot;</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> its_samp_ps) {</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  tmp_dataset <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span><span class="fu">paste0</span>(., <span class="st">&quot;_me&quot;</span>)))</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  tmp_dataset<span class="sc">$</span><span class="fu">cal_betadiv</span>(<span class="at">unifrac =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="do">#### CODE TO ADD JSD DISTANCE ####  </span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  tmp_jsd <span class="ot">&lt;-</span> phyloseq<span class="sc">::</span><span class="fu">distance</span>(<span class="fu">get</span>(i), <span class="at">method =</span> <span class="st">&quot;jsd&quot;</span>) </span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  tmp_jsd <span class="ot">&lt;-</span> <span class="fu">forceSymmetric</span>(<span class="fu">as.matrix</span>(tmp_jsd), <span class="at">uplo =</span> <span class="st">&quot;L&quot;</span>)</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  tmp_jsd <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(tmp_jsd)</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  tmp_dataset<span class="sc">$</span>beta_diversity<span class="sc">$</span>jsd <span class="ot">&lt;-</span> tmp_jsd</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="do">#### CODE TO ADD jaccard DISTANCE ####  </span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  tmp_jac <span class="ot">&lt;-</span> phyloseq<span class="sc">::</span><span class="fu">distance</span>(<span class="fu">get</span>(i), <span class="at">method =</span> <span class="st">&quot;jaccard&quot;</span>, <span class="at">binary =</span> <span class="cn">TRUE</span>) </span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  tmp_jac <span class="ot">&lt;-</span> <span class="fu">forceSymmetric</span>(<span class="fu">as.matrix</span>(tmp_jac), <span class="at">uplo =</span> <span class="st">&quot;L&quot;</span>)</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>  tmp_jac <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(tmp_jac)</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>  tmp_dataset<span class="sc">$</span>beta_diversity<span class="sc">$</span>jaccard <span class="ot">&lt;-</span> tmp_jac</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="do">#### CODE TO ADD GOWER DISTANCE ####  </span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>  tmp_gower <span class="ot">&lt;-</span> phyloseq<span class="sc">::</span><span class="fu">distance</span>(<span class="fu">get</span>(i), <span class="at">method =</span> <span class="st">&quot;gower&quot;</span>) </span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>  tmp_gower <span class="ot">&lt;-</span> <span class="fu">forceSymmetric</span>(<span class="fu">as.matrix</span>(tmp_gower), <span class="at">uplo =</span> <span class="st">&quot;L&quot;</span>)</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>  tmp_gower <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(tmp_gower)</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  tmp_dataset<span class="sc">$</span>beta_diversity<span class="sc">$</span>gower <span class="ot">&lt;-</span> tmp_gower</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a><span class="do">#### CODE TO ADD canberra DISTANCE ####  </span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>  tmp_canberra <span class="ot">&lt;-</span> phyloseq<span class="sc">::</span><span class="fu">distance</span>(<span class="fu">get</span>(i), <span class="at">method =</span> <span class="st">&quot;canberra&quot;</span>) </span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>  tmp_canberra <span class="ot">&lt;-</span> <span class="fu">forceSymmetric</span>(<span class="fu">as.matrix</span>(tmp_canberra), <span class="at">uplo =</span> <span class="st">&quot;L&quot;</span>)</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>  tmp_canberra <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(tmp_canberra)</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>  tmp_dataset<span class="sc">$</span>beta_diversity<span class="sc">$</span>canberra <span class="ot">&lt;-</span> tmp_canberra</span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a><span class="do">#### CODE TO ADD manhattan DISTANCE ####  </span></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>  tmp_manhattan <span class="ot">&lt;-</span> phyloseq<span class="sc">::</span><span class="fu">distance</span>(<span class="fu">get</span>(i), <span class="at">method =</span> <span class="st">&quot;manhattan&quot;</span>) </span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>  tmp_manhattan <span class="ot">&lt;-</span> <span class="fu">forceSymmetric</span>(<span class="fu">as.matrix</span>(tmp_manhattan), <span class="at">uplo =</span> <span class="st">&quot;L&quot;</span>)</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>  tmp_manhattan <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(tmp_manhattan)</span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>  tmp_dataset<span class="sc">$</span>beta_diversity<span class="sc">$</span>manhattan <span class="ot">&lt;-</span> tmp_manhattan</span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a><span class="do">#### #### #### #### #### #### #### ####  </span></span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">paste</span>(microeco_path, i, <span class="st">&quot;/metrics/&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>), <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>  tmp_dataset<span class="sc">$</span><span class="fu">save_betadiv</span>(<span class="at">dirpath =</span> <span class="fu">paste</span>(microeco_path, i, <span class="st">&quot;/metrics/&quot;</span>, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>))</span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">pattern =</span> <span class="st">&quot;tmp_&quot;</span>))</span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a><span class="fu">objects</span>(<span class="at">pattern =</span> <span class="st">&quot;its_&quot;</span>)</span></code></pre></div>
+</div>
+<p>Now we run the custom function <code>run_microeco_beta_plot</code>, which incorporates the other custom function <code>microeco_beta_plot</code>, for each of the filtered and unfiltered data sets, split by Year. Like so…</p>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;ssu_ps_work&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;ssu_ps_filt&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;ssu_ps_perfect&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;ssu_ps_pime&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span></code></pre></div>
+</details>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_work&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_filt&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_perfect&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_pime&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span></code></pre></div>
+</details>
+</div>
+<p>Before moving on we create a function that sets set all axes (in plots to compare) to the same scales.</p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>scale_beta_div_plots <span class="ot">&lt;-</span>  <span class="cf">function</span>(ps_object, ord) {</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="do">### GET PLOTS  </span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  sub_scale <span class="ot">&lt;-</span> stringr<span class="sc">::</span><span class="fu">str_subset</span>(scale_plots, ps_object)</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  sub_scale <span class="ot">&lt;-</span> stringr<span class="sc">::</span><span class="fu">str_subset</span>(sub_scale, <span class="fu">paste</span>(<span class="st">&quot;_&quot;</span>, ord, <span class="at">sep =</span> <span class="st">&quot;&quot;</span>))</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  tmp_scale <span class="ot">&lt;-</span> sub_scale</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  scale_plot_list <span class="ot">&lt;-</span> <span class="fu">lapply</span>(tmp_scale, get)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">names</span>(scale_plot_list) <span class="ot">&lt;-</span> tmp_scale</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="do">### GET min/max PCo values</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  PCo1min <span class="ot">&lt;-</span> <span class="fu">min</span>(<span class="fu">sapply</span>(scale_plot_list, <span class="cf">function</span>(x) <span class="fu">min</span>(x<span class="sc">$</span>data<span class="sc">$</span>PCo1)))</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>  PCo1max <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">sapply</span>(scale_plot_list, <span class="cf">function</span>(x) <span class="fu">max</span>(x<span class="sc">$</span>data<span class="sc">$</span>PCo1)))</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>  PCo1 <span class="ot">&lt;-</span> <span class="fu">c</span>(PCo1min, PCo1max)</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>  PCo1 <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">abs</span>(PCo1))</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>  PCo2min <span class="ot">&lt;-</span> <span class="fu">min</span>(<span class="fu">sapply</span>(scale_plot_list, <span class="cf">function</span>(x) <span class="fu">min</span>(x<span class="sc">$</span>data<span class="sc">$</span>PCo2)))</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>  PCo2max <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">sapply</span>(scale_plot_list, <span class="cf">function</span>(x) <span class="fu">max</span>(x<span class="sc">$</span>data<span class="sc">$</span>PCo2)))</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>  PCo2 <span class="ot">&lt;-</span> <span class="fu">c</span>(PCo2min, PCo2max)</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>  PCo2 <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">abs</span>(PCo2))</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;For the data  set&quot;</span>, ps_object,<span class="st">&quot; and distance method&quot;</span>, ord, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;The minimum &amp; maximum values of PCo1 have been set to &quot;</span>, PCo1, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)  </span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;The minimum &amp; maximum values of PCo2 have been set to &quot;</span>, PCo2, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)  </span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;--------------------------------------------------------- &quot;</span>, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)  </span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>  <span class="do">### Add new lims</span></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>  scale_plot_list_fix <span class="ot">&lt;-</span> <span class="fu">lapply</span>(scale_plot_list, <span class="cf">function</span>(x) x <span class="sc">+</span> </span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>                                  <span class="fu">xlim</span>(<span class="sc">-</span>PCo1, PCo1) <span class="sc">+</span> </span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>                                  <span class="fu">ylim</span>(<span class="sc">-</span>PCo2, PCo2))</span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list2env</span>(scale_plot_list_fix, <span class="at">envir =</span> <span class="fu">parent.frame</span>())</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+</details>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<p>The remaining code blocks in this section are used to generate combined figures. These code blocks are hidden by default but can be accessed using the repo link at the bottom of the page.</p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="l-page">
+<div class="panelset">
+<section id="full-data-set-1" class="panel">
+<h4>FULL data set</h4>
+<div class="layout-chunk" data-layout="l-page">
+
+</div>
+<p><small><strong>(16S rRNA) Figure 2 | </strong></small></p>
+</section>
+<section id="arbitrary-filtered-2" class="panel">
+<h4>Arbitrary filtered</h4>
+<div class="layout-chunk" data-layout="l-page">
+
+</div>
+<p><small><strong>(16S rRNA) Figure 3 | </strong></small></p>
+</section>
+<section id="perfect-filtered-2" class="panel">
+<h4>PERFect filtered</h4>
+<div class="layout-chunk" data-layout="l-page">
+
+</div>
+<p><small><strong>(16S rRNA) Figure 4 | </strong></small></p>
+</section>
+<section id="pime-filtered-2" class="panel">
+<h4>PIME filtered</h4>
+<div class="layout-chunk" data-layout="l-page">
+
+</div>
+<p><small><strong>(16S rRNA) Figure 5 | </strong></small></p>
+</section>
+</div>
+</div>
+<h4 id="its">ITS</h4>
+<p>In order to test for significance between sample groups, we must perform the following steps:</p>
+<ol type="1">
+<li>Transform sample counts to relative abundance.</li>
+<li>Create distance matrices based on some metrics, for example <code>wunifrac</code>, <code>unifrac</code>, and <code>jsd</code>. For this we use the function <code>phyloseq::distance</code>.</li>
+<li>Next, calculate beta dispersion using the <code>betadisper</code> function from the <code>vegan</code> package <span class="citation" data-cites="oksanen2013community">(<a href="#ref-oksanen2013community" role="doc-biblioref">Oksanen et al. 2012</a>)</span>.</li>
+<li>Then, use the function <code>permutest</code> to run a Permutation test for homogeneity of multivariate dispersions.</li>
+<li>If the beta dispersion tests are not significant we will run a PERMANOVA using <code>adonis</code> (since PERMANOVA assumes equal dispersion), otherwise we will use Analysis of Similarity (ANOSIM), both available in the <code>vegan</code> package <span class="citation" data-cites="oksanen2013community">(<a href="#ref-oksanen2013community" role="doc-biblioref">Oksanen et al. 2012</a>)</span>.</li>
+</ol>
+<p>Steps 2–4 are combined in a <code>for</code> loop that tests all three distance metrics.</p>
+<p>Again, transform sample counts to relative abundance and generate some new trees.</p>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>its_samp_ps <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">objects</span>(<span class="at">pattern =</span> <span class="st">&quot;its_.*_Y[0-9]$&quot;</span>))</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> its_samp_ps) {</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>     tmp_name <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_prop&quot;</span>))</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>     tmp_get <span class="ot">&lt;-</span> <span class="fu">get</span>(i)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>     tmp_ps <span class="ot">&lt;-</span> <span class="fu">transform_sample_counts</span>(tmp_get, <span class="cf">function</span>(otu) </span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>                                          <span class="fl">1e5</span> <span class="sc">*</span> otu<span class="sc">/</span><span class="fu">sum</span>(otu))</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>     tmp_ps<span class="sc">@</span>phy_tree <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>     tmp_ps <span class="ot">&lt;-</span> <span class="fu">prune_samples</span>(<span class="fu">sample_sums</span>(tmp_ps) <span class="sc">&gt;</span> <span class="dv">0</span>, tmp_ps)</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>     tmp_ps <span class="ot">&lt;-</span> <span class="fu">merge_phyloseq</span>(tmp_ps, sample_data)</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>     <span class="fu">print</span>(tmp_name)</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>     <span class="fu">assign</span>(tmp_name, tmp_ps)</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>     <span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">pattern =</span> <span class="st">&quot;tmp_&quot;</span>))</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+</details>
+</div>
+<h4 id="beta-dispersion-1">Beta Dispersion</h4>
+<p>Here we create distance matrices for each metric, calculate the beta dispersion, and run a permutation test for homogeneity of multivariate dispersions.</p>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>its_dist <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;jsd&quot;</span>, <span class="st">&quot;bray&quot;</span>, <span class="st">&quot;gower&quot;</span>, <span class="st">&quot;jaccard&quot;</span>)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> its_samp_ps) {</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (d <span class="cf">in</span> its_dist){</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>       tmp_get <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(i, <span class="st">&quot;_prop&quot;</span>)))</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>       tmp_samp <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">sample_data</span>(tmp_get))</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>       <span class="cf">if</span>(d <span class="sc">==</span> <span class="st">&quot;jaccard&quot;</span>){</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>         tmp_df <span class="ot">&lt;-</span> phyloseq<span class="sc">::</span><span class="fu">distance</span>(tmp_get, <span class="at">method =</span> d, <span class="at">binary =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>       } <span class="cf">else</span> {</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>         tmp_df <span class="ot">&lt;-</span> phyloseq<span class="sc">::</span><span class="fu">distance</span>(tmp_get, <span class="at">method =</span> d)</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>         }</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="co">#       tmp_df &lt;- phyloseq::distance(tmp_get, method = d)</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>       tmp_df_name <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(d, <span class="sc">~</span> <span class="fu">paste0</span>(i, <span class="st">&quot;_beta_dist_&quot;</span>, .))</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>       <span class="fu">assign</span>(tmp_df_name, tmp_df)</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>       tmp_df2 <span class="ot">&lt;-</span> <span class="fu">betadisper</span>(tmp_df, tmp_samp[[choose_group]], <span class="at">bias.adjust =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>       tmp_df_name2 <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(d, <span class="sc">~</span> <span class="fu">paste0</span>(i, <span class="st">&quot;_beta_dispersion_&quot;</span>, .))</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>       <span class="fu">assign</span>(tmp_df_name2, tmp_df2)</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>       tmp_df3 <span class="ot">&lt;-</span> <span class="fu">permutest</span>(tmp_df2, <span class="at">pairwise =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>                            <span class="at">permutations =</span> <span class="dv">1000</span>, <span class="at">binary =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>       tmp_df_name3 <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(d, <span class="sc">~</span> <span class="fu">paste0</span>(i, <span class="st">&quot;_permutest_&quot;</span>, .))</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>       <span class="fu">assign</span>(tmp_df_name3, tmp_df3)</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>       <span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">pattern =</span> <span class="st">&quot;tmp_&quot;</span>))</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+</details>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<details>
+<summary>
+Results of Beta Dispersion &amp; Permutation tests <strong>(FULL data set)</strong>
+</summary>
+<div class="l-body">
+<div class="panelset">
+<section id="year-0" class="panel">
+<h4>Year 0</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-1" class="panel">
+<h4>Year 1</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-4" class="panel">
+<h4>Year 4</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+</div>
+</div>
+</details>
+<details>
+<summary>
+Results of Beta Dispersion &amp; Permutation tests <strong>(Arbitrary filtered)</strong>
+</summary>
+<div class="l-body">
+<div class="panelset">
+<section id="year-0-1" class="panel">
+<h4>Year 0</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-1-1" class="panel">
+<h4>Year 1</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-4-1" class="panel">
+<h4>Year 4</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+</div>
+</div>
+</details>
+<details>
+<summary>
+Results of Beta Dispersion &amp; Permutation tests <strong>(PERFect filtered)</strong>
+</summary>
+<div class="l-body">
+<div class="panelset">
+<section id="year-0-2" class="panel">
+<h4>Year 0</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-1-2" class="panel">
+<h4>Year 1</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-4-2" class="panel">
+<h4>Year 4</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+</div>
+</div>
+</details>
+<details>
+<summary>
+Results of Beta Dispersion &amp; Permutation tests <strong>(PIME filtered)</strong>
+</summary>
+<div class="l-body">
+<div class="panelset">
+<section id="year-0-3" class="panel">
+<h4>Year 0</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-1-3" class="panel">
+<h4>Year 1</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-4-3" class="panel">
+<h4>Year 4</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+</div>
+</div>
+</details>
+<p>Remember, if the beta dispersion p-value is greater than <code>0.05</code> we use PERMANOVA, otherwise we use ANOSIM.</p>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>its_perm_pvalues <span class="ot">&lt;-</span> <span class="fu">data.frame</span>()</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> its_samp_ps) {</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (d <span class="cf">in</span> its_dist){</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>          tmp_get <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_permutest_&quot;</span>, d)))</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>          tmp_pv <span class="ot">&lt;-</span> tmp_get<span class="sc">$</span>tab<span class="sc">$</span><span class="st">`</span><span class="at">Pr(&gt;F)</span><span class="st">`</span>[<span class="dv">1</span>]</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>          tmp_test <span class="ot">&lt;-</span> <span class="cf">if</span>(tmp_pv <span class="sc">&lt;</span> <span class="fl">0.05</span>){</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>            tmp_test <span class="ot">&lt;-</span> <span class="st">&quot;ANOSIM&quot;</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>          } <span class="cf">else</span> {</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>            tmp_test <span class="ot">&lt;-</span> <span class="st">&quot;ADONIS&quot;</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>          tmp_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(i, d, tmp_pv, tmp_test)</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>          its_perm_pvalues <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(its_perm_pvalues, tmp_df)</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>          <span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">pattern =</span> <span class="st">&quot;tmp_&quot;</span>))</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>its_perm_pvalues <span class="ot">&lt;-</span> its_perm_pvalues <span class="sc">%&gt;%</span> </span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="fu">c</span>(<span class="st">&quot;data_set&quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;dist&quot;</span> <span class="ot">=</span> <span class="dv">2</span>, <span class="st">&quot;pval&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot;test&quot;</span> <span class="ot">=</span> <span class="dv">4</span>))</span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>its_perm_pvalues <span class="ot">&lt;-</span> its_perm_pvalues <span class="sc">%&gt;%</span> tibble<span class="sc">::</span><span class="fu">remove_rownames</span>()</span></code></pre></div>
+</details>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<p><small><strong>(ITS) Table 1 | Summary of Beta Dispersion Tests for unfiltered &amp; filtered data sets against various distance metrics. The <code>test</code> column shows the method chosen (based on the test results) to assess differences in beta diversity. If p-values are significant (red, p-value &lt; 0.05) we used ANOSIM, otherwise we used PERMANOVA (blue, p-value &gt; 0.05).</strong></small></p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<h4 id="significance-tests-1">Significance Tests</h4>
+<p>Depending on the test, we need different data structures. For <code>adonis</code> we need the sample metadata and for <code>anosim</code> we start with a phyloseq object.</p>
+<p>We begin by creating separate sample metadata data frames for each phyloseq object (for any <code>adonis</code> analyses).</p>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> its_samp_ps) {</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>     tmp_get <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_prop&quot;</span>)))</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>     tmp_samp <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">sample_data</span>(tmp_get))</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>     tmp_name <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_sampledf&quot;</span>))</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>     <span class="fu">assign</span>(tmp_name, tmp_samp)</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>     <span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">pattern =</span> <span class="st">&quot;tmp_&quot;</span>))</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="fu">objects</span>(<span class="at">pattern=</span><span class="st">&quot;_sampledf&quot;</span>)</span></code></pre></div>
+</details>
+</div>
+<p>Next we can use a <code>for</code> loop with an <code>if/else</code> to perform significance tests. This loop does the following for every combination of phyloseq object and distance metric:</p>
+<ol type="1">
+<li>Get the results of each permutation test.</li>
+<li>Get the p-value from the test.</li>
+<li>If the p-value is &lt; 0.05, <code>anosim</code> is run, otherwise we use <code>adonis</code>.</li>
+</ol>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> its_samp_ps) {</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (d <span class="cf">in</span> its_dist){</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>          tmp_get <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_permutest_&quot;</span>, d)))</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>          tmp_pv <span class="ot">&lt;-</span> tmp_get<span class="sc">$</span>tab<span class="sc">$</span><span class="st">`</span><span class="at">Pr(&gt;F)</span><span class="st">`</span>[<span class="dv">1</span>]</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>          </span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>          <span class="cf">if</span>(tmp_pv <span class="sc">&lt;</span> <span class="fl">0.05</span>){</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>            tmp_anosim_data <span class="ot">&lt;-</span> <span class="fu">get</span>(i)</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>            tmp_groups <span class="ot">&lt;-</span> <span class="fu">get_variable</span>(tmp_anosim_data, choose_group)</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>            tmp_prop <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_prop&quot;</span>)))</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>            tmp_anosim_d <span class="ot">&lt;-</span> <span class="fu">anosim</span>(phyloseq<span class="sc">::</span><span class="fu">distance</span>(tmp_prop, d), <span class="at">grouping =</span> tmp_groups)</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>            tmp_anosim_name <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_sig_anosim_&quot;</span>, d))</span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>            <span class="fu">assign</span>(tmp_anosim_name, tmp_anosim_d)</span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>          } <span class="cf">else</span> {</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>            tmp_adonis_data <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_beta_dist_&quot;</span>, d)))</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>            tmp_adonis_sampledf <span class="ot">&lt;-</span> <span class="fu">get</span>(purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_sampledf&quot;</span>)))</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>            tmp_adonis <span class="ot">&lt;-</span> <span class="fu">adonis</span>(tmp_adonis_data <span class="sc">~</span> YR_TREAT,</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">data =</span> tmp_adonis_sampledf, <span class="at">permutations =</span> <span class="dv">1000</span>)</span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>            tmp_adonis2 <span class="ot">&lt;-</span> <span class="fu">adonis2</span>(tmp_adonis_data <span class="sc">~</span> YR_TREAT,</span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">data =</span> tmp_adonis_sampledf, <span class="at">permutations =</span> <span class="dv">1000</span>)</span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a>            tmp_adonis_name <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_sig_adonis_&quot;</span>, d))</span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a>            tmp_adonis2_name <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map_chr</span>(i, <span class="sc">~</span> <span class="fu">paste0</span>(., <span class="st">&quot;_sig_adonis2_&quot;</span>, d))</span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a>            <span class="fu">assign</span>(tmp_adonis_name, tmp_adonis)</span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a>            <span class="fu">assign</span>(tmp_adonis2_name, tmp_adonis2)</span>
+<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a>          <span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">pattern =</span> <span class="st">&quot;tmp_&quot;</span>))</span>
+<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+</details>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<details>
+<summary>
+Results of Significance tests <strong>(FULL data set)</strong>
+</summary>
+<div class="l-body">
+<div class="panelset">
+<section id="year-0-4" class="panel">
+<h4>Year 0</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-1-4" class="panel">
+<h4>Year 1</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-4-4" class="panel">
+<h4>Year 4</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+</div>
+</div>
+</details>
+<details>
+<summary>
+Results of Significance tests <strong>(Arbitrary filtered)</strong>
+</summary>
+<div class="l-body">
+<div class="panelset">
+<section id="year-0-5" class="panel">
+<h4>Year 0</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-1-5" class="panel">
+<h4>Year 1</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-4-5" class="panel">
+<h4>Year 4</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+</div>
+</div>
+</details>
+<details>
+<summary>
+Results of Significance tests <strong>(PERFect filtered)</strong>
+</summary>
+<div class="l-body">
+<div class="panelset">
+<section id="year-0-6" class="panel">
+<h4>Year 0</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-1-6" class="panel">
+<h4>Year 1</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-4-6" class="panel">
+<h4>Year 4</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+</div>
+</div>
+</details>
+<details>
+<summary>
+Results of Significance tests <strong>(PIME filtered)</strong>
+</summary>
+<div class="l-body">
+<div class="panelset">
+<section id="year-0-7" class="panel">
+<h4>Year 0</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-1-7" class="panel">
+<h4>Year 1</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="year-4-7" class="panel">
+<h4>Year 4</h4>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+</div>
+</div>
+</details>
+<h4 id="summaries-1">Summaries</h4>
+<p>Here is a quick summary of significance tests for the data sets against three distance matrices.</p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="l-body">
+<div class="panelset">
+<section id="full-data-sets" class="panel">
+<h4>FULL data sets</h4>
+<p><small><strong>(ITS) Table 2 | Summary of significant tests by Year for FULL, unfiltered data set. P-values in red indicate significant differences (p-value &lt; 0.05).</strong></small></p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="arbitrary-filtered-3" class="panel">
+<h4>Arbitrary filtered</h4>
+<p><small><strong>(ITS) Table 3 | Summary of significant tests by Year for Arbitrary filtered data set. P-values in red indicate significant differences (p-value &lt; 0.05).</strong></small></p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="perfect-filtered-3" class="panel">
+<h4>PERFect filtered</h4>
+<p><small><strong>(ITS) Table 4 | Summary of significant tests by Year for PERFect filtered data set. P-values in red indicate significant differences (p-value &lt; 0.05).</strong></small></p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+<section id="pime-filtered-3" class="panel">
+<h4>PIME filtered</h4>
+<p><small><strong>(ITS) Table 5 | Summary of significant tests by Year for PIME filtered data set. P-values in red indicate significant differences (p-value &lt; 0.05).</strong></small></p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</section>
+</div>
+</div>
+<h4 id="its-plots">ITS Plots</h4>
+<p>The ITS code is nearly identical. The only differences are related to selected distance metrics.</p>
+<details>
+<summary>
+Code to reproduce <strong>ITS</strong> plots
+</summary>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(its_ps_perfect_Y0_me<span class="sc">$</span>beta_diversity)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(its_ps_perfect_Y0_me<span class="sc">$</span>beta_diversity)</span></code></pre></div>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+<details>
+<summary>
+Show code
+</summary>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_work&quot;</span>, <span class="st">&quot;Y0&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_work&quot;</span>, <span class="st">&quot;Y1&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_work&quot;</span>, <span class="st">&quot;Y4&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_filt&quot;</span>, <span class="st">&quot;Y0&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_filt&quot;</span>, <span class="st">&quot;Y1&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_filt&quot;</span>, <span class="st">&quot;Y4&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_perfect&quot;</span>, <span class="st">&quot;Y0&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_perfect&quot;</span>, <span class="st">&quot;Y1&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_perfect&quot;</span>, <span class="st">&quot;Y4&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_pime&quot;</span>, <span class="st">&quot;Y0&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_pime&quot;</span>, <span class="st">&quot;Y1&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a><span class="fu">run_microeco_beta_plot</span>(<span class="st">&quot;its_ps_pime&quot;</span>, <span class="st">&quot;Y4&quot;</span>, <span class="st">&quot;PCoA&quot;</span>)</span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a><span class="fu">objects</span>(<span class="at">pattern =</span> <span class="st">&quot;PCoA$&quot;</span>)</span></code></pre></div>
+</details>
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+</details>
+<div class="l-page">
+<div class="panelset">
+<section id="full-data-set-2" class="panel">
+<h4>FULL data set</h4>
+<div class="layout-chunk" data-layout="l-page">
+
+</div>
+<p><small><strong>(ITS) Figure 2 | </strong></small></p>
+</section>
+<section id="arbitrary-filtered-4" class="panel">
+<h4>Arbitrary filtered</h4>
+<div class="layout-chunk" data-layout="l-page">
+
+</div>
+<p><small><strong>(ITS) Figure 3 | </strong></small></p>
+</section>
+<section id="perfect-filtered-4" class="panel">
+<h4>PERFect filtered</h4>
+<div class="layout-chunk" data-layout="l-page">
+
+</div>
+<p><small><strong>(ITS) Figure 4 | </strong></small></p>
+</section>
+<section id="pime-filtered-4" class="panel">
+<h4>PIME filtered</h4>
+<div class="layout-chunk" data-layout="l-page">
+
+</div>
+<p><small><strong>(ITS) Figure 5 | </strong></small></p>
+</section>
+</div>
+</div>
+</details>
+<h2 class="appendix" id="source-code">Source Code</h2>
+<p>The source code for this page can be accessed on GitHub by <a href="https://github.com/agua-salud/nutrients/blob/main/beta.Rmd">clicking this link</a>.</p>
+<h2 class="appendix" id="data-availability">Data Availability</h2>
+<p>Data generated in this workflow and the Rdata need to run the workflow can be accessed on figshare at <a href="https://doi.org/10.25573/data.16828063">10.25573/data.16828063</a>.</p>
+<div id="refs" class="references csl-bib-body hanging-indent" role="doc-bibliography">
+<div id="ref-oksanen2013community" class="csl-entry" role="doc-biblioentry">
+Oksanen, Jari, F. Guillaume Blanchet, Roeland Kindt, Pierre Legendre, Peter R. Minchin, R. B. O’Hara, Gavin L. Simpson, Peter Sólymos, M. Henry H. Stevens, and Helene Wagner. 2012. <span>“Vegan: Community Ecology Package.”</span> <em>R Package Version</em> 2 (0). <a href="https://cran.r-project.org/web/packages/vegan/index.html">https://cran.r-project.org/web/packages/vegan/index.html</a>.
+</div>
+</div>
+<!--radix_placeholder_article_footer-->
+<!--/radix_placeholder_article_footer-->
+</div>
+
+<div class="d-appendix">
+</div>
+
+
+<!--radix_placeholder_site_after_body-->
+<!--/radix_placeholder_site_after_body-->
+<!--radix_placeholder_appendices-->
+<div class="appendix-bottom">
+<h3 id="references">References</h3>
+<div id="references-listing"></div>
+<h3 id="updates-and-corrections">Corrections</h3>
+<p>If you see mistakes or want to suggest changes, please <a href="https://github.com/agua-salud/nutrients/issues/new">create an issue</a> on the source repository.</p>
+<h3 id="reuse">Reuse</h3>
+<p>Text and figures are licensed under Creative Commons Attribution <a rel="license" href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Source code is available at <a href="https://github.com/agua-salud/nutrients/">https://github.com/agua-salud/nutrients/</a>, unless otherwise noted. The figures that have been reused from other sources don't fall under this license and can be recognized by a note in their caption: "Figure from ...".</p>
+</div>
+<!--/radix_placeholder_appendices-->
+<!--radix_placeholder_navigation_after_body-->
+<div class="distill-site-nav distill-site-footer">
+<p>© Copyright 2021 <a href="https://metacrobe.github.io/">metacrobe</a> &amp; The Agua Salud Project.</p>
+<p>Site constructed using <a href="https://rstudio.github.io/distill/">Distill for R Markdown</a>.</p>
+</div>
+<!--/radix_placeholder_navigation_after_body-->
+
+
+</body>
+
+</html>

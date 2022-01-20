@@ -36,6 +36,9 @@ caption_tab_its("its_alpha_hill_filt_posthoc", "Summary of posthoc comparisons f
 caption_tab_its("its_alpha_hill_perfect_posthoc", "Summary of posthoc comparisons for the PERFect filtered data set across three metrics. P-values in red indicate significance between year/treatment (p-value < 0.05).")
 caption_tab_its("its_alpha_hill_pime_posthoc", "Summary of posthoc comparisons for the PIME filtered data set across three metrics. P-values in red indicate significance between year/treatment (p-value < 0.05).")
 
+##### COMBO table caption
+caption_tab_combo("combo_post_hoc_by_age_sig", "Assessment of differences in alpha diversity by forest age. Summary of significant differences in 432 pairwise posthoc comparisons for 16S rRNA data sets and 432 for the ITS data sets. Comparisons were performed within subsets of data for each Year/Treatment combination, for each of the unfiltered and filtered data sets. All p-values presented here were significant by forest Age (p-value < 0.05).")
+
 #<small>`r caption_tab_ssu("qual_scores_after_ssu")`</small>
 
 ## Figure captions
